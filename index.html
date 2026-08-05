@@ -1,0 +1,2442 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>查房快速紀錄 · 精簡術後照護版</title>
+<style>
+  :root{
+    --bg:#eef2f4; --surface:#ffffff; --ink:#12303d; --ink2:#3d5a67;
+    --muted:#6f8794; --line:#d6e0e4; --line2:#e7eef1;
+    --primary:#0e6b7a; --primary-d:#0a5460; --primary-soft:#e0f0f2;
+    --pos:#b45309; --pos-bg:#fdf3e3; --pos-line:#e8b878;
+    --focus:#0e6b7a; --focus-bg:#eef7f8; --focus-line:#9bcfd6;
+    --danger:#b02a37;
+    --radius:12px; --radius-s:9px;
+    --shadow:0 1px 2px rgba(18,48,61,.06),0 6px 20px rgba(18,48,61,.06);
+    --font: -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Noto Sans TC","Microsoft JhengHei",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{font-family:var(--font);background:var(--bg);color:var(--ink);
+    font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  button{font-family:inherit;cursor:pointer}
+  input,select,textarea{font-family:inherit;font-size:15px}
+  .wrap{max-width:760px;margin:0 auto;min-height:100vh;background:var(--bg)}
+
+  /* ---------- top bars ---------- */
+  .topbar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.92);
+    backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line);
+    padding:10px 14px;display:flex;align-items:center;gap:10px}
+  .topbar .grow{flex:1;min-width:0}
+  .btn{border:1px solid var(--line);background:#fff;color:var(--ink);
+    padding:9px 13px;border-radius:var(--radius-s);font-size:14px;font-weight:600;
+    display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn.primary:active{background:var(--primary-d)}
+  .btn.ghost{border-color:transparent;background:transparent;padding:8px 8px}
+  .btn.sm{padding:6px 10px;font-size:13px}
+
+  /* ---------- patient list ---------- */
+  .hero{padding:26px 18px 10px}
+  .hero h1{margin:0;font-size:22px;letter-spacing:.5px;font-weight:800;color:var(--ink)}
+  .hero p{margin:6px 0 0;color:var(--muted);font-size:13.5px}
+  .list{padding:8px 14px 90px}
+  .pcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:14px 14px;margin:10px 0;display:flex;align-items:center;gap:12px}
+  .pcard:active{border-color:var(--primary)}
+  .pcard .pc-main{flex:1;min-width:0}
+  .pc-code{font-weight:800;font-size:17px;letter-spacing:.4px;color:var(--ink);
+    font-variant-numeric:tabular-nums}
+  .pc-meta{color:var(--muted);font-size:12.5px;margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .spec-badge{background:var(--primary-soft);color:var(--primary-d);border-radius:20px;
+    padding:2px 10px;font-size:12px;font-weight:700}
+  .pc-del{border:none;background:transparent;color:var(--muted);font-size:20px;
+    width:36px;height:36px;border-radius:8px;line-height:1}
+  .pc-del:active{background:#f4d9dc;color:var(--danger)}
+  .empty{padding:50px 20px;text-align:center;color:var(--muted)}
+  .empty .em-ic{font-size:40px;opacity:.5}
+
+  /* new patient form */
+  .newform{background:var(--surface);border:1px dashed var(--primary);border-radius:var(--radius);
+    padding:16px 14px;margin:10px 0}
+  .newform h3{margin:0 0 12px;font-size:15px;color:var(--primary-d)}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:5px;font-weight:600}
+  .field input,.field select{width:100%;padding:11px 12px;border:1px solid var(--line);
+    border-radius:var(--radius-s);background:#fff;color:var(--ink)}
+  .newform .row{display:flex;gap:10px}
+  .newform .row .btn{flex:1;justify-content:center}
+
+  /* fab */
+  .fab{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:30;
+    background:var(--primary);color:#fff;border:none;border-radius:26px;
+    padding:14px 22px;font-size:15px;font-weight:700;box-shadow:0 6px 22px rgba(14,107,122,.4);
+    display:inline-flex;gap:8px;align-items:center}
+  .fab:active{background:var(--primary-d)}
+
+  /* ---------- note view ---------- */
+  .note-sub{padding:10px 14px 4px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .note-sub .pcode{font-weight:800;font-size:16px;letter-spacing:.4px}
+  .specsel{padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius-s);
+    background:#fff;color:var(--ink);font-weight:600;font-size:13.5px}
+  .summary{padding:0 14px 6px;color:var(--muted);font-size:12.5px}
+  .summary b{color:var(--pos)}
+
+  .note-body{padding:6px 12px 120px}
+  .section{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);margin:12px 0;overflow:hidden}
+  .section.focus{border-color:var(--focus-line);background:var(--focus-bg)}
+  .sec-head{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;user-select:none}
+  .sec-head .st{flex:1;font-weight:800;font-size:14.5px;letter-spacing:.3px}
+  .sec-head .kindtag{font-size:11px;font-weight:800;color:var(--muted);
+    border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+  .section.focus .sec-head .st{color:var(--focus)}
+  .focus-flag{font-size:11px;font-weight:800;color:#fff;background:var(--focus);
+    border-radius:6px;padding:2px 8px}
+  .cnt{font-size:12px;font-weight:800;color:var(--pos);background:var(--pos-bg);
+    border:1px solid var(--pos-line);border-radius:20px;padding:1px 9px;min-width:22px;text-align:center}
+  .cnt.zero{display:none}
+  .chev{color:var(--muted);transition:transform .18s;font-size:13px}
+  .section.collapsed .sec-body{display:none}
+  .section.collapsed .chev{transform:rotate(-90deg)}
+  .sec-body{border-top:1px solid var(--line2);padding:6px 0}
+  .secnote-btn{border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:8px;
+    width:30px;height:30px;font-size:13px;line-height:1;flex:none;padding:0}
+  .secnote-btn.active{background:var(--primary-soft);border-color:var(--primary);color:var(--primary-d)}
+  .section.focus .secnote-btn{border-color:var(--focus-line)}
+  .blocknote-wrap{display:none;padding:8px 14px 2px}
+  .blocknote-wrap.show{display:block}
+  .blocknote-input{width:100%;padding:9px 11px;border:1px solid var(--primary);border-radius:9px;
+    background:#fbfdfd;color:var(--ink);font-size:13.5px}
+
+  /* item */
+  .item{padding:9px 14px;border-bottom:1px solid var(--line2)}
+  .item:last-child{border-bottom:none}
+  .item-row{display:flex;align-items:center;gap:10px}
+  .item-label{flex:1;line-height:1.25;min-width:0}
+  .item-label .lab-en{font-size:15.5px;font-weight:600;color:var(--ink);letter-spacing:.1px}
+  .item-label .lab-zh{display:block;font-size:11px;font-weight:400;color:var(--muted);opacity:.85;margin-top:1px}
+  .star{color:var(--pos);font-weight:800;margin-left:3px;font-size:13px}
+  /* section title en/zh */
+  .st-en{font-weight:800;font-size:14.5px;letter-spacing:.2px}
+  .st-zh{font-weight:500;font-size:11px;color:var(--muted);opacity:.9;margin-left:7px}
+  .section.focus .st-zh{opacity:.85}
+
+  /* toggle pill */
+  .toggle{border:1.5px solid var(--line);background:#fff;color:var(--muted);
+    border-radius:22px;padding:6px 15px;font-size:13.5px;font-weight:800;min-width:64px;text-align:center}
+  .toggle .neg{color:var(--muted)}
+  .toggle.on{background:var(--pos-bg);border-color:var(--pos-line);color:var(--pos)}
+  .item.hit{background:var(--pos-bg)}
+  .item.hit .lab-en{color:var(--pos)}
+
+  .isel{padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius-s);
+    background:#fff;color:var(--ink);font-weight:600;font-size:13.5px;max-width:56%}
+  .isel.abn{border-color:var(--pos-line);background:var(--pos-bg);color:var(--pos)}
+
+  .notebtn{border:1px solid var(--line);background:#fff;color:var(--muted);
+    border-radius:8px;width:34px;height:34px;font-size:15px;line-height:1;flex:none}
+  .notebtn.active{background:var(--primary-soft);border-color:var(--primary);color:var(--primary-d)}
+
+  .subwrap{margin-top:9px;padding-left:2px;display:none;flex-direction:column;gap:8px}
+  /* 顱神經面板 */
+  .cnpanel{display:none;margin:8px 0 2px;padding:8px 12px 4px;background:rgba(14,107,122,.05);border-top:1px dashed var(--line)}
+  .cnpanel.show{display:block}
+  .cn-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid var(--line2)}
+  .cn-row:last-child{border-bottom:none}
+  .cn-top{display:flex;align-items:center;gap:8px;width:100%}
+  .cn-tog{border:1.5px solid var(--line);background:#fff;color:#2f7a43;border-radius:16px;
+    padding:5px 12px;font-size:12px;font-weight:800;min-width:56px;flex:none}
+  .cn-tog.on{background:var(--pos-bg);border-color:var(--pos-line);color:var(--pos)}
+  .cn-lab{flex:1;font-size:13px;color:var(--ink2);min-width:110px}
+  .cn-detail{display:none;width:100%}
+  .cn-detail.show{display:block}
+  .cn-grid{margin-bottom:8px}
+  .cng-head,.cng-row{display:grid;grid-template-columns:1fr 56px 56px;gap:6px;align-items:center}
+  .cng-head{font-size:11px;color:var(--muted);font-weight:800;text-align:center;padding-bottom:3px}
+  .cng-row{padding:4px 0;border-top:1px solid var(--line2)}
+  .cng-lab{font-size:12.5px;color:var(--ink2)}
+  .cng-cell{height:32px;border:1.5px solid var(--line);background:#fff;border-radius:8px;
+    color:var(--pos);font-size:14px;font-weight:800;line-height:1;padding:0}
+  .cng-cell.on{background:var(--pos-bg);border-color:var(--pos-line)}
+  .cn-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+  .cn-chip{border:1.5px solid var(--line);background:#fff;color:var(--ink2);border-radius:14px;
+    padding:5px 11px;font-size:12px;font-weight:600;text-align:left}
+  .cn-chip.on{background:var(--pos-bg);border-color:var(--pos-line);color:var(--pos);font-weight:800}
+  .cn-note{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-size:12.5px;background:#fbfdfd}
+  /* DTR 格點（循環點擊） */
+  .dtr-grid{padding:8px 12px 4px}
+  .dtr-head,.dtr-row{display:grid;grid-template-columns:1fr 60px 60px;gap:8px;align-items:center}
+  .dtr-head{font-size:11px;color:var(--muted);font-weight:800;padding-bottom:4px;text-align:center}
+  .dtr-head span:first-child{text-align:left}
+  .dtr-row{padding:4px 0;border-top:1px solid var(--line2)}
+  .dtr-site{font-size:12.5px;color:var(--ink2)}
+  .dtr-cell{height:34px;border:1px solid var(--line);border-radius:8px;background:#fff;
+    font-size:14px;font-weight:800;color:var(--ink2);padding:0}
+  .dtr-cell.abn{border-color:var(--pos-line);background:var(--pos-bg);color:var(--pos)}
+  /* Babinski / 蹠反射 */
+  .plantar-wrap{display:flex;gap:10px;flex-wrap:wrap;padding:8px 12px 4px}
+  .plantar-field{display:flex;align-items:center;gap:6px}
+  .plantar-field span{font-size:12.5px;color:var(--ink2);font-weight:700}
+  /* 循環點擊按鈕 */
+  .icycle{border:1.5px solid var(--line);background:#fff;color:var(--muted);border-radius:16px;
+    padding:8px 14px;font-size:13px;font-weight:700;max-width:60%;text-align:center;line-height:1.25}
+  .icycle.norm{border-color:#cfe6d4;background:#eef8f0;color:#2f7a43}
+  .icycle.abn{border-color:var(--pos-line);background:var(--pos-bg);color:var(--pos)}
+  /* 群組滑桿（肌力 / GCS） */
+  .grpslider{flex-direction:column;align-items:stretch;gap:9px;width:100%}
+  .grow-field{display:flex;align-items:center;gap:10px}
+  .grow-field .gf-lab{font-size:12.5px;font-weight:800;color:var(--ink2);width:42px;flex:none}
+  .grow-field input[type=range]{flex:1;accent-color:var(--primary)}
+  .grow-field.abn input[type=range]{accent-color:var(--pos)}
+  .grow-field .gf-val{font-size:14px;font-weight:800;color:var(--ink2);width:26px;text-align:right}
+  .grow-field.abn .gf-val{color:var(--pos)}
+  .grpslider .grptotal{font-size:12.5px;font-weight:800;color:var(--ink2);text-align:right;padding-right:2px}
+  .grpslider .grptotal.abn{color:var(--pos)}
+
+  /* 肌力 / GCS：清除回未評估 */
+  .gf-clear{border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:7px;
+    min-width:42px;height:30px;padding:0 6px;font-size:11px;font-weight:800;flex:none}
+  .gf-clear:active{background:var(--line2);color:var(--ink)}
+
+  /* 多筆感覺檢查 */
+  .sensory-wrap{width:100%;padding:8px 12px 5px}
+  .sensory-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .sensory-hint{font-size:11px;color:var(--muted);flex:1;min-width:150px}
+  .sensory-add{display:none}
+  .sensory-add.show{display:inline-flex}
+  .sensory-list{display:none;margin-top:8px;gap:8px;flex-direction:column}
+  .sensory-list.show{display:flex}
+  .sensory-empty{font-size:12px;color:var(--muted);padding:8px 2px}
+  .sensory-entry{border:1px solid #cbdde1;border-left:4px solid var(--primary);border-radius:10px;background:#fbfdfd;padding:9px}
+  .sensory-ehead{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .sensory-num{font-size:12px;font-weight:800;color:var(--primary-d);flex:1}
+  .sensory-del{border:1px solid #eecdd1;background:#fff;color:var(--danger);border-radius:7px;padding:5px 9px;font-size:11px;font-weight:800}
+  .sensory-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+  .sensory-field{min-width:0}
+  .sensory-field.full{grid-column:1/-1}
+  .sensory-field label{display:block;font-size:10.5px;font-weight:800;color:var(--muted);margin-bottom:3px}
+  .sensory-field select,.sensory-field textarea{width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:7px;background:#fff;font-size:12.5px;color:var(--ink)}
+  .sensory-chips{display:flex;flex-wrap:wrap;gap:5px}
+  .sensory-chip{border:1.5px solid var(--line);background:#fff;color:var(--ink2);border-radius:13px;padding:4px 8px;font-size:11.5px;font-weight:700}
+  .sensory-chip.on{background:var(--pos-bg);border-color:var(--pos-line);color:var(--pos)}
+
+  /* 外科術後照護組套：精簡、循環點擊與滑桿 */
+  .postop-area{margin:8px 12px 0}
+  .postop-head{display:flex;align-items:center;gap:10px;padding:2px 2px 6px}
+  .postop-title{flex:1;font-weight:800;font-size:14px;color:var(--ink2)}
+  .postop-card{background:#fff;border:1px solid #b8d8cd;border-left:4px solid #2f7a5b;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:10px}
+  .postop-bhead{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#eef8f3}
+  .postop-btitle{flex:1;font-weight:800;color:#245f47;font-size:14px}
+  .postop-del{border:1px solid #eecdd1;background:#fff;color:var(--danger);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700}
+  .postop-card.collapsed .postop-body{display:none}
+  .postop-card.collapsed .chev{transform:rotate(-90deg)}
+  .postop-body{padding:8px 10px 11px}
+  .po-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .po-field{border:1px solid var(--line2);border-radius:9px;padding:7px;background:#fcfefe;min-width:0}
+  .po-field.full{grid-column:1/-1}
+  .po-field-top{display:flex;align-items:center;gap:6px;min-height:31px}
+  .po-k{font-size:11px;font-weight:800;color:#245f47;min-width:58px;line-height:1.2}
+  .po-control{flex:1;min-width:0}
+  .po-control input,.po-control textarea{width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:7px;background:#fff;font-size:12.5px;color:var(--ink)}
+  .po-note-btn{border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:7px;width:28px;height:28px;padding:0;flex:none;font-size:12px}
+  .po-note-btn.active{background:var(--primary-soft);border-color:var(--primary);color:var(--primary-d)}
+  .po-note{display:none;width:100%;margin-top:6px;padding:7px 8px;border:1px solid var(--primary);border-radius:7px;background:#fbfdfd;font-size:12px}
+  .po-note.show{display:block}
+  .po-cycle{width:100%;min-height:31px;border:1.5px solid var(--line);background:#fff;color:var(--muted);border-radius:16px;padding:5px 8px;font-size:11.5px;font-weight:800;line-height:1.2;text-align:center}
+  .po-cycle.norm{background:#eef8f0;border-color:#9fd3ab;color:#2f7a43}
+  .po-cycle.warn{background:var(--pos-bg);border-color:var(--pos-line);color:var(--pos)}
+  .po-cycle.danger{background:#fbeaec;border-color:#dc9fa7;color:var(--danger)}
+  .po-date-wrap{display:flex;align-items:center;gap:7px}
+  .po-date-wrap input{flex:1;min-width:0}
+  .po-pod{flex:none;border-radius:14px;padding:5px 9px;background:var(--primary-soft);color:var(--primary-d);font-size:11.5px;font-weight:800;white-space:nowrap}
+  .po-pod.empty{background:#f2f5f6;color:var(--muted)}
+  .po-pod.future{background:#fbeaec;color:var(--danger)}
+  .po-range{display:flex;align-items:center;gap:7px}
+  .po-range input[type=range]{flex:1;min-width:70px;accent-color:#2f7a5b}
+  .po-range-val{font-size:12.5px;font-weight:800;color:#245f47;min-width:38px;text-align:right}
+  .po-range-val.warn{color:var(--pos)}
+  .po-clear{border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:7px;padding:5px 7px;font-size:10.5px;font-weight:700}
+  .po-subhead{display:flex;align-items:center;gap:8px;margin:10px 1px 6px;padding-top:8px;border-top:1px solid var(--line2)}
+  .po-subtitle{flex:1;font-size:12px;font-weight:800;color:#245f47}
+  .po-drain-empty{font-size:12px;color:var(--muted);padding:6px 2px}
+  .po-drain{border:1px solid #c7ddd4;border-radius:9px;background:#f9fcfa;padding:7px;margin-top:6px}
+  .po-drain-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .po-drain-title{flex:1;font-size:12px;font-weight:800;color:#245f47}
+  .po-drain-del{border:1px solid #eecdd1;background:#fff;color:var(--danger);border-radius:7px;padding:4px 8px;font-size:11px;font-weight:700}
+  .po-drain-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .po-drain-field{min-width:0}
+  .po-drain-field.full{grid-column:1/-1}
+  .po-drain-field label{display:block;font-size:10.5px;font-weight:800;color:var(--muted);margin-bottom:3px}
+  .po-drain-field input,.po-drain-field textarea{width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:7px;background:#fff;font-size:12px;color:var(--ink)}
+  .po-drain-amount{display:flex;gap:5px;align-items:center}
+  .po-drain-amount input{flex:1;min-width:0}
+  .po-drain-amount .po-cycle{width:auto;min-width:72px}
+  @media(max-width:420px){
+    .po-k{min-width:50px;font-size:10.5px}
+    .po-cycle{font-size:10.5px;padding:5px 5px}
+    .po-note-btn{width:26px;height:26px}
+    .po-drain-grid{grid-template-columns:1fr 1fr}
+  }
+
+  /* ADL 區塊 */
+  .section.adl{border-color:#cddbe6;background:#eef4f9}
+  .section.adl .sec-body{background:#f6fafd}
+  .adl-in{margin:2px 0}
+  .adl-level{padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .adl-level .lab{font-weight:700;font-size:14px;color:var(--ink);flex:none}
+  .adl-btn{border:1.5px solid;border-radius:20px;padding:9px 18px;font-size:14px;font-weight:800;flex:none}
+  .adl-btn.adl-l0{background:#e2f3e6;border-color:#9fd3ab;color:#2f7a43}
+  .adl-btn.adl-l1{background:#fdf3d6;border-color:#e8c96a;color:#8a6a12}
+  .adl-btn.adl-l2{background:var(--pos-bg);border-color:var(--pos-line);color:var(--pos)}
+  .adl-hint{font-size:11px;color:var(--muted)}
+  .adl-note-wrap{padding:4px 14px 12px}
+  .adl-note-wrap input{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fbfdfd;font-size:13.5px}
+
+  /* LQQOPERA */
+  .lqq-area{margin:8px 12px 0}
+  .lqq-head{display:flex;align-items:center;gap:10px;padding:2px 2px 6px}
+  .lqq-title{flex:1;font-weight:800;font-size:14px;color:var(--ink2)}
+  .lqq-block{background:#fff;border:1px solid #d8c7e6;border-left:4px solid #8b5cbf;border-radius:var(--radius);
+    box-shadow:var(--shadow);margin-bottom:10px;overflow:hidden}
+  .lqq-bhead{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#f7f2fb}
+  .lqq-name{flex:1;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:14px;font-weight:700;background:#fff}
+  .lqq-del{border:1px solid #eecdd1;background:#fff;color:#b02a37;border-radius:8px;padding:6px 10px;font-size:12.5px;font-weight:700;flex:none}
+  .lqq-del:active{background:#fbe2e4}
+  .lqq-block .chev{color:var(--muted);font-size:13px;transition:transform .18s}
+  .lqq-collapsed .chev{transform:rotate(-90deg)}
+  .lqq-collapsed .lqq-body{display:none}
+  .lqq-body{padding:8px 12px 12px}
+  .lqq-f{padding:7px 0;border-bottom:1px solid var(--line2)}
+  .lqq-f:last-child{border-bottom:none}
+  .lqq-k{display:block;font-size:12px;font-weight:800;color:#7a4fa8;margin-bottom:5px}
+  .lqq-f>input,.lqq-f select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13.5px;background:#fff;margin-top:5px}
+  .lqq-f select+input{margin-top:6px}
+  .lqq-chips{display:flex;flex-wrap:wrap;gap:6px}
+  .qchip{border:1.5px solid var(--line);background:#fff;color:var(--muted);border-radius:14px;padding:5px 11px;font-size:12.5px;font-weight:700}
+  .qchip.on{background:#f0e6f9;border-color:#b98fe0;color:#6b3fa0}
+  .lqq-sev{display:flex;align-items:center;gap:12px;margin-top:6px}
+  .lqq-sev input[type=range]{flex:1;accent-color:#8b5cbf}
+  .sevval{font-size:13px;font-weight:800;color:#6b3fa0;min-width:52px;text-align:right}
+  .adl-care{display:none;padding:4px 14px 12px}
+  .adl-care.show{display:block}
+  .adl-care .cg-title{font-size:12.5px;font-weight:800;color:var(--ink2);margin:4px 0 8px}
+  .adl-pills{display:flex;gap:8px;flex-wrap:wrap}
+  .cg-pill{border:1.5px solid var(--line);background:#fff;color:var(--muted);border-radius:20px;
+    padding:7px 14px;font-size:13px;font-weight:700}
+  .cg-pill.on{background:var(--primary-soft);border-color:var(--primary);color:var(--primary-d)}
+  .cg-text{margin-top:8px;display:none}
+  .cg-text.show{display:block}
+  .cg-text input{width:100%;padding:9px 11px;border:1px solid var(--primary);border-radius:9px;background:#fbfdfd;font-size:13.5px}
+  .subwrap.show{display:flex}
+  .subrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .sublab{font-size:12.5px;color:var(--ink2);font-weight:700;min-width:52px}
+  .subsel{padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;font-size:13px}
+  .subtext,.itemnote{width:100%;padding:9px 11px;border:1px solid var(--line);
+    border-radius:var(--radius-s);background:#fbfdfd;color:var(--ink);font-size:13.5px}
+  .itemnote{margin-top:8px;display:none}
+  .itemnote.show{display:block}
+  /* 自動長高文字欄位 */
+  textarea.autogrow{font:inherit;line-height:1.4;resize:none;overflow:hidden;
+    field-sizing:content;white-space:pre-wrap;word-break:break-word}
+  input.autogrow{}
+
+  .grpwrap{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .item.has-group .item-row{align-items:flex-start}
+  .item.has-group > .grpwrap{padding:8px 14px 2px;gap:10px 12px}
+  .item.has-group .grpfield{margin-bottom:2px}
+  .grpfield{display:flex;align-items:center;gap:4px}
+  .grpfield span{font-size:12px;color:var(--muted);font-weight:700}
+  .grpfield select{padding:6px 7px;border:1px solid var(--line);border-radius:7px;font-size:13px;background:#fff}
+  .grpfield select.abn{border-color:var(--pos-line);background:var(--pos-bg);color:var(--pos)}
+  .grptotal{font-size:12.5px;font-weight:800;color:var(--ink2);margin-left:2px}
+  .grptotal.abn{color:var(--pos)}
+
+  .gnote{margin:14px 12px 0}
+  .gnote-top{margin:8px 12px 4px}
+
+  /* 清單卡片：性別/年齡/主要問題 */
+  .pc-demo{font-size:12.5px;color:var(--ink2);margin-top:3px}
+  .pc-demo .pc-prob{color:var(--primary-d);font-weight:600}
+
+  /* 紀錄頁可編輯表頭 */
+  .pcode-input{font-weight:800;font-size:16px;letter-spacing:.3px;color:var(--ink);
+    border:1px solid transparent;background:transparent;padding:6px 6px;border-radius:8px;flex:1;min-width:110px}
+  .pcode-input:focus{border-color:var(--line);background:#fff;outline:none}
+  .note-sub2{padding:0 14px 6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .demo-in{padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);font-size:13px}
+  .demo-age{width:78px}
+  .demo-prob{flex:1;min-width:140px}
+
+  /* 區塊配色：ROS 淡綠、PE 淡黃（Focus 維持藍） */
+  .section.kind-ros{background:#eef8f0;border-color:#cde6d3}
+  .section.kind-ros .sec-body{background:#f6fbf7}
+  .section.kind-pe{background:#fdf9ec;border-color:#ece1c1}
+  .section.kind-pe .sec-body{background:#fefcf4}
+
+  /* 待辦事項 To-do */
+  .todo-section{margin:8px 12px 2px;background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .todo-head{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line2)}
+  .todo-title{flex:1;font-weight:800;font-size:14px;color:var(--ink2)}
+  .todo-list{padding:2px 8px 6px}
+  .todo-empty{color:var(--muted);font-size:13px;padding:10px 6px}
+  .todo-row{display:flex;align-items:center;gap:5px;flex-wrap:nowrap;padding:4px 2px;border-bottom:1px solid var(--line2)}
+  .todo-row:last-child{border-bottom:none}
+  .todo-row.done .todo-text{text-decoration:line-through;color:var(--muted)}
+  .todo-row.imp{background:#fbfdff}
+  .todo-star{border:1px solid var(--line);background:#fff;color:#c9ccd1;border-radius:7px;
+    width:30px;height:30px;font-size:14px;line-height:1;flex:none;padding:0}
+  .todo-star.on{color:#e8a800;border-color:#f0c860;background:#fff8e6}
+  .todo-text{flex:1 1 auto;min-width:40px;padding:5px 8px;border:1px solid var(--line);
+    border-radius:7px;background:#fff;color:var(--ink);font-size:13.5px;min-height:1.9em}
+  .todo-btns{display:flex;gap:3px;flex:none}
+  .tb{border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:7px;
+    padding:5px 0;width:30px;text-align:center;font-size:13px;font-weight:800;line-height:1.1}
+  .tb-todo.sel{background:#fdf3d6;border-color:#e8c96a;color:#8a6a12}
+  .tb-done.sel{background:#e2f3e6;border-color:#9fd3ab;color:#2f7a43}
+  .tb-del{color:#b02a37;border-color:#eecdd1}
+  .tb-del:active{background:#fbe2e4}
+  .todo-time{flex:none;font-size:9px;color:var(--muted);white-space:nowrap;line-height:1.1;width:38px;text-align:right}
+  .gnote label{display:block;font-size:13px;font-weight:800;color:var(--ink2);margin-bottom:6px}
+  .gnote textarea{width:100%;min-height:90px;padding:12px;border:1px solid var(--line);
+    border-radius:var(--radius);background:var(--surface);color:var(--ink);resize:vertical;box-shadow:var(--shadow)}
+
+  /* export menu */
+  .menu{position:absolute;top:52px;right:12px;z-index:60;background:#fff;border:1px solid var(--line);
+    border-radius:var(--radius);box-shadow:0 10px 34px rgba(18,48,61,.18);padding:6px;display:none;min-width:230px}
+  .menu.show{display:block}
+  .menu button{display:block;width:100%;text-align:left;border:none;background:transparent;
+    padding:11px 12px;border-radius:8px;font-size:13.5px;color:var(--ink);font-weight:600}
+  .menu button:active{background:var(--primary-soft)}
+  .menu .mlabel{font-size:11px;color:var(--muted);font-weight:800;padding:8px 12px 4px;text-transform:uppercase;letter-spacing:.5px}
+  .menu .mdiv{height:1px;background:var(--line2);margin:5px 4px}
+  .scrim{position:fixed;inset:0;z-index:55;display:none}
+  .scrim.show{display:block}
+
+  /* ---- export preview modal ---- */
+  .modal{position:fixed;inset:0;z-index:70;display:none;background:rgba(18,48,61,.45);
+    align-items:flex-end;justify-content:center;padding:0}
+  .modal.show{display:flex}
+  .modal-card{background:#fff;width:100%;max-width:760px;max-height:92vh;border-radius:16px 16px 0 0;
+    display:flex;flex-direction:column;box-shadow:0 -8px 40px rgba(18,48,61,.3)}
+  @media(min-width:620px){ .modal{align-items:center;padding:20px} .modal-card{border-radius:16px;max-height:88vh} }
+  .modal-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+  .modal-head .mt{flex:1;font-weight:800;font-size:15px}
+  .modal-head .mx{border:none;background:transparent;font-size:22px;color:var(--muted);width:38px;height:38px;border-radius:9px;line-height:1}
+  .modal-head .mx:active{background:var(--line2)}
+  .modal-scroll{flex:1;overflow:auto;padding:16px;background:#f6f9fa}
+  .modal-foot{display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--line);flex-wrap:wrap}
+  .modal-foot .btn{flex:1;justify-content:center;min-width:120px}
+  .txtprev{white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"PingFang TC","Noto Sans TC",monospace;
+    font-size:12.5px;line-height:1.6;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px}
+  /* on-screen document preview (mirrors print) */
+  .docprev{background:#fff;border:1px solid var(--line);border-radius:10px;padding:20px;color:#111}
+  .docprev .pr-h{border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:14px}
+  .docprev .pr-h h1{font-size:18px;margin:0 0 4px}
+  .docprev .pr-meta{font-size:12.5px;color:#444}
+  .docprev .pr-sec{margin:0 0 12px}
+  .docprev .pr-sec h2{font-size:14px;margin:0 0 4px;padding:3px 0;border-bottom:1px solid #bbb}
+  .docprev .pr-line{font-size:12.5px;padding:2px 0;line-height:1.5}
+  .docprev .pr-line .k{font-weight:700}
+  .docprev .pr-line i{color:var(--pos);font-style:normal}
+  .docprev .pr-note{white-space:pre-wrap;font-size:12.5px;border:1px solid #bbb;padding:8px;border-radius:6px}
+
+  .hidden{display:none!important}
+
+  /* toast */
+  .toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:#fff;padding:10px 18px;border-radius:22px;font-size:13.5px;
+    font-weight:600;opacity:0;transition:.25s;z-index:80;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* print */
+  #printArea{display:none}
+  @media print{
+    body{background:#fff}
+    .wrap>*{display:none!important}
+    #printArea{display:block!important;padding:0;color:#000}
+    .pr-h{border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:14px}
+    .pr-h h1{font-size:19px;margin:0 0 4px}
+    .pr-meta{font-size:12.5px;color:#333}
+    .pr-sec{margin:0 0 12px;break-inside:avoid}
+    .pr-sec h2{font-size:14px;margin:0 0 4px;padding:3px 0;border-bottom:1px solid #999}
+    .pr-line{font-size:12.5px;padding:2px 0;line-height:1.45}
+    .pr-line .k{font-weight:700}
+    .pr-line.pos .k{color:#000}
+    .pr-note{white-space:pre-wrap;font-size:12.5px;border:1px solid #999;padding:8px;border-radius:6px}
+    @page{margin:14mm}
+  }
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap"></div>
+<div class="scrim" id="scrim"></div>
+<div class="toast" id="toast"></div>
+<div class="modal" id="exportModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <span class="mt" id="modalTitle">匯出預覽</span>
+      <button class="mx" id="modalClose" title="關閉">×</button>
+    </div>
+    <div class="modal-scroll" id="modalScroll"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+<div id="printArea"></div>
+
+<script>
+"use strict";
+/* =======================================================================
+   查房快速紀錄 ROS / PE Rounding Note  ── 單檔應用（含多筆 Sensory 與術後照護組套）
+   資料以 localStorage 自動儲存；下載後用瀏覽器開啟即可離線使用。
+   ======================================================================= */
+
+/* ---------- 儲存層（雙模式）----------
+   在 Claude artifact 內：用 window.storage（每位觀看者各自持久化，跨 session 保留）
+   下載成檔 / 自架網站：用 localStorage（每台裝置各自持久化）
+   兩者都不可用：記憶體（重整即清空）
+------------------------------------------------ */
+const KEY = "rounding_notes_v1";
+const mem = {data:null};
+const hasWinStore = (typeof window!=="undefined" && window.storage && typeof window.storage.get==="function");
+const Store = {
+  async read(){
+    if(hasWinStore){
+      try{ const r=await window.storage.get(KEY, false); return (r&&r.value)?JSON.parse(r.value):null; }
+      catch(e){ return null; }  // 不存在的 key 會 throw，視為 null
+    }
+    try{ const s=localStorage.getItem(KEY); return s?JSON.parse(s):null; }
+    catch(e){ return mem.data; }
+  },
+  write(v){
+    mem.data = v;
+    if(hasWinStore){ try{ window.storage.set(KEY, JSON.stringify(v), false); }catch(e){} return; }
+    try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){}
+  }
+};
+
+/* ---------- 建構小工具 ---------- */
+// toggle：預設 negative；fu = follow-up 陣列（勾陽性才展開）
+function T(id,label,en,star,fu){ return {id,kind:"",system:"",type:"toggle",label,en:en||"",star:!!star,fu:fu||null}; }
+// select：下拉；opts 字串陣列（第一項固定為未評估）；normal=正常值字串
+function S(id,label,en,opts,normal,star,fu,fuOn){ return {id,type:"select",label,en:en||"",opts,normal,star:!!star,fu:fu||null,fuOn:fuOn||null}; }
+// group：多欄位（GCS / 肌力）
+function G(id,label,en,fields,star,total){ return {id,type:"group",label,en:en||"",fields,star:!!star,total:total||null}; }
+// text：純文字/數值欄位
+function X(id,label,en){ return {id,type:"text",label,en:en||""}; }
+// custom：自訂 widget（DTR 格點、Babinski 分邊…），render/export 由 custom 類型分派
+function C(id,label,en,custom,star){ return {id,type:"custom",custom,label,en:en||"",star:!!star}; }
+// follow-up 建構
+function fS(id,label,opts){ return {id,type:"select",label,opts}; }
+function fT(id,label){ return {id,type:"text",label}; }
+function fToggle(id,label){ return {id,type:"toggle",label}; }
+
+/* ---------- 內容目錄（ROS + PE） ---------- */
+const SECTIONS = [
+/* ================= ROS ================= */
+{key:"ros_const",kind:"ROS",label:"一般全身 Constitutional",items:[
+  T("fever","發燒","Fever",1,[fT("fever_t","體溫/描述")]),
+  T("chills","畏寒","Chills"),
+  T("night_sweats","盜汗","Night sweats"),
+  T("wt_loss","體重減輕","Weight loss",1,[fT("wt_loss_a","公斤 / 期間")]),
+  T("wt_gain","體重增加","Weight gain"),
+  T("fatigue","疲倦","Fatigue"),
+  T("anorexia","食慾不振","Anorexia"),
+  T("malaise","全身倦怠","Malaise"),
+]},
+{key:"ros_skin",kind:"ROS",label:"皮膚 Skin",items:[
+  T("rash","皮疹","Rash"),
+  T("pruritus","搔癢","Pruritus"),
+  T("easy_bruise","容易瘀青","Easy bruising"),
+  T("skin_lesion","皮膚病灶/腫塊","Skin lesion",0,[fT("skin_lesion_d","描述")]),
+]},
+{key:"ros_heent",kind:"ROS",label:"頭頸五官 HEENT / Neck",items:[
+  T("headache","頭痛","Headache",1,[fT("headache_d","部位/性質")]),
+  T("dizziness","頭暈","Dizziness"),
+  T("vertigo","眩暈","Vertigo"),
+  T("vision_change","視力改變","Vision change",0,[fT("vision_d","描述")]),
+  T("diplopia","複視","Diplopia"),
+  T("eye_pain","眼痛/眼紅","Eye pain/redness"),
+  T("hearing_loss","聽力下降","Hearing loss"),
+  T("tinnitus","耳鳴","Tinnitus"),
+  T("ear_pain","耳痛","Otalgia"),
+  T("nasal_cong","鼻塞","Nasal congestion"),
+  T("rhinorrhea","流鼻水","Rhinorrhea"),
+  T("epistaxis","鼻出血","Epistaxis"),
+  T("sore_throat","喉嚨痛","Sore throat"),
+  T("hoarseness","聲音沙啞","Hoarseness"),
+  T("dysphagia","吞嚥困難","Dysphagia"),
+  T("odynophagia","吞嚥疼痛","Odynophagia"),
+  T("neck_mass","頸部腫塊","Neck mass"),
+  T("neck_stiff_ros","頸部僵硬","Neck stiffness"),
+]},
+{key:"ros_resp",kind:"ROS",label:"呼吸 Respiratory",items:[
+  T("cough","咳嗽","Cough",1,[fS("cough_type","型態",["乾咳 dry","有痰 productive"])]),
+  T("sputum","痰","Sputum",0,[fS("sputum_c","顏色",["白 white","黃 yellow","綠 green","血絲 blood-tinged","鐵鏽色 rusty"])]),
+  T("hemoptysis","咳血","Hemoptysis",1),
+  T("dyspnea","呼吸困難","Dyspnea",1,[fS("dyspnea_g","程度",["勞力性 exertional","休息時 at rest"])]),
+  T("wheezing_ros","喘鳴","Wheezing"),
+  T("pleuritic","胸膜性胸痛","Pleuritic pain"),
+]},
+{key:"ros_cv",kind:"ROS",label:"心血管 Cardiovascular",items:[
+  T("chest_pain","胸痛","Chest pain",1,[
+    fS("cp_char","性質",["壓迫感 pressure","緊縮 tightness","刺痛 sharp","灼熱 burning"]),
+    fS("cp_rad","放射",["左臂 left arm","下顎 jaw","背部 back","無 none"]),
+    fS("cp_trig","誘發",["勞力 exertion","休息 rest","進食 eating","情緒 emotion"]),
+  ]),
+  T("palpitation","心悸","Palpitations",1),
+  T("exert_dyspnea","勞力性呼吸困難","Exertional dyspnea",1),
+  T("orthopnea","端坐呼吸","Orthopnea",1),
+  T("pnd","陣發性夜間呼吸困難","PND",1),
+  T("leg_edema","下肢水腫","Leg edema",1),
+  T("syncope","暈厥","Syncope",1),
+  T("presyncope","昏厥前","Presyncope"),
+  T("claudication","間歇性跛行","Claudication"),
+]},
+{key:"ros_gi",kind:"ROS",label:"消化 Gastrointestinal",items:[
+  T("nausea","噁心","Nausea"),
+  T("vomiting","嘔吐","Vomiting"),
+  T("hematemesis","嘔血","Hematemesis",1),
+  T("heartburn","胃灼熱","Heartburn"),
+  T("abd_pain_ros","腹痛","Abdominal pain",1,[fS("abdp_loc","部位",["右上 RUQ","左上 LUQ","右下 RLQ","左下 LLQ","上腹 epigastric","臍周 periumbilical","下腹 suprapubic","全腹 diffuse"])]),
+  T("bloating","腹脹","Bloating"),
+  T("diarrhea","腹瀉","Diarrhea"),
+  T("constipation","便秘","Constipation"),
+  T("hematochezia","血便","Hematochezia",1),
+  T("melena","黑便","Melena",1),
+  T("jaundice_ros","黃疸","Jaundice"),
+  T("bowel_change","排便習慣改變","Bowel habit change"),
+]},
+{key:"ros_gu",kind:"ROS",label:"泌尿生殖 Genitourinary",items:[
+  T("gu_freq","頻尿","Frequency"),
+  T("gu_urg","急尿","Urgency"),
+  T("nocturia","夜尿","Nocturia"),
+  T("dysuria","排尿疼痛","Dysuria"),
+  T("hematuria","血尿","Hematuria",1),
+  T("incontinence","尿失禁","Incontinence"),
+  T("flank_pain","腰痛","Flank pain"),
+  T("hesitancy","排尿猶豫/細小","Hesitancy"),
+]},
+{key:"ros_gyn",kind:"ROS",gate:"gyn",label:"婦科 Gynecologic",items:[
+  X("lmp","末次月經 LMP","LMP"),
+  S("menses","月經規則性","Menstrual cycle",["規則 Regular","不規則 Irregular","停經 Menopause"],"規則 Regular"),
+  T("dysmenorrhea","經痛","Dysmenorrhea"),
+  T("menorrhagia","經量過多","Menorrhagia"),
+  T("intermenstrual_bleed","經間出血","Intermenstrual bleeding"),
+  T("postmenopausal_bleed","停經後出血","Postmenopausal bleeding",1),
+  T("vaginal_discharge","陰道分泌物","Vaginal discharge",0,[fS("vd_char","性狀",["白色 white","黃綠 yellow-green","血絲 blood-tinged","有異味 malodorous"])]),
+  T("pelvic_pain","骨盆腔疼痛","Pelvic pain"),
+  T("dyspareunia","性交疼痛","Dyspareunia"),
+  X("contraception","避孕方式","Contraception"),
+]},
+{key:"ros_obs",kind:"ROS",gate:"obs",label:"產科 Obstetric",items:[
+  X("ga","妊娠週數 GA","Gestational age"),
+  X("edc","預產期 EDC","EDC"),
+  X("gravida_para","孕產史 GxPxAx","Gravida/Para"),
+  S("fetal_movement","胎動","Fetal movement",["正常 normal","減少 decreased","無 absent"],"正常 normal",1),
+  T("contractions","子宮收縮/陣痛","Contractions"),
+  T("vaginal_bleeding_preg","孕期陰道出血","Vaginal bleeding",1),
+  T("leaking_fluid","破水/漏液","Leaking fluid",1),
+  T("preeclampsia_sx","子癇前症症狀","Pre-eclampsia sx",1,[fS("preec_which","項目",["頭痛 headache","視力模糊 blurred vision","上腹痛 epigastric pain","水腫 edema"])]),
+]},
+{key:"ros_msk",kind:"ROS",label:"骨骼肌肉 Musculoskeletal",items:[
+  T("arthralgia","關節痛","Arthralgia",0,[fT("arth_loc","部位")]),
+  T("joint_swell_ros","關節腫脹","Joint swelling"),
+  T("morning_stiff","晨僵","Morning stiffness"),
+  T("myalgia","肌肉痛","Myalgia"),
+  T("back_pain","背痛","Back pain"),
+]},
+{key:"ros_neuro",kind:"ROS",label:"神經 Neurological",items:[
+  T("numbness","感覺異常/麻木","Numbness",0,[fT("numb_loc","部位")]),
+  T("limb_weak","肢體無力","Limb weakness",1,[fT("weak_loc","部位")]),
+  T("gait_prob","步態不穩","Gait disturbance"),
+  T("tremor","顫抖","Tremor"),
+  T("seizure","癲癇/抽搐","Seizure",1),
+  T("loc","意識喪失","LOC",1),
+  T("speech_diff","語言障礙","Speech difficulty"),
+  T("memory_change","記憶/認知改變","Memory change"),
+]},
+{key:"ros_psych",kind:"ROS",label:"精神 Psychiatric",items:[
+  T("dep_mood","情緒低落","Depressed mood"),
+  T("anhedonia","興趣喪失","Anhedonia"),
+  T("anxiety","焦慮","Anxiety"),
+  T("sleep_dist","睡眠障礙","Sleep disturbance"),
+  T("suicidal","自殺/自傷意念","Suicidal ideation",1,[fT("sui_d","描述/風險")]),
+  T("hallucination","幻覺","Hallucination"),
+]},
+{key:"ros_endo",kind:"ROS",label:"內分泌 Endocrine",items:[
+  T("heat_intol","怕熱","Heat intolerance"),
+  T("cold_intol","怕冷","Cold intolerance"),
+  T("polydipsia","多飲","Polydipsia"),
+  T("polyuria","多尿","Polyuria"),
+  T("polyphagia","多食","Polyphagia"),
+]},
+{key:"ros_heme",kind:"ROS",label:"血液淋巴 Hematologic",items:[
+  T("lymphadeno_ros","淋巴結腫大","Lymphadenopathy"),
+  T("recur_infx","反覆感染","Recurrent infection"),
+  T("bleeding_tend","出血傾向","Bleeding tendency"),
+]},
+
+/* ================= PE ================= */
+{key:"pe_general",kind:"PE",label:"一般外觀・生命徵象 General",items:[
+  S("consciousness","意識狀態","Consciousness",["清醒 Alert","嗜睡 Drowsy","木僵 Stuporous","昏迷 Comatose"],"清醒 Alert",1),
+  G("gcs","GCS","",[
+    {id:"E",label:"E",opts:["1","2","3","4"],normal:"4"},
+    {id:"V",label:"V",opts:["1","2","3","4","5"],normal:"5"},
+    {id:"M",label:"M",opts:["1","2","3","4","5","6"],normal:"6"},
+  ],1,15),
+  S("appearance","一般外觀","Appearance",["無急性病容 Not acutely ill","急性病容 Acutely ill","慢性病容 Chronically ill","惡病質 Cachectic"],"無急性病容 Not acutely ill"),
+  T("resp_distress","呼吸窘迫","Respiratory distress",1),
+  S("hydration","水分狀態","Hydration",["正常 Normal","脫水 Dehydrated"],"正常 Normal"),
+]},
+{key:"pe_skin",kind:"PE",label:"皮膚 Skin",items:[
+  T("pe_pallor","蒼白","Pallor"),
+  T("pe_jaundice","黃疸","Jaundice"),
+  T("pe_cyanosis","發紺","Cyanosis"),
+  T("pe_rash","皮疹","Rash",0,[fT("pe_rash_d","描述")]),
+  S("pe_turgor","皮膚張力","Skin turgor",["正常 Normal","下降 Decreased"],"正常 Normal"),
+  T("pe_petechiae","出血點/瘀斑","Petechiae/purpura"),
+  T("pe_clubbing","杵狀指","Clubbing"),
+]},
+{key:"pe_heent",kind:"PE",label:"頭頸五官 HEENT",items:[
+  S("pe_conj","結膜","Conjunctiva",["紅潤 Normal","蒼白 Pale"],"紅潤 Normal"),
+  S("pe_sclera","鞏膜","Sclera",["無黃疸 Anicteric","黃疸 Icteric"],"無黃疸 Anicteric"),
+  S("pe_pupil","瞳孔","Pupil",["PERRLA 正常","異常 Abnormal"],"PERRLA 正常"),
+  S("pe_eom","眼球運動","EOM",["正常 Full","受限 Limited"],"正常 Full"),
+  T("pe_throat","咽部充血","Pharyngeal injection"),
+  T("pe_tonsil","扁桃腺腫大","Tonsillar enlargement",0,[fToggle("pe_tonsil_ex","有滲出物 exudate")]),
+  S("pe_tm","鼓膜","Tympanic membrane",["正常 Normal","異常 Abnormal"],"正常 Normal"),
+]},
+{key:"pe_neck",kind:"PE",label:"頸部 Neck",items:[
+  T("pe_jvd","頸靜脈怒張","JVD",1),
+  T("pe_thyroid","甲狀腺腫大","Thyroid enlargement"),
+  T("pe_carotid","頸動脈雜音","Carotid bruit",0,[fS("pe_carotid_s","側別",["左 Left","右 Right","雙側 Bilateral"])]),
+  S("pe_trachea","氣管位置","Trachea",["置中 Midline","偏移 Deviated"],"置中 Midline"),
+  T("pe_nuchal","頸部僵硬","Nuchal rigidity",1,[fToggle("pe_kernig","Kernig sign (+)"),fToggle("pe_brudz","Brudzinski sign (+)")]),
+  T("pe_lymph_neck","頸部淋巴結腫大","Cervical lymphadenopathy"),
+]},
+{key:"pe_chest",kind:"PE",label:"胸部・肺 Chest / Lungs",items:[
+  S("pe_expansion","胸廓擴張","Chest expansion",["對稱 Symmetric","不對稱 Asymmetric"],"對稱 Symmetric"),
+  S("pe_breath","呼吸音","Breath sounds",["清晰 Clear","減弱 Decreased","消失 Absent"],"清晰 Clear"),
+  T("pe_crackles","囉音","Crackles",1,[
+    fS("pe_crackles_side","位置",["左肺 Left","右肺 Right","雙側 Bilateral"]),
+    fS("pe_crackles_zone","肺野",["上肺野 Upper","下肺野 Lower","全肺野 Diffuse"]),
+  ]),
+  T("pe_wheezes","喘鳴","Wheezes",1,[fS("pe_wheezes_side","位置",["左肺 Left","右肺 Right","雙側 Bilateral"])]),
+  T("pe_rhonchi","乾囉音","Rhonchi"),
+  S("pe_percussion","叩診","Percussion",["清音 Resonant","濁音 Dull","過度反響 Hyperresonant"],"清音 Resonant"),
+  S("pe_fremitus","觸覺震顫","Tactile fremitus",["正常 Normal","增強 Increased","減弱 Decreased"],"正常 Normal"),
+]},
+{key:"pe_cv",kind:"PE",label:"心血管 Cardiovascular",items:[
+  S("pe_rhythm","心律","Rhythm",["規則 Regular","不規則 Irregular"],"規則 Regular"),
+  S("pe_heartsound","心音 S1S2","Heart sounds",["正常 Normal","異常 Abnormal"],"正常 Normal"),
+  T("pe_murmur","心雜音","Murmur",1,[
+    fS("mur_time","時期",["收縮期 Systolic","舒張期 Diastolic","連續 Continuous"]),
+    fS("mur_loc","位置",["主動脈瓣區 Aortic","肺動脈瓣區 Pulmonic","三尖瓣區 Tricuspid","二尖瓣區 Mitral","Erb's point"]),
+    fS("mur_grade","強度",["I/VI","II/VI","III/VI","IV/VI","V/VI","VI/VI"]),
+    fT("mur_rad","放射"),
+  ]),
+  T("pe_s3","S3 奔馬律","S3 gallop",1),
+  T("pe_s4","S4","S4"),
+  T("pe_pericard","心包摩擦音","Pericardial rub"),
+  S("pe_pmi","心尖搏動 PMI","PMI",["正常 Normal","移位 Displaced"],"正常 Normal"),
+  T("pe_thrill","震顫 Thrill / Heave","Thrill/Heave"),
+  S("pe_pulse","周邊脈搏","Peripheral pulses",["正常對稱 Normal","減弱 Decreased","消失 Absent"],"正常對稱 Normal"),
+  S("pe_pedema","下肢凹陷性水腫","Pitting edema",["無 None","1+","2+","3+","4+"],"無 None",1),
+  S("pe_caprefill","微血管回填","Cap refill",["< 2 秒","> 2 秒"],"< 2 秒"),
+]},
+{key:"pe_abd",kind:"PE",label:"腹部 Abdomen",items:[
+  S("pe_abd_appear","外形","Appearance",["平軟 Soft/flat","膨隆 Distended","舟狀 Scaphoid"],"平軟 Soft/flat"),
+  S("pe_bowel","腸音","Bowel sounds",["正常 Normoactive","亢進 Hyperactive","減弱 Hypoactive","消失 Absent"],"正常 Normoactive"),
+  T("pe_abd_tender","壓痛","Tenderness",1,[fS("abdt_loc","部位",["右上 RUQ","左上 LUQ","右下 RLQ","左下 LLQ","上腹 Epigastric","臍周 Periumbilical","下腹 Suprapubic","全腹 Diffuse"])]),
+  T("pe_rebound","反彈痛","Rebound tenderness",1),
+  T("pe_guarding","肌肉防衛","Guarding"),
+  T("pe_rigidity","僵硬","Rigidity"),
+  T("pe_hepatomeg","肝腫大","Hepatomegaly"),
+  T("pe_splenomeg","脾腫大","Splenomegaly"),
+  T("pe_murphy","Murphy sign","",1),
+  T("pe_mcburney","McBurney 壓痛","",1),
+  T("pe_cva","CVA tenderness","",1,[fS("cva_side","側別",["左 Left","右 Right","雙側 Bilateral"])]),
+  T("pe_shifting","移動性濁音","Shifting dullness"),
+  T("pe_abd_mass","腹部腫塊","Abdominal mass",0,[fT("abd_mass_d","描述")]),
+]},
+{key:"pe_obgyn",kind:"PE",gate:"gyn",label:"婦產科 OB/GYN",items:[
+  X("fundal_height","宮底高度 cm","Fundal height"),
+  S("fetal_heart","胎心音","Fetal heart",["正常 normal","異常 abnormal","未測 n/a"],"正常 normal"),
+  S("speculum","陰道窺鏡","Speculum",["正常 normal","異常 abnormal"],"正常 normal"),
+  S("cervix_os","子宮頸口","Cervical os",["閉合 closed","擴張 dilated","異常 abnormal"],"閉合 closed"),
+  S("bimanual","雙合診","Bimanual",["正常 normal","壓痛 tender","腫塊 mass"],"正常 normal"),
+  T("adnexal","附件壓痛/腫塊","Adnexal tenderness/mass"),
+]},
+{key:"pe_msk",kind:"PE",label:"骨骼肌肉 Musculoskeletal",items:[
+  T("pe_joint_swell","關節腫脹","Joint swelling",0,[fT("pe_js_loc","部位")]),
+  T("pe_joint_tender","關節壓痛","Joint tenderness",0,[fT("pe_jt_loc","部位")]),
+  S("pe_rom","關節活動度","ROM",["正常 Full","受限 Limited"],"正常 Full"),
+  T("pe_deformity","變形","Deformity",0,[fT("pe_def_d","描述")]),
+  S("pe_gait","步態","Gait",["正常 Normal","跛行 Antalgic","運動失調 Ataxic","無法行走 Unable"],"正常 Normal"),
+]},
+{key:"pe_neuro",kind:"PE",label:"神經 Neurological",items:[
+  S("pe_cn","顱神經 Cranial nerves","CN I–XII",["大致正常 Intact","異常 Abnormal"],"大致正常 Intact"),
+  S("pe_tone","肌張力","Tone",["正常 Normal","痙攣 Spasticity","僵直 Rigidity","低張 Flaccid"],"正常 Normal"),
+  G("pe_strength","四肢肌力","Motor power 0–5",[
+    {id:"RUE",label:"RUE",opts:["0","1","2","3","4","5"],normal:"5"},
+    {id:"LUE",label:"LUE",opts:["0","1","2","3","4","5"],normal:"5"},
+    {id:"RLE",label:"RLE",opts:["0","1","2","3","4","5"],normal:"5"},
+    {id:"LLE",label:"LLE",opts:["0","1","2","3","4","5"],normal:"5"},
+  ],1),
+  C("pe_dtr","深部肌腱反射","DTR (0–4+)","dtr",1),
+  C("pe_plantar","蹠反射 / Babinski","Plantar response","plantar",1),
+  T("pe_clonus","陣攣 Clonus",0,0,[fS("clonus_side","側別",["左 L","右 R","雙側 Bilateral"])]),
+  C("pe_sensory","感覺","Sensory","sensory",0),
+  S("pe_romberg","Romberg","Romberg",["陰性 Negative","陽性 Positive"],"陰性 Negative"),
+  S("pe_coord","協調","Coordination",["正常 Normal","異常 Abnormal"],"正常 Normal",0,[
+    fT("coord_d","描述（finger-nose / heel-shin / 輪替）"),
+  ],"異常 Abnormal"),
+]},
+{key:"pe_psych",kind:"PE",label:"精神狀態 Mental status",items:[
+  S("pe_orient","定向感","Orientation",["人時地清楚 x3","部分障礙","完全障礙"],"人時地清楚 x3"),
+  S("pe_mood","情緒/情感","Mood/Affect",["正常 Normal","低落 Depressed","焦慮 Anxious","躁動 Agitated"],"正常 Normal"),
+  X("pe_mmse","MMSE 分數","MMSE score"),
+  S("pe_insight","洞察力","Insight",["良好 Good","部分 Partial","缺乏 Poor"],"良好 Good"),
+]},
+];
+
+/* index：itemId -> {item, section} */
+const ITEM_INDEX = {};
+SECTIONS.forEach(sec=>{ sec.items.forEach(it=>{ it.kind=sec.kind; it.system=sec.key; ITEM_INDEX[it.id]={item:it,sec}; }); });
+
+/* 顱神經（CN）詳細面板：選「異常」時展開。分左右的異常做成「左/右 × 項目」表格，
+   不分邊的獨立列在下方；另有自由描述。 */
+ITEM_INDEX["pe_cn"].item.cnOn = "異常 Abnormal";
+ITEM_INDEX["pe_cn"].item.cnPanel = [
+  {id:"cn1",  label:"CN I 嗅神經 Olfactory",
+    sides:[{k:"anosmia",l:"嗅覺喪失 anosmia"}], mono:[]},
+  {id:"cn2",  label:"CN II 視神經 Optic",
+    sides:[{k:"acuity",l:"視力下降 ↓acuity"},{k:"field",l:"視野缺損 field defect"},{k:"rapd",l:"RAPD"}],
+    mono:["偏盲 hemianopia","乳頭水腫 papilledema"]},
+  {id:"cn346",label:"CN III·IV·VI 眼動・瞳孔",
+    sides:[{k:"ptosis",l:"眼瞼下垂 ptosis"},{k:"dilated",l:"瞳孔散大 dilated"},{k:"sluggish",l:"對光遲鈍 sluggish"},{k:"abduct",l:"外展受限 abduction↓"}],
+    mono:["眼位偏斜 gaze deviation","複視 diplopia"]},
+  {id:"cn5",  label:"CN V 三叉 Trigeminal",
+    sides:[{k:"sens",l:"顏面感覺↓ sensation↓"},{k:"masseter",l:"咀嚼肌無力 masseter↓"},{k:"corneal",l:"角膜反射消失 corneal↓"}],
+    mono:[]},
+  {id:"cn7",  label:"CN VII 顏面 Facial",
+    sides:[{k:"central",l:"中樞型（額頭保留）central"},{k:"periph",l:"周邊型（全臉）peripheral"}],
+    mono:[]},
+  {id:"cn8",  label:"CN VIII 聽/前庭",
+    sides:[{k:"hearing",l:"聽力下降 ↓hearing"}],
+    mono:["眼球震顫 nystagmus","眩暈 vertigo"]},
+  {id:"cn910",label:"CN IX·X 舌咽・迷走",
+    sides:[{k:"palate",l:"軟顎上抬無力 palate↓"},{k:"uvula",l:"懸雍垂偏向 uvula→"}],
+    mono:["咽反射消失 gag absent","聲音沙啞 hoarseness","吞嚥困難 dysphagia"]},
+  {id:"cn11", label:"CN XI 副神經 Accessory",
+    sides:[{k:"shrug",l:"聳肩無力 shrug↓(trapezius)"},{k:"scm",l:"轉頭無力 SCM↓"}],
+    mono:[]},
+  {id:"cn12", label:"CN XII 舌下 Hypoglossal",
+    sides:[{k:"tongue",l:"舌偏向 tongue→"},{k:"atrophy",l:"舌肌萎縮 atrophy"}],
+    mono:["舌顫動 fasciculation"]},
+];
+
+/* ---------- 科別 → Focus 重點項目 ---------- */
+const SPECIALTIES = [
+  {key:"cvs", label:"CV / CVS 心臟內外科", focus:[
+    "chest_pain","exert_dyspnea","orthopnea","pnd","palpitation","leg_edema","syncope","claudication",
+    "pe_jvd","pe_rhythm","pe_heartsound","pe_murmur","pe_s3","pe_pedema","pe_pulse","pe_carotid"]},
+  {key:"cms", label:"CM / CS 胸腔內外科", focus:[
+    "cough","sputum","hemoptysis","dyspnea","wheezing_ros","pleuritic",
+    "pe_expansion","pe_breath","pe_crackles","pe_wheezes","pe_rhonchi","pe_percussion","pe_clubbing"]},
+  {key:"gigs", label:"GI / GS 消化內科・一般外科", focus:[
+    "nausea","vomiting","hematemesis","heartburn","abd_pain_ros","bloating","diarrhea","constipation","hematochezia","melena","jaundice_ros","bowel_change",
+    "pe_abd_appear","pe_bowel","pe_abd_tender","pe_rebound","pe_guarding","pe_hepatomeg","pe_splenomeg","pe_murphy","pe_mcburney","pe_shifting"]},
+  {key:"neuro", label:"Neuro / NS 神經內外科", focus:[
+    "headache","dizziness","vertigo","numbness","limb_weak","gait_prob","tremor","seizure","loc","speech_diff","memory_change",
+    "consciousness","gcs","pe_cn","pe_tone","pe_strength","pe_sensory","pe_dtr","pe_plantar","pe_clonus","pe_romberg","pe_coord","pe_nuchal"]},
+  {key:"nephrogu", label:"Nephro / GU 腎臟・泌尿科", focus:[
+    "gu_freq","gu_urg","nocturia","dysuria","hematuria","incontinence","flank_pain","hesitancy","leg_edema",
+    "pe_cva","pe_pedema","hydration","pe_abd_tender"]},
+  {key:"crs", label:"CRS 大腸直腸外科", focus:[
+    "abd_pain_ros","bloating","diarrhea","constipation","hematochezia","melena","bowel_change","wt_loss",
+    "pe_abd_appear","pe_bowel","pe_abd_tender","pe_rebound","pe_guarding","pe_abd_mass"]},
+  {key:"obs", label:"OBS 產科", focus:[
+    "ga","edc","gravida_para","fetal_movement","contractions","leaking_fluid","vaginal_bleeding_preg","preeclampsia_sx","abd_pain_ros","leg_edema",
+    "fundal_height","fetal_heart","pe_abd_tender","pe_pedema"]},
+  {key:"gyn", label:"GYN 婦科", focus:[
+    "lmp","menses","dysmenorrhea","menorrhagia","intermenstrual_bleed","postmenopausal_bleed","vaginal_discharge","pelvic_pain","dyspareunia","abd_pain_ros",
+    "pe_abd_tender","speculum","cervix_os","bimanual","adnexal"]},
+  {key:"air", label:"AIR 過敏免疫風濕科", focus:[
+    "arthralgia","joint_swell_ros","morning_stiff","myalgia","rash","pruritus","fever","fatigue",
+    "pe_joint_swell","pe_joint_tender","pe_rom","pe_rash","pe_lymph_neck"]},
+  {key:"psy", label:"PSY 精神科", focus:[
+    "dep_mood","anhedonia","anxiety","sleep_dist","suicidal","hallucination","memory_change","fatigue",
+    "consciousness","pe_orient","pe_mood","pe_mmse","pe_insight"]},
+  {key:"ortho", label:"Ortho 骨科", focus:[
+    "arthralgia","joint_swell_ros","morning_stiff","myalgia","back_pain","limb_weak","numbness",
+    "pe_joint_swell","pe_joint_tender","pe_rom","pe_deformity","pe_gait","pe_strength","pe_sensory"]},
+  {key:"hemonc", label:"Hema / Onco 血液腫瘤科", focus:[
+    "fever","night_sweats","wt_loss","fatigue","easy_bruise","bleeding_tend","lymphadeno_ros","recur_infx",
+    "pe_pallor","pe_petechiae","pe_lymph_neck","pe_splenomeg","pe_hepatomeg","pe_jaundice"]},
+  {key:"inf", label:"INF 感染科", focus:[
+    "fever","chills","night_sweats","cough","dysuria","diarrhea","rash","headache",
+    "consciousness","pe_nuchal","pe_lymph_neck","pe_throat"]},
+  {key:"ent", label:"ENT 耳鼻喉科", focus:[
+    "sore_throat","hoarseness","dysphagia","odynophagia","ear_pain","hearing_loss","tinnitus","nasal_cong","rhinorrhea","epistaxis","neck_mass",
+    "pe_throat","pe_tonsil","pe_tm","pe_lymph_neck","pe_thyroid"]},
+  {key:"dermaps", label:"Derma / PS 皮膚・整形外科", focus:[
+    "rash","pruritus","skin_lesion","easy_bruise",
+    "pe_rash","pe_pallor","pe_jaundice","pe_cyanosis","pe_petechiae","pe_clubbing","pe_turgor"]},
+  {key:"general", label:"一般內科／不分科／其他", focus:[]},
+];
+const SPEC_INDEX = {}; SPECIALTIES.forEach(s=>SPEC_INDEX[s.key]=s);
+const GENDERS = ["","男 M","女 F","其他 Other"];
+const ADL_LEVELS = ["Totally independent 完全獨立","Partially dependent 部分依賴","Totally dependent 完全依賴"];
+function adlDependent(a){ return !!(a && a.level && a.level!=="Totally independent 完全獨立"); }
+function adlLevel(a){ return (a && a.level) || ADL_LEVELS[0]; } // 預設完全獨立
+
+/* 婦產科項目顯示條件 */
+function sectionVisible(secDef,p){
+  const g=secDef.gate;
+  if(!g) return true;
+  const female = (p.sex==="女 F");
+  if(g==="gyn") return female || p.specialty==="gyn" || p.specialty==="obs"; // 任何女性、或婦/產科
+  if(g==="obs") return p.specialty==="obs";                                   // 產科（懷孕情境）
+  return true;
+}
+function itemVisible(item,p){
+  const rec=ITEM_INDEX[item.id]; if(!rec) return true;
+  return sectionVisible(rec.sec,p);
+}
+
+/* =======================================================================
+   狀態與導覽
+   ======================================================================= */
+let DB = {patients:[]};
+let saveTimer=null;
+function save(){ if(saveTimer)clearTimeout(saveTimer); saveTimer=setTimeout(()=>Store.write(DB),150); }
+function saveNow(){ if(saveTimer)clearTimeout(saveTimer); Store.write(DB); }
+
+const $ = s=>document.querySelector(s);
+const wrap = $("#wrap");
+const scrim = $("#scrim");
+
+function uid(){ return "p"+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function fmtTime(ts){
+  const d=new Date(ts), p=n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function toast(msg){
+  const t=$("#toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),1600);
+}
+
+/* ---------- 每一項目狀態存取 ---------- */
+function vOf(p,id){ if(!p.values[id]) p.values[id]={}; return p.values[id]; }
+
+/* 判斷「有異常/需記錄」 */
+function hasFinding(p,it){
+  const v=p.values[it.id]||{};
+  if(it.type==="toggle") { if(v.on) return true; }
+  else if(it.type==="select"){ if(v.sel && v.sel!==it.normal) return true; }
+  else if(it.type==="group"){ if(it.fields.some(f=>{const g=(v.grp||{})[f.id]; return g && g!==f.normal;})) return true; }
+  else if(it.type==="text"){ if(v.text && v.text.trim()) return true; }
+  else if(it.type==="custom"){
+    if(it.custom==="dtr"){ const d=v.dtr||{}; if(Object.keys(d).some(k=>d[k] && d[k]!=="2+")) return true; }
+    if(it.custom==="plantar"){ const pl=v.plantar||{}; if(["L","R"].some(s=>pl[s] && pl[s]!==PLANTAR_OPTS[0])) return true; }
+    if(it.custom==="sensory"){ const s=v.sensory||{}; if(s.status==="異常 Abnormal") return true; }
+  }
+  if(it.cnPanel){ const cn=v.cn||{}; if(Object.keys(cn).some(k=>cn[k] && (cn[k].abn || (cn[k].note&&cn[k].note.trim())))) return true; }
+  if(v.note && v.note.trim()) return true;
+  return false;
+}
+
+/* =======================================================================
+   畫面 1：病人清單
+   ======================================================================= */
+function renderList(){
+  closeMenu();
+  let html = `
+  <div class="hero">
+    <h1>查房快速紀錄</h1>
+    <p>ROS / PE Rounding Note — 點選病人進入紀錄，資料自動儲存</p>
+  </div>
+  <div class="list" id="listArea"></div>
+  <button class="fab" id="fabNew">＋ 新增病人</button>`;
+  wrap.innerHTML = html;
+  drawList();
+  $("#fabNew").onclick = showNewForm;
+}
+
+function drawList(){
+  const area=$("#listArea"); if(!area) return;
+  const ps=[...DB.patients].sort((a,b)=>b.updatedAt-a.updatedAt);
+  if(ps.length===0){
+    area.innerHTML=`<div class="empty"><div class="em-ic">🗂️</div><p>尚無病人紀錄<br>點下方「新增病人」開始</p></div>`;
+    return;
+  }
+  area.innerHTML = ps.map(p=>{
+    const spec=SPEC_INDEX[p.specialty]||SPEC_INDEX.general;
+    const nPos = countPositives(p);
+    const demo=[];
+    if(p.sex) demo.push(escapeHtml(p.sex.split(" ")[0]));
+    if(p.age) demo.push(escapeHtml(p.age)+(/^\d+$/.test(String(p.age))?" 歲":""));
+    const demoLine = demo.length||p.problem
+      ? `<div class="pc-demo">${demo.join(" · ")}${p.problem?`${demo.length?" · ":""}<span class="pc-prob">${escapeHtml(p.problem)}</span>`:""}</div>` : "";
+    return `<div class="pcard" data-open="${p.id}">
+      <div class="pc-main">
+        <div class="pc-code">${escapeHtml(p.code||"（未命名）")}</div>
+        ${demoLine}
+        <div class="pc-meta">
+          <span class="spec-badge">${escapeHtml(spec.label)}</span>
+          <span>更新 ${fmtTime(p.updatedAt)}</span>
+          ${nPos?`<span style="color:var(--pos);font-weight:700">陽性/異常 ${nPos}</span>`:""}
+        </div>
+      </div>
+      <button class="pc-del" data-del="${p.id}" title="刪除">×</button>
+    </div>`;
+  }).join("");
+  area.querySelectorAll("[data-open]").forEach(el=>{
+    el.addEventListener("click",e=>{ if(e.target.closest("[data-del]"))return; openNote(el.getAttribute("data-open")); });
+  });
+  area.querySelectorAll("[data-del]").forEach(el=>{
+    el.addEventListener("click",e=>{ e.stopPropagation(); delPatient(el.getAttribute("data-del")); });
+  });
+}
+
+function countPositives(p){
+  let n=0;
+  SECTIONS.forEach(sec=>{ if(!sectionVisible(sec,p)) return; sec.items.forEach(it=>{ if(hasFinding(p,it)) n++; }); });
+  return n;
+}
+
+function showNewForm(){
+  const area=$("#listArea");
+  if($("#newForm")) { $("#newForm input").focus(); return; }
+  const div=document.createElement("div");
+  div.id="newForm"; div.className="newform";
+  div.innerHTML=`
+    <h3>新增病人紀錄</h3>
+    <div class="field">
+      <label>病人代號 Patient code</label>
+      <input id="nf_code" placeholder="例：3F-12 王 / Bed 07" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>科別 Department（可不指定）</label>
+      <select id="nf_spec">${SPECIALTIES.map(s=>`<option value="${s.key}" ${s.key==="general"?"selected":""}>${s.label}</option>`).join("")}</select>
+    </div>
+    <div class="row" style="gap:10px">
+      <div class="field" style="flex:1;margin-bottom:12px">
+        <label>性別 Sex（選填）</label>
+        <select id="nf_sex">${GENDERS.map(g=>`<option value="${g}">${g||"未填"}</option>`).join("")}</select>
+      </div>
+      <div class="field" style="flex:1;margin-bottom:12px">
+        <label>年齡 Age（選填）</label>
+        <input id="nf_age" inputmode="numeric" placeholder="例：72" autocomplete="off">
+      </div>
+    </div>
+    <div class="field">
+      <label>主要問題（選填）</label>
+      <input id="nf_problem" placeholder="例：CHF、fever workup" autocomplete="off">
+    </div>
+    <div class="row">
+      <button class="btn" id="nf_cancel">取消</button>
+      <button class="btn primary" id="nf_create">建立並開始</button>
+    </div>`;
+  area.prepend(div);
+  $("#nf_code").focus();
+  $("#nf_cancel").onclick=()=>div.remove();
+  $("#nf_create").onclick=()=>{
+    const now=Date.now();
+    const p={id:uid(), code:$("#nf_code").value.trim()||"（未命名）", specialty:$("#nf_spec").value,
+      sex:$("#nf_sex").value, age:$("#nf_age").value.trim(), problem:$("#nf_problem").value.trim(),
+      createdAt:now, updatedAt:now, values:{}, globalNote:"", blockNotes:{}, todos:[]};
+    DB.patients.push(p); saveNow(); openNote(p.id);
+  };
+}
+
+function delPatient(id){
+  const p=DB.patients.find(x=>x.id===id); if(!p)return;
+  if(!confirm(`確定刪除「${p.code}」的紀錄？此動作無法復原。`)) return;
+  DB.patients=DB.patients.filter(x=>x.id!==id); saveNow(); drawList();
+  toast("已刪除");
+}
+
+/* =======================================================================
+   畫面 2：ROS + PE 紀錄
+   ======================================================================= */
+let CUR=null; // current patient
+
+function openNote(id){
+  CUR = DB.patients.find(x=>x.id===id);
+  if(!CUR) return renderList();
+  renderNote();
+  window.scrollTo(0,0);
+}
+
+function renderNote(){
+  closeMenu();
+  const p=CUR;
+  wrap.innerHTML = `
+    <div class="topbar">
+      <button class="btn ghost" id="backBtn">‹ 病人清單</button>
+      <div class="grow"></div>
+      <button class="btn primary" id="exportBtn">匯出 ▾</button>
+    </div>
+    <div class="note-sub">
+      <input class="pcode-input" id="pCode" value="${escapeHtml(p.code||"")}" placeholder="病人代號">
+      <select class="specsel" id="specSel">${SPECIALTIES.map(s=>`<option value="${s.key}" ${s.key===p.specialty?"selected":""}>${s.label}</option>`).join("")}</select>
+    </div>
+    <div class="note-sub2">
+      <select id="pSex" class="demo-in">${GENDERS.map(g=>`<option value="${g}" ${g===(p.sex||"")?"selected":""}>${g||"性別"}</option>`).join("")}</select>
+      <input id="pAge" class="demo-in demo-age" inputmode="numeric" value="${escapeHtml(p.age||"")}" placeholder="年齡">
+      <textarea id="pProblem" rows="1" class="demo-in demo-prob autogrow" placeholder="主要問題">${escapeHtml(p.problem||"")}</textarea>
+    </div>
+    <div class="summary" id="summary"></div>
+    <div class="note-body" id="noteBody"></div>
+    <div class="menu" id="exportMenu">
+      <div class="mlabel">限縮版（Focus＋陽性/異常＋備註）</div>
+      <button data-exp="lim-pdf">📄 匯出 PDF（限縮）</button>
+      <button data-exp="lim-txt">📝 匯出 TXT（限縮）</button>
+      <div class="mdiv"></div>
+      <div class="mlabel">完整版（全部項目）</div>
+      <button data-exp="all-pdf">📄 匯出 PDF（完整）</button>
+      <button data-exp="all-txt">📝 匯出 TXT（完整）</button>
+    </div>`;
+
+  $("#backBtn").onclick=()=>{ saveNow(); CUR=null; renderList(); };
+  $("#specSel").onchange=e=>{ p.specialty=e.target.value; touch(); buildBody(); };
+  $("#pCode").addEventListener("input",e=>{ p.code=e.target.value; touch(); });
+  $("#pSex").addEventListener("change",e=>{ p.sex=e.target.value; touch(); });
+  $("#pAge").addEventListener("input",e=>{ p.age=e.target.value; touch(); });
+  $("#pProblem").addEventListener("input",e=>{ p.problem=e.target.value; touch(); });
+  $("#exportBtn").onclick=e=>{ e.stopPropagation(); toggleMenu(); };
+  scrim.onclick=closeMenu;
+  $("#exportMenu").querySelectorAll("[data-exp]").forEach(b=>{
+    b.onclick=()=>{ closeMenu(); doExport(b.getAttribute("data-exp")); };
+  });
+  buildBody();
+}
+
+function touch(){ CUR.updatedAt=Date.now(); save(); updateSummary(); }
+
+function updateSummary(){
+  const el=$("#summary"); if(!el)return;
+  const n=countPositives(CUR);
+  const spec=SPEC_INDEX[CUR.specialty]||SPEC_INDEX.general;
+  el.innerHTML = `${spec.focus.length?`重點 ${spec.focus.length} 項 · `:""}目前 <b>${n}</b> 項陽性/異常 · 自動儲存`;
+}
+
+/* ---------- 待辦事項 ---------- */
+function fmtShort(ts){ const d=new Date(ts),p=n=>String(n).padStart(2,"0");
+  return `${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+function sortedTodos(){
+  const arr=[...(CUR.todos||[])];
+  const tier=t=> t.status==="done"?2:(t.important?0:1);   // 重要 → 一般待辦 → 已完成
+  arr.sort((a,b)=> tier(a)-tier(b) || a.createdAt-b.createdAt); // 同層：舊 → 新
+  return arr;
+}
+function addTodo(){
+  if(!CUR.todos) CUR.todos=[];
+  const t={id:"td"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
+    text:"", createdAt:Date.now(), important:false, status:"todo"};
+  CUR.todos.push(t); touch(); renderTodos(t.id);
+}
+function renderTodos(focusId){
+  const list=$("#todoList"); if(!list) return;
+  const arr=sortedTodos();
+  if(arr.length===0){ list.innerHTML=`<div class="todo-empty">尚無待辦，點「＋ 新增」開始</div>`; return; }
+  list.innerHTML="";
+  arr.forEach(t=>{
+    const row=document.createElement("div");
+    row.className="todo-row"+(t.status==="done"?" done":"")+((t.important&&t.status!=="done")?" imp":"");
+    row.innerHTML=`
+      <button class="todo-star ${t.important?"on":""}" title="重要">★</button>
+      <textarea class="todo-text autogrow" rows="1" placeholder="待辦內容…">${escapeHtml(t.text)}</textarea>
+      <div class="todo-btns">
+        <button class="tb tb-todo ${t.status==="todo"?"sel":""}" data-st="todo" title="待辦">待</button>
+        <button class="tb tb-done ${t.status==="done"?"sel":""}" data-st="done" title="完成">完</button>
+        <button class="tb tb-del" data-st="del" title="刪除">✕</button>
+      </div>
+      <span class="todo-time">${fmtShort(t.createdAt)}</span>`;
+    row.querySelector(".todo-star").onclick=()=>{ t.important=!t.important; touch(); renderTodos(); };
+    const txt=row.querySelector(".todo-text");
+    txt.addEventListener("input",()=>{ t.text=txt.value; touch(); }); // 即時儲存、不重繪以保留游標
+    row.querySelectorAll("[data-st]").forEach(b=>{
+      b.onclick=()=>{
+        const st=b.getAttribute("data-st");
+        if(st==="del"){ CUR.todos=CUR.todos.filter(x=>x.id!==t.id); touch(); renderTodos(); return; }
+        t.status=st; touch(); renderTodos();
+      };
+    });
+    list.appendChild(row);
+    if(focusId && t.id===focusId) txt.focus();
+  });
+  resizeAutogrow(list);
+}
+
+
+/* 英文在前、中文在後拆解 label（用於區塊標題） */
+function flipLabel(s){
+  const m=String(s).match(/^(.+?)\s+([A-Za-z].*)$/);
+  if(m) return {en:m[2], zh:m[1]};
+  return {en:s, zh:""};
+}
+function headTemplate(titleHtml, tag, isFocus){
+  return `<div class="sec-head">
+      ${isFocus?`<span class="focus-flag">${tag}</span>`:`<span class="kindtag">${tag}</span>`}
+      <span class="st">${titleHtml}</span>
+      <span class="cnt zero">0</span>
+      <button class="secnote-btn" data-secnote title="區塊備註">✎</button>
+      <span class="chev">▾</span>
+    </div>`;
+}
+function focusHeadHtml(kind){
+  const zh = kind==="ROS" ? "重點問診" : "重點理學檢查";
+  return headTemplate(`<span class="st-en">Focus ${kind}</span><span class="st-zh">${zh}</span>`, "★ 重點", true);
+}
+function sysHeadHtml(secDef){
+  const f=flipLabel(secDef.label);
+  return headTemplate(`<span class="st-en">${escapeHtml(f.en)}</span>${f.zh?`<span class="st-zh">${escapeHtml(f.zh)}</span>`:""}`, secDef.kind, false);
+}
+
+/* 依科別組出：Focus ROS + Focus PE + 各系統區（排除已在 Focus 的） */
+/* ---------- ADL 日常生活功能・主要照護者 ---------- */
+function renderADL(p){
+  if(!p.adl) p.adl={};
+  const a=p.adl;
+  const idxOf=()=>Math.max(0,ADL_LEVELS.indexOf(adlLevel(a)));
+  const sec=document.createElement("div");
+  sec.className="section adl";
+  sec.innerHTML=`
+    <div class="sec-head">
+      <span class="kindtag">ADL</span>
+      <span class="st"><span class="st-en">ADL</span><span class="st-zh">日常生活功能・主要照護者</span></span>
+      <span class="chev">▾</span>
+    </div>
+    <div class="sec-body">
+      <div class="adl-level">
+        <span class="lab">ADL</span>
+        <button class="adl-btn adl-l${idxOf()}" id="adlBtn">${escapeHtml(adlLevel(a))}</button>
+        <span class="adl-hint">點擊循環切換</span>
+      </div>
+      <div class="adl-care ${adlDependent(a)?"show":""}" id="adlCare">
+        <div class="cg-title">主要照護者 Primary caregiver（可複選）</div>
+        <div class="adl-pills">
+          <button class="cg-pill ${a.foreign?"on":""}" data-cg="foreign">外籍看護 Foreign</button>
+          <button class="cg-pill ${a.domestic?"on":""}" data-cg="domestic">本國看護 Domestic</button>
+          <button class="cg-pill ${a.institution?"on":""}" data-cg="institution">機構 Institution</button>
+          <button class="cg-pill ${a.family?"on":""}" data-cg="family">家人 Family</button>
+        </div>
+        <div class="cg-text ${a.institution?"show":""}" id="cgInstWrap"><textarea id="adlInst" rows="1" class="autogrow" placeholder="機構名稱 Facility name">${escapeHtml(a.instName||"")}</textarea></div>
+        <div class="cg-text ${a.family?"show":""}" id="cgFamWrap"><textarea id="adlFam" rows="1" class="autogrow" placeholder="家人姓名/關係 Family member">${escapeHtml(a.famName||"")}</textarea></div>
+      </div>
+      <div class="adl-note-wrap"><textarea id="adlNote" rows="1" class="autogrow" placeholder="ADL 備註（Barthel 分數、具體失能項目、原因…）">${escapeHtml(a.note||"")}</textarea></div>
+    </div>`;
+  sec.querySelector(".sec-head").addEventListener("click",()=>sec.classList.toggle("collapsed"));
+  const btn=sec.querySelector("#adlBtn");
+  const care=sec.querySelector("#adlCare");
+  btn.addEventListener("click",()=>{
+    const ni=(idxOf()+1)%ADL_LEVELS.length;
+    a.level=ADL_LEVELS[ni];
+    btn.textContent=a.level;
+    btn.className="adl-btn adl-l"+ni;
+    care.classList.toggle("show", adlDependent(a));
+    touch(); updateSummary();
+  });
+  sec.querySelectorAll("[data-cg]").forEach(b=>{
+    const key=b.getAttribute("data-cg");
+    b.addEventListener("click",()=>{
+      a[key]=!a[key];
+      b.classList.toggle("on",a[key]);
+      if(key==="institution") sec.querySelector("#cgInstWrap").classList.toggle("show",a[key]);
+      if(key==="family") sec.querySelector("#cgFamWrap").classList.toggle("show",a[key]);
+      touch();
+    });
+  });
+  sec.querySelector("#adlInst").addEventListener("input",e=>{ a.instName=e.target.value; touch(); });
+  sec.querySelector("#adlFam").addEventListener("input",e=>{ a.famName=e.target.value; touch(); });
+  sec.querySelector("#adlNote").addEventListener("input",e=>{ a.note=e.target.value; touch(); });
+  return sec;
+}
+function adlModel(p){
+  const a=p.adl||{};
+  const dep=adlDependent(a);
+  const lines=[{label:"ADL 日常生活功能", val:adlLevel(a), pos:!!dep, note:""}];
+  if(dep){
+    const cg=[];
+    if(a.foreign) cg.push("外籍看護 Foreign");
+    if(a.domestic) cg.push("本國看護 Domestic");
+    if(a.institution) cg.push("機構 Institution"+(a.instName?`（${a.instName}）`:""));
+    if(a.family) cg.push("家人 Family"+(a.famName?`（${a.famName}）`:""));
+    lines.push({label:"主要照護者 Caregiver", val:(cg.length?cg.join("、"):"（未填）"), pos:true, note:""});
+  }
+  if(a.note && a.note.trim()) lines.push({label:"ADL 備註", val:a.note.trim(), pos:false, note:""});
+  return {title:"ADL 日常生活功能・照護", note:"", lines};
+}
+
+/* ---------- LQQOPERA 症狀分析（可多個，置於 Focus 上方） ---------- */
+const LQQ_QUALITY=["刺痛 sharp","悶/鈍痛 dull","壓迫 pressure","灼熱 burning","抽痛 throbbing","絞痛 cramping","撕裂 tearing"];
+const LQQ_ONSET=["突發 sudden","漸進 gradual","波動 fluctuating"];
+function addLqq(){
+  if(!CUR.lqq) CUR.lqq=[];
+  CUR.lqq.push({id:"lq"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
+    name:"", L:"", quality:[], qnote:"", sev:null, onset:"", onsetText:"", P:"", E:"", R:"", A:""});
+  touch(); renderLQQ(true);
+}
+function renderLQQ(focusNew){
+  const area=$("#lqqArea"); if(!area) return;
+  const list=CUR.lqq||[];
+  area.innerHTML=`
+    <div class="lqq-head">
+      <span class="lqq-title">症狀分析 LQQOPERA</span>
+      <button class="btn sm primary" id="addLqqBtn">＋ 新增</button>
+    </div>
+    <div id="lqqList"></div>`;
+  $("#addLqqBtn").onclick=addLqq;
+  const listEl=$("#lqqList");
+  list.forEach(item=>listEl.appendChild(buildLqqBlock(item)));
+  if(focusNew && list.length){ const el=listEl.lastChild; const nm=el&&el.querySelector(".lqq-name"); if(nm) nm.focus(); }
+  resizeAutogrow(area);
+}
+function buildLqqBlock(item){
+  const el=document.createElement("div"); el.className="lqq-block";
+  el.innerHTML=`
+    <div class="lqq-bhead">
+      <textarea class="lqq-name autogrow" rows="1" placeholder="症狀名稱（例：胸痛 Chest pain）">${escapeHtml(item.name||"")}</textarea>
+      <button class="lqq-del" data-del title="刪除">刪除</button>
+      <span class="chev" data-chev>▾</span>
+    </div>
+    <div class="lqq-body">
+      <div class="lqq-f"><span class="lqq-k">L｜位置 Location</span><textarea data-f="L" rows="1" class="autogrow" placeholder="部位/位置">${escapeHtml(item.L||"")}</textarea></div>
+      <div class="lqq-f"><span class="lqq-k">Q｜性質 Quality</span>
+        <div class="lqq-chips">${LQQ_QUALITY.map(q=>`<button class="qchip ${(item.quality||[]).includes(q)?"on":""}" data-q="${escapeHtml(q)}">${escapeHtml(q)}</button>`).join("")}</div>
+        <textarea data-f="qnote" rows="1" class="autogrow" placeholder="其他性質描述">${escapeHtml(item.qnote||"")}</textarea>
+      </div>
+      <div class="lqq-f"><span class="lqq-k">Q｜嚴重度 Severity</span>
+        <div class="lqq-sev"><input type="range" min="0" max="10" step="1" value="${item.sev==null?0:item.sev}" data-sev>
+          <span class="sevval">${item.sev==null?"—":item.sev+" /10"}</span></div>
+      </div>
+      <div class="lqq-f"><span class="lqq-k">O｜發作 Onset</span>
+        <select data-f="onset"><option value="">—</option>${LQQ_ONSET.map(o=>`<option value="${escapeHtml(o)}" ${o===(item.onset||"")?"selected":""}>${escapeHtml(o)}</option>`).join("")}</select>
+        <textarea data-f="onsetText" rows="1" class="autogrow" placeholder="何時開始 / 病程">${escapeHtml(item.onsetText||"")}</textarea>
+      </div>
+      <div class="lqq-f"><span class="lqq-k">P｜誘發/加重 Provoke</span><textarea data-f="P" rows="1" class="autogrow" placeholder="加重因素">${escapeHtml(item.P||"")}</textarea></div>
+      <div class="lqq-f"><span class="lqq-k">E｜緩解 Ease</span><textarea data-f="E" rows="1" class="autogrow" placeholder="緩解因素">${escapeHtml(item.E||"")}</textarea></div>
+      <div class="lqq-f"><span class="lqq-k">R｜放射 Radiation</span><textarea data-f="R" rows="1" class="autogrow" placeholder="放射部位">${escapeHtml(item.R||"")}</textarea></div>
+      <div class="lqq-f"><span class="lqq-k">A｜伴隨 Associated</span><textarea data-f="A" rows="1" class="autogrow" placeholder="伴隨症狀">${escapeHtml(item.A||"")}</textarea></div>
+    </div>`;
+  el.querySelector(".lqq-name").addEventListener("input",e=>{ item.name=e.target.value; touch(); });
+  el.querySelector("[data-del]").onclick=()=>{ CUR.lqq=CUR.lqq.filter(x=>x.id!==item.id); touch(); renderLQQ(); };
+  el.querySelector("[data-chev]").addEventListener("click",()=>el.classList.toggle("lqq-collapsed"));
+  el.querySelectorAll("[data-f]").forEach(inp=>{
+    const f=inp.getAttribute("data-f"); const ev=inp.tagName==="SELECT"?"change":"input";
+    inp.addEventListener(ev,()=>{ item[f]=inp.value; touch(); });
+  });
+  el.querySelectorAll("[data-q]").forEach(b=>{
+    b.onclick=()=>{ if(!item.quality)item.quality=[]; const q=b.getAttribute("data-q");
+      const i=item.quality.indexOf(q); if(i>=0)item.quality.splice(i,1); else item.quality.push(q);
+      b.classList.toggle("on"); touch(); };
+  });
+  const sev=el.querySelector("[data-sev]"), sevval=el.querySelector(".sevval");
+  sev.addEventListener("input",()=>{ item.sev=parseInt(sev.value,10); sevval.textContent=item.sev+" /10"; touch(); });
+  return el;
+}
+function lqqModels(p){
+  const arr=p.lqq||[]; const out=[];
+  arr.forEach(item=>{
+    const lines=[];
+    const add=(lab,val)=>{ if(val&&String(val).trim()) lines.push({label:lab,val:String(val).trim(),pos:false,note:""}); };
+    add("L 位置", item.L);
+    add("Q 性質", [...(item.quality||[]), (item.qnote||"").trim()].filter(Boolean).join("、"));
+    if(item.sev!=null) lines.push({label:"Q 嚴重度",val:item.sev+" /10",pos:item.sev>=7,note:""});
+    add("O 發作", [item.onset,item.onsetText].filter(Boolean).join(" "));
+    add("P 誘發/加重", item.P);
+    add("E 緩解", item.E);
+    add("R 放射", item.R);
+    add("A 伴隨症狀", item.A);
+    if(lines.length||(item.name&&item.name.trim())) out.push({title:`症狀分析 LQQOPERA · ${item.name||"（未命名）"}`, note:"", lines});
+  });
+  return out;
+}
+
+
+/* ---------- 外科術後照護組套：精簡版 ---------- */
+const PO_CYCLES={
+  vitals:[
+    {v:"穩定 Stable",c:"norm"},{v:"需留意 Concern",c:"warn"},{v:"不穩定 Unstable",c:"danger"}
+  ],
+  fever:[
+    {v:"無 Afebrile",c:"norm"},{v:"有 Febrile",c:"danger"}
+  ],
+  diet:[
+    {v:"NPO 禁食",c:"warn"},{v:"清流 Clear liquid",c:""},{v:"全流 Full liquid",c:""},
+    {v:"軟質 Soft diet",c:"norm"},{v:"普通 Regular diet",c:"norm"},{v:"管灌 Enteral",c:""},{v:"TPN",c:""}
+  ],
+  nausea:[
+    {v:"無 None",c:"norm"},{v:"噁心 Nausea",c:"warn"},{v:"嘔吐 Vomiting",c:"danger"}
+  ],
+  activity:[
+    {v:"臥床 Bed rest",c:"warn"},{v:"坐起 Sit",c:""},{v:"站立 Stand",c:""},
+    {v:"步行 Ambulate",c:"norm"},{v:"獨立 Independent",c:"norm"}
+  ],
+  flatus:[
+    {v:"未排 No",c:"warn"},{v:"已排 Yes",c:"norm"}
+  ],
+  voiding:[
+    {v:"自解 Voiding",c:"norm"},{v:"Foley 留置",c:""},{v:"拔管待解 Awaiting",c:"warn"},
+    {v:"解尿困難 Difficulty",c:"danger"},{v:"尿滯留 Retention",c:"danger"}
+  ],
+  respiratory:[
+    {v:"RA 穩定",c:"norm"},{v:"需氧 O₂",c:"warn"},{v:"呼吸異常 Concern",c:"danger"}
+  ],
+  woundStatus:[
+    {v:"乾淨乾燥無紅腫 CDI",c:"norm"},{v:"需留意 Concern",c:"warn"},{v:"異常 Abnormal",c:"danger"}
+  ],
+  vteStatus:[
+    {v:"已預防 Done",c:"norm"},{v:"尚未執行 Not done",c:"warn"},{v:"禁忌/暫緩 Contraindicated",c:""}
+  ],
+  redflagStatus:[
+    {v:"無警訊 None",c:"norm"},{v:"有警訊 Present",c:"danger"}
+  ],
+  drainPeriod:[
+    {v:"單次",c:""},{v:"8 h",c:""},{v:"24 h",c:""}
+  ],
+  drainCharacter:[
+    {v:"漿液 Serous",c:"norm"},{v:"淡血 Serosanguineous",c:""},{v:"血性 Sanguineous",c:"warn"},
+    {v:"膽汁樣 Bilious",c:"warn"},{v:"膿性 Purulent",c:"danger"},{v:"乳糜 Chylous",c:"warn"},{v:"其他 Other",c:""}
+  ],
+  drainPatency:[
+    {v:"通暢 Patent",c:"norm"},{v:"疑阻塞 Blocked?",c:"danger"},{v:"夾管 Clamped",c:"warn"}
+  ],
+  drainSurround:[
+    {v:"周圍乾淨",c:"norm"},{v:"紅腫/滲漏",c:"danger"},{v:"壓痛/腫脹",c:"warn"}
+  ]
+};
+
+function appendLegacyNote(po,key,text){
+  if(!text||!String(text).trim())return;
+  if(!po.notes)po.notes={};
+  const t=String(text).trim();
+  if(!(po.notes[key]||"").includes(t))po.notes[key]=[po.notes[key],t].filter(Boolean).join("；");
+}
+function ensurePostop(){
+  if(!CUR.postop) CUR.postop={notes:{},drains:[]};
+  const po=CUR.postop;
+  if(!po.notes)po.notes={}; if(!Array.isArray(po.drains))po.drains=[];
+  // 舊版欄位只轉換一次，避免原資料在精簡介面中消失。
+  if(!po._compactMigrated){
+    if(Array.isArray(po.wound)){
+      po.woundStatus=po.wound.some(x=>x&&x!=="乾淨/乾燥/完整、無紅腫 Clean-dry-intact")?"異常 Abnormal":(po.wound.length?"乾淨乾燥無紅腫 CDI":"");
+      if(po.wound.length>1||po.wound.some(x=>x&&x!=="乾淨/乾燥/完整、無紅腫 Clean-dry-intact"))appendLegacyNote(po,"woundStatus",po.wound.join("、"));
+    }
+    if(Array.isArray(po.vte)){
+      po.vteStatus=po.vte.some(x=>String(x).includes("禁忌"))?"禁忌/暫緩 Contraindicated":(po.vte.length?"已預防 Done":"");
+      if(po.vte.length)appendLegacyNote(po,"vteStatus",po.vte.join("、"));
+    }
+    if(Array.isArray(po.redflags)){
+      po.redflagStatus=po.redflags.some(x=>x&&x!=="無明顯警訊 None")?"有警訊 Present":(po.redflags.length?"無警訊 None":"");
+      if(po.redflags.some(x=>x&&x!=="無明顯警訊 None"))appendLegacyNote(po,"redflagStatus",po.redflags.join("、"));
+    }
+    appendLegacyNote(po,"pain",po.painControl?`疼痛控制：${po.painControl}`:"");
+    appendLegacyNote(po,"diet",po.dietTolerance?`耐受：${po.dietTolerance}`:"");
+    appendLegacyNote(po,"flatus",po.bowel?`排便：${po.bowel}`:"");
+    appendLegacyNote(po,"voiding",po.urineOutput?`尿量：${po.urineOutput}`:"");
+    appendLegacyNote(po,"redflagStatus",po.otherTubes?`其他管路/造口：${po.otherTubes}`:"");
+    po._compactMigrated=true;
+  }
+  return po;
+}
+function poTextHtml(po,key,placeholder,type){
+  const t=type||"text";
+  return `<input type="${t}" data-po="${key}" value="${escapeHtml(po[key]||"")}" placeholder="${escapeHtml(placeholder||"")}">`;
+}
+function poAreaHtml(po,key,placeholder){
+  return `<textarea rows="1" class="autogrow" data-po="${key}" placeholder="${escapeHtml(placeholder||"")}">${escapeHtml(po[key]||"")}</textarea>`;
+}
+function poCycleHtml(obj,key,cycleKey){
+  const cur=obj[key]||"", opts=PO_CYCLES[cycleKey||key]||[];
+  const found=opts.find(x=>x.v===cur);
+  return `<button class="po-cycle ${found?found.c:""}" data-po-cycle="${key}" data-po-cycle-set="${cycleKey||key}">${escapeHtml(cur||"— 未評估 —")}</button>`;
+}
+function poPainHtml(po){
+  const assessed=po.pain!==""&&po.pain!=null&&!Number.isNaN(Number(po.pain));
+  const val=assessed?Math.max(0,Math.min(10,Number(po.pain))):0;
+  return `<div class="po-range"><input type="range" min="0" max="10" step="1" value="${val}" data-po-range="pain">
+    <span class="po-range-val ${assessed&&val>=7?"warn":""}" data-po-range-val="pain">${assessed?val+"/10":"—"}</span>
+    <button class="po-clear" data-po-clear="pain">清除</button></div>`;
+}
+function calcPOD(dateStr,now){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(dateStr||""))return {text:"POD —",cls:"empty",value:""};
+  const [y,m,d]=dateStr.split("-").map(Number);
+  const op=Date.UTC(y,m-1,d);
+  const chk=new Date(op);
+  if(chk.getUTCFullYear()!==y||chk.getUTCMonth()!==m-1||chk.getUTCDate()!==d)return {text:"日期錯誤",cls:"future",value:""};
+  const n=now||new Date(),today=Date.UTC(n.getFullYear(),n.getMonth(),n.getDate());
+  const diff=Math.round((today-op)/86400000);
+  if(diff<0)return {text:"手術日在未來",cls:"future",value:""};
+  return {text:`POD ${diff}`,cls:"",value:`POD ${diff}`};
+}
+function poDateHtml(po){
+  const pod=calcPOD(po.surgeryDate||"");
+  return `<div class="po-date-wrap"><input type="date" data-po="surgeryDate" value="${escapeHtml(po.surgeryDate||"")}">
+    <span class="po-pod ${pod.cls}" data-po-pod>${escapeHtml(pod.text)}</span></div>`;
+}
+function poFieldHtml(po,key,label,control,full){
+  const note=(po.notes||{})[key]||"";
+  return `<div class="po-field${full?" full":""}" data-po-field="${key}">
+    <div class="po-field-top"><span class="po-k">${escapeHtml(label)}</span><div class="po-control">${control}</div>
+    <button class="po-note-btn ${note?"active":""}" data-po-note-btn="${key}" title="此題註記">✎</button></div>
+    <textarea rows="1" class="po-note autogrow${note?" show":""}" data-po-note="${key}" placeholder="此題註記…">${escapeHtml(note)}</textarea>
+  </div>`;
+}
+function addPostop(){ ensurePostop(); touch(); renderPostop(true); }
+function removePostop(){
+  if(!CUR.postop)return;
+  if(!confirm("確定刪除外科術後照護組套？"))return;
+  CUR.postop=null; touch(); renderPostop();
+}
+function addPostopDrain(){
+  const po=ensurePostop();
+  po.drains.push({id:"dr"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),site:"",amount:"",period:"",character:"",patency:"",surround:"",note:""});
+  touch(); renderPostopDrains(true);
+}
+function cycleValue(obj,key,cycleKey){
+  const opts=PO_CYCLES[cycleKey||key]||[],cur=obj[key]||"";
+  const idx=opts.findIndex(x=>x.v===cur);
+  obj[key]=(idx<0)?opts[0].v:(idx===opts.length-1?"":opts[idx+1].v);
+}
+function bindPoNotes(card,po){
+  card.querySelectorAll("[data-po-note-btn]").forEach(btn=>{
+    const key=btn.getAttribute("data-po-note-btn"),note=card.querySelector(`[data-po-note="${key}"]`);
+    btn.onclick=()=>{const show=note.classList.toggle("show");btn.classList.toggle("active",show||!!note.value);if(show){note.focus();autoGrow(note);}};
+  });
+  card.querySelectorAll("[data-po-note]").forEach(note=>{
+    const key=note.getAttribute("data-po-note");
+    note.addEventListener("input",()=>{po.notes[key]=note.value;const b=card.querySelector(`[data-po-note-btn="${key}"]`);if(b)b.classList.toggle("active",note.classList.contains("show")||!!note.value);touch();});
+  });
+}
+function renderPostop(focusNew){
+  const area=$("#postopArea"); if(!area)return;
+  area.innerHTML=`<div class="postop-head"><span class="postop-title">外科術後照護 Postoperative care</span>
+    ${CUR.postop?"":'<button class="btn sm primary" id="addPostopBtn">＋ 建立組套</button>'}</div><div id="postopCardHost"></div>`;
+  if(!CUR.postop){$("#addPostopBtn").onclick=addPostop;return;}
+  const po=ensurePostop(),host=$("#postopCardHost"),card=document.createElement("div");card.className="postop-card";
+  card.innerHTML=`<div class="postop-bhead"><span class="postop-btitle">術後快速評估</span>
+      <button class="postop-del" data-po-delete>刪除組套</button><span class="chev" data-po-chev>▾</span></div>
+    <div class="postop-body"><div class="po-grid">
+      ${poFieldHtml(po,"surgery","手術",poAreaHtml(po,"surgery","手術種類 / Procedure"),true)}
+      ${poFieldHtml(po,"surgeryDate","日期 / POD",poDateHtml(po),true)}
+      ${poFieldHtml(po,"pain","疼痛",poPainHtml(po),true)}
+      ${poFieldHtml(po,"vitals","循環",poCycleHtml(po,"vitals"),false)}
+      ${poFieldHtml(po,"fever","發燒",poCycleHtml(po,"fever"),false)}
+      ${poFieldHtml(po,"diet","飲食",poCycleHtml(po,"diet"),false)}
+      ${poFieldHtml(po,"nausea","噁心嘔吐",poCycleHtml(po,"nausea"),false)}
+      ${poFieldHtml(po,"activity","活動",poCycleHtml(po,"activity"),false)}
+      ${poFieldHtml(po,"flatus","排氣",poCycleHtml(po,"flatus"),false)}
+      ${poFieldHtml(po,"voiding","排尿",poCycleHtml(po,"voiding"),false)}
+      ${poFieldHtml(po,"respiratory","呼吸",poCycleHtml(po,"respiratory"),false)}
+      ${poFieldHtml(po,"woundStatus","傷口",poCycleHtml(po,"woundStatus"),false)}
+      ${poFieldHtml(po,"vteStatus","VTE",poCycleHtml(po,"vteStatus"),false)}
+      ${poFieldHtml(po,"redflagStatus","警訊",poCycleHtml(po,"redflagStatus"),false)}
+      ${poFieldHtml(po,"plan","今日計畫",poAreaHtml(po,"plan","檢查、拔管、進食、活動或出院目標…"),true)}
+    </div>
+    <div class="po-subhead"><span class="po-subtitle">Drain（可新增多支）</span><button class="btn sm primary" id="addDrainBtn">＋ 新增</button></div>
+    <div id="postopDrainList"></div></div>`;
+  host.appendChild(card);
+  card.querySelector("[data-po-chev]").onclick=()=>card.classList.toggle("collapsed");
+  card.querySelector("[data-po-delete]").onclick=removePostop;
+  card.querySelector("#addDrainBtn").onclick=addPostopDrain;
+  card.querySelectorAll("[data-po]").forEach(inp=>{
+    const key=inp.getAttribute("data-po"),ev=inp.tagName==="TEXTAREA"||inp.type==="text"?"input":"change";
+    inp.addEventListener(ev,()=>{
+      po[key]=inp.value;
+      if(key==="surgeryDate"){
+        const pod=calcPOD(po.surgeryDate),el=card.querySelector("[data-po-pod]");
+        if(el){el.textContent=pod.text;el.className=`po-pod ${pod.cls}`.trim();}
+      }
+      touch();
+    });
+  });
+  card.querySelectorAll("[data-po-cycle]").forEach(btn=>{
+    btn.onclick=()=>{const key=btn.getAttribute("data-po-cycle"),set=btn.getAttribute("data-po-cycle-set");cycleValue(po,key,set);touch();renderPostop();};
+  });
+  const painRange=card.querySelector('[data-po-range="pain"]'),painVal=card.querySelector('[data-po-range-val="pain"]');
+  if(painRange){
+    painRange.addEventListener("input",()=>{po.pain=String(painRange.value);painVal.textContent=po.pain+"/10";painVal.classList.toggle("warn",Number(po.pain)>=7);touch();});
+    card.querySelector('[data-po-clear="pain"]').onclick=()=>{po.pain="";touch();renderPostop();};
+  }
+  bindPoNotes(card,po);
+  renderPostopDrains();resizeAutogrow(card);
+  if(focusNew){const f=card.querySelector('[data-po="surgery"]');if(f)f.focus();}
+}
+function renderPostopDrains(focusNew){
+  const list=$("#postopDrainList");if(!list||!CUR.postop)return;
+  const po=ensurePostop();list.innerHTML="";
+  if(!po.drains.length){list.innerHTML='<div class="po-drain-empty">無 Drain；需要時再新增。</div>';return;}
+  po.drains.forEach((d,idx)=>{
+    if(Array.isArray(d.surround))d.surround=d.surround.find(x=>x&&x!=="周圍乾淨無紅腫")?"紅腫/滲漏":(d.surround.length?"周圍乾淨":"");
+    const el=document.createElement("div");el.className="po-drain";
+    el.innerHTML=`<div class="po-drain-head"><span class="po-drain-title">Drain ${idx+1}</span><button class="po-drain-del" data-dr-del>刪除</button></div>
+      <div class="po-drain-grid">
+        <div class="po-drain-field full"><label>種類 / 位置</label><textarea rows="1" class="autogrow" data-dr="site" placeholder="例：JP, RUQ">${escapeHtml(d.site||"")}</textarea></div>
+        <div class="po-drain-field"><label>量</label><div class="po-drain-amount"><input type="number" min="0" data-dr="amount" value="${escapeHtml(d.amount||"")}" placeholder="mL">${poCycleHtml(d,"period","drainPeriod")}</div></div>
+        <div class="po-drain-field"><label>顏色 / 性狀</label>${poCycleHtml(d,"character","drainCharacter")}</div>
+        <div class="po-drain-field"><label>通暢</label>${poCycleHtml(d,"patency","drainPatency")}</div>
+        <div class="po-drain-field"><label>周圍</label>${poCycleHtml(d,"surround","drainSurround")}</div>
+        <div class="po-drain-field full"><label>註記</label><textarea rows="1" class="autogrow" data-dr="note" placeholder="趨勢、氣味、漏液或拔除條件…">${escapeHtml(d.note||"")}</textarea></div>
+      </div>`;
+    el.querySelector("[data-dr-del]").onclick=()=>{po.drains=po.drains.filter(x=>x.id!==d.id);touch();renderPostopDrains();};
+    el.querySelectorAll("[data-dr]").forEach(inp=>{const key=inp.getAttribute("data-dr"),ev=inp.tagName==="TEXTAREA"?"input":"input";inp.addEventListener(ev,()=>{d[key]=inp.value;touch();});});
+    el.querySelectorAll("[data-po-cycle]").forEach(btn=>{btn.onclick=()=>{const key=btn.getAttribute("data-po-cycle"),set=btn.getAttribute("data-po-cycle-set");cycleValue(d,key,set);touch();renderPostopDrains();};});
+    list.appendChild(el);
+  });
+  resizeAutogrow(list);
+  if(focusNew){const last=list.lastChild,inp=last&&last.querySelector('[data-dr="site"]');if(inp)inp.focus();}
+}
+function postopModel(p){
+  const po=p.postop;if(!po)return null;
+  const lines=[],notes=po.notes||{};
+  const add=(key,label,val,pos)=>{const note=(notes[key]||"").trim();if((val&&String(val).trim())||note)lines.push({label,val:(val&&String(val).trim())||"—",pos:!!pos,note:note?`　※${note}`:""});};
+  add("surgery","手術種類 / Procedure",po.surgery,false);
+  add("surgeryDate","手術日期 / POD",[po.surgeryDate,calcPOD(po.surgeryDate||"").value].filter(Boolean).join(" · "),false);
+  add("pain","疼痛 0–10",po.pain!==""&&po.pain!=null?`${po.pain} /10`:"",Number(po.pain)>=7);
+  add("vitals","生命徵象 / 循環",po.vitals,po.vitals&&po.vitals!=="穩定 Stable");
+  add("fever","發燒",po.fever,po.fever==="有 Febrile");
+  add("diet","飲食",po.diet,false);
+  add("nausea","噁心 / 嘔吐",po.nausea,po.nausea&&po.nausea!=="無 None");
+  add("activity","下床活動",po.activity,po.activity==="臥床 Bed rest");
+  add("flatus","排氣",po.flatus,po.flatus==="未排 No");
+  add("voiding","排尿",po.voiding,["解尿困難 Difficulty","尿滯留 Retention"].includes(po.voiding));
+  add("respiratory","呼吸",po.respiratory,po.respiratory&&po.respiratory!=="RA 穩定");
+  add("woundStatus","傷口",po.woundStatus,po.woundStatus&&po.woundStatus!=="乾淨乾燥無紅腫 CDI");
+  add("vteStatus","VTE 預防",po.vteStatus,po.vteStatus==="尚未執行 Not done");
+  add("redflagStatus","術後警訊",po.redflagStatus,po.redflagStatus==="有警訊 Present");
+  add("plan","今日計畫 / Plan",po.plan,false);
+  (po.drains||[]).forEach((d,i)=>{
+    const vals=[];if(d.site)vals.push(d.site);if(d.amount)vals.push(`${d.amount} mL${d.period?` / ${d.period}`:""}`);if(d.character)vals.push(d.character);if(d.patency)vals.push(d.patency);if(d.surround)vals.push(d.surround);
+    if(vals.length||(d.note&&d.note.trim()))lines.push({label:`Drain ${i+1}`,val:vals.join("｜")||"—",pos:[d.character,d.patency,d.surround].some(x=>x&&(/膿性|阻塞|紅腫|滲漏/.test(x))),note:d.note&&d.note.trim()?`　※${d.note.trim()}`:""});
+  });
+  return {title:"外科術後照護 Postoperative care",note:"",lines};
+}
+
+function buildBody(){
+  const body=$("#noteBody"); body.innerHTML="";
+  const p=CUR;
+  const spec=SPEC_INDEX[p.specialty]||SPEC_INDEX.general;
+  const focusSet=new Set(spec.focus);
+
+  // 待辦事項（頁面最上方）
+  const todoWrap=document.createElement("div");
+  todoWrap.className="todo-section";
+  todoWrap.innerHTML=`
+    <div class="todo-head">
+      <span class="todo-title">待辦事項 To-do</span>
+      <button class="btn sm primary" id="addTodoBtn">＋ 新增</button>
+    </div>
+    <div class="todo-list" id="todoList"></div>`;
+  body.appendChild(todoWrap);
+  $("#addTodoBtn").onclick=addTodo;
+  renderTodos();
+
+  // 總備註（頁面最上方，待辦之下）
+  const gn=document.createElement("div");
+  gn.className="gnote gnote-top";
+  gn.innerHTML=`<label>其他備註 Additional notes</label>
+    <textarea id="globalNote" rows="2" class="autogrow" placeholder="記錄上面沒有的資訊：impression、plan、pending labs、家屬溝通…">${escapeHtml(p.globalNote||"")}</textarea>`;
+  body.appendChild(gn);
+  $("#globalNote").addEventListener("input",e=>{ p.globalNote=e.target.value; touch(); });
+
+  const addSection=(headHtml,items,isFocus,blockKey,kind)=>{
+    if(!items.length) return;
+    const sec=document.createElement("div");
+    // Focus 藍色並展開；ROS 淡綠、PE 淡黃，且預設收合
+    sec.className="section"+(isFocus?" focus":(" collapsed "+(kind==="ROS"?"kind-ros":"kind-pe")));
+    sec.innerHTML=headHtml;
+    const bodyEl=document.createElement("div"); bodyEl.className="sec-body";
+    const bnVal=(p.blockNotes||{})[blockKey]||"";
+    const bn=document.createElement("div"); bn.className="blocknote-wrap"+(bnVal?" show":"");
+    bn.innerHTML=`<textarea class="blocknote-input autogrow" rows="1" placeholder="這個區塊的備註…">${escapeHtml(bnVal)}</textarea>`;
+    bodyEl.appendChild(bn);
+    items.forEach(it=>bodyEl.appendChild(renderItem(it)));
+    sec.appendChild(bodyEl);
+    sec._items=items;
+    wireSection(sec, blockKey, !!bnVal);
+    body.appendChild(sec);
+  };
+
+  // LQQOPERA 症狀分析（Focus 上方）
+  const lqqArea=document.createElement("div"); lqqArea.id="lqqArea"; lqqArea.className="lqq-area";
+  body.appendChild(lqqArea);
+  renderLQQ();
+
+  // 外科術後照護組套（LQQOPERA 之後、Focus 之前）
+  const postopArea=document.createElement("div"); postopArea.id="postopArea"; postopArea.className="postop-area";
+  body.appendChild(postopArea);
+  renderPostop();
+
+  // Focus 拆成 ROS / PE 兩區
+  if(spec.focus.length){
+    const fitems = spec.focus.map(id=>ITEM_INDEX[id]&&ITEM_INDEX[id].item).filter(Boolean).filter(it=>itemVisible(it,p));
+    addSection(focusHeadHtml("ROS"), fitems.filter(it=>it.kind==="ROS"), true, "focus_ros");
+    addSection(focusHeadHtml("PE"),  fitems.filter(it=>it.kind==="PE"),  true, "focus_pe");
+  }
+
+  // ADL 區塊（Focus 之後第一個）
+  body.appendChild(renderADL(p));
+
+  // 其餘系統（ROS 再 PE，順序同 SECTIONS）
+  SECTIONS.forEach(secDef=>{
+    if(!sectionVisible(secDef,p)) return;
+    addSection(sysHeadHtml(secDef), secDef.items.filter(it=>!focusSet.has(it.id)), false, secDef.key, secDef.kind);
+  });
+
+  refreshAllCounts();
+  updateSummary();
+  resizeAutogrow(body);
+}
+function wireSection(sec, blockKey, hasNote){
+  const head=sec.querySelector(".sec-head");
+  const noteBtn=sec.querySelector("[data-secnote]");
+  const wrap=sec.querySelector(".blocknote-wrap");
+  const input=wrap.querySelector(".blocknote-input");
+  if(hasNote) noteBtn.classList.add("active");
+  head.addEventListener("click",e=>{
+    if(e.target.closest("[data-secnote]")) return;
+    sec.classList.toggle("collapsed");
+    if(!sec.classList.contains("collapsed")) resizeAutogrow(sec);
+  });
+  noteBtn.addEventListener("click",e=>{
+    e.stopPropagation();
+    sec.classList.remove("collapsed");
+    const show=wrap.classList.toggle("show");
+    noteBtn.classList.toggle("active", show || !!input.value);
+    if(show){ input.focus(); autoGrow(input); }
+  });
+  input.addEventListener("input",()=>{
+    if(!CUR.blockNotes) CUR.blockNotes={};
+    CUR.blockNotes[blockKey]=input.value;
+    noteBtn.classList.toggle("active", wrap.classList.contains("show") || !!input.value);
+    touch();
+  });
+}
+
+/* ---------- 單一項目 render ---------- */
+function renderItem(it){
+  const p=CUR, v=vOf(p,it.id);
+  const el=document.createElement("div");
+  el.className="item"; el.dataset.item=it.id;
+
+  const enText = it.en || it.label;        // 英文為主（無 en 時 label 本身即英文/術語）
+  const zhText = it.en ? it.label : "";    // 有 en 時 label 為中文副標
+  const labelHtml=`<div class="item-label"><span class="lab-en">${escapeHtml(enText)}${it.star?'<span class="star">★</span>':""}</span>${zhText?`<span class="lab-zh">${escapeHtml(zhText)}</span>`:""}</div>`;
+
+  let control="";
+  if(it.type==="toggle"){
+    control=`<button class="toggle ${v.on?"on":""}" data-toggle>${v.on?"(+) 陽性":"(−) 陰性"}</button>`;
+  }else if(it.type==="select"){
+    control=selectHtml(it,v.sel);
+  }else if(it.type==="group"){
+    control=""; // 群組另起一行
+  }else if(it.type==="custom"){
+    control=""; // 自訂 widget 另起一行
+  }else if(it.type==="text"){
+    control=`<textarea class="isel autogrow" style="max-width:56%" rows="1" data-textfield placeholder="輸入">${escapeHtml(v.text||"")}</textarea>`;
+  }
+
+  if(it.type==="group"||it.type==="custom") el.classList.add("has-group");
+
+  el.innerHTML=`<div class="item-row">
+      ${labelHtml}
+      ${control}
+      <button class="notebtn ${v.note?"active":""}" data-notebtn title="備註">✎</button>
+    </div>`;
+
+  // group / custom 內容：獨立整行
+  if(it.type==="group"){
+    el.appendChild(buildGroup(it,v));
+  }else if(it.type==="custom"){
+    el.appendChild(buildCustom(it,v));
+  }
+
+  // follow-up 容器（toggle 陽性、或 select 選到觸發值時展開）
+  if((it.type==="toggle"||it.type==="select") && it.fu){
+    const sub=buildFollowUps(it,v);
+    el.appendChild(sub);
+    const open = it.type==="toggle" ? !!v.on : (v.sel===it.fuOn);
+    if(open) sub.classList.add("show");
+  }
+
+  // 顱神經詳細面板
+  if(it.cnPanel){
+    const panel=buildCNPanel(it,v);
+    el.appendChild(panel);
+    if(v.sel===it.cnOn) panel.classList.add("show");
+  }
+
+  // 備註欄
+  const noteInput=document.createElement("textarea");
+  noteInput.className="itemnote autogrow"+(v.note?" show":"");
+  noteInput.rows=1;
+  noteInput.setAttribute("data-noteinput","");
+  noteInput.placeholder="敘述 / 備註";
+  noteInput.value=v.note||"";
+  el.appendChild(noteInput);
+
+  wireItem(el,it);
+  applyItemHitClass(el,it);
+  return el;
+}
+
+function selectHtml(it,val){
+  const cur=val||"";
+  const abn = cur && cur!==it.normal;
+  const cls = abn?"abn":(cur?"norm":"");
+  return `<button class="icycle ${cls}" data-cycle>${escapeHtml(cur||"未評估")}</button>`;
+}
+
+function buildGroup(it,v){
+  const g=v.grp||{};
+  const wrapEl=document.createElement("div");
+  wrapEl.className="grpwrap grpslider";
+  it.fields.forEach(f=>{
+    const nums=f.opts.map(Number);
+    const mn=Math.min(...nums), mx=Math.max(...nums);
+    const cur=(g[f.id]===undefined?"":g[f.id]);
+    const abn=cur!=="" && cur!==f.normal;
+    const thumb=(cur===""?f.normal:cur);
+    const fld=document.createElement("div");
+    fld.className="grow-field"+(abn?" abn":"");
+    fld.innerHTML=`<span class="gf-lab">${f.label}</span>
+      <input type="range" min="${mn}" max="${mx}" step="1" value="${thumb}" data-grp="${f.id}">
+      <span class="gf-val">${cur===""?"—":cur}</span>
+      <button class="gf-clear" data-grp-clear="${f.id}" title="清除並回到未評估">清除</button>`;
+    wrapEl.appendChild(fld);
+  });
+  if(it.total){
+    const tot=document.createElement("div");
+    tot.className="grptotal"; tot.dataset.total="1";
+    wrapEl.appendChild(tot);
+  }
+  return wrapEl;
+}
+function updateGroupTotal(el,it,v){
+  const totEl=el.querySelector("[data-total]"); if(!totEl)return;
+  const g=v.grp||{};
+  let allSet=it.fields.every(f=>g[f.id]);
+  if(!allSet){ totEl.textContent=""; totEl.classList.remove("abn"); return; }
+  let sum=it.fields.reduce((a,f)=>a+parseInt(g[f.id],10),0);
+  totEl.textContent=`= ${sum}`;
+  totEl.classList.toggle("abn", sum<it.total);
+}
+
+function buildFollowUps(it,v){
+  const sub=document.createElement("div");
+  sub.className="subwrap";
+  const fv=v.fu||{};
+  it.fu.forEach(f=>{
+    const row=document.createElement("div"); row.className="subrow";
+    if(f.type==="select"){
+      const cur=fv[f.id]||"";
+      const opts=[`<option value="">— 選擇 —</option>`].concat(f.opts.map(o=>`<option value="${escapeHtml(o)}" ${o===cur?"selected":""}>${escapeHtml(o)}</option>`)).join("");
+      row.innerHTML=`<span class="sublab">${escapeHtml(f.label)}</span><select class="subsel" data-fu="${f.id}">${opts}</select>`;
+    }else if(f.type==="text"){
+      row.innerHTML=`<span class="sublab">${escapeHtml(f.label)}</span><textarea class="subtext autogrow" rows="1" data-fu="${f.id}" placeholder="輸入">${escapeHtml(fv[f.id]||"")}</textarea>`;
+    }else if(f.type==="toggle"){
+      const on=fv[f.id]==="1";
+      row.innerHTML=`<button class="toggle ${on?"on":""}" data-futoggle="${f.id}" style="min-width:auto;font-size:12.5px;padding:5px 12px">${escapeHtml(f.label)} ${on?"(+)":""}</button>`;
+    }
+    sub.appendChild(row);
+  });
+  return sub;
+}
+
+/* 顱神經詳細面板：分左右 → 左/右表格；不分邊 → chips；另有描述 */
+function buildCNPanel(it,v){
+  if(!v.cn) v.cn={};
+  const panel=document.createElement("div");
+  panel.className="cnpanel";
+  it.cnPanel.forEach(n=>{
+    const st=v.cn[n.id]||{}, grid=st.grid||{}, mono=st.mono||[], abn=!!st.abn;
+    const gridHtml = (n.sides&&n.sides.length) ? `
+      <div class="cn-grid">
+        <div class="cng-head"><span></span><span>左 L</span><span>右 R</span></div>
+        ${n.sides.map(s=>`<div class="cng-row">
+          <span class="cng-lab">${escapeHtml(s.l)}</span>
+          <button class="cng-cell ${grid[s.k+"_L"]?"on":""}" data-cell="${s.k}_L">${grid[s.k+"_L"]?"✓":""}</button>
+          <button class="cng-cell ${grid[s.k+"_R"]?"on":""}" data-cell="${s.k}_R">${grid[s.k+"_R"]?"✓":""}</button>
+        </div>`).join("")}
+      </div>` : "";
+    const monoHtml = (n.mono&&n.mono.length) ? `<div class="cn-chips">${n.mono.map(m=>`<button class="cn-chip ${mono.includes(m)?"on":""}" data-cm="${escapeHtml(m)}">${escapeHtml(m)}</button>`).join("")}</div>` : "";
+    const row=document.createElement("div"); row.className="cn-row"+(abn?" abn":"");
+    row.innerHTML=`
+      <div class="cn-top">
+        <button class="cn-tog ${abn?"on":""}" data-cntog>${abn?"異常":"正常"}</button>
+        <span class="cn-lab">${escapeHtml(n.label)}</span>
+      </div>
+      <div class="cn-detail ${abn?"show":""}">
+        ${gridHtml}${monoHtml}
+        <textarea class="cn-note autogrow" rows="1" data-cnnote placeholder="其他描述（自由填寫）">${escapeHtml(st.note||"")}</textarea>
+      </div>`;
+    const get=()=>{ if(!v.cn[n.id])v.cn[n.id]={}; const s=v.cn[n.id]; if(!s.grid)s.grid={}; if(!s.mono)s.mono=[]; return s; };
+    const detail=row.querySelector(".cn-detail");
+    const tog=row.querySelector("[data-cntog]");
+    tog.onclick=()=>{
+      const s=get(); s.abn=!s.abn;
+      if(!s.abn){ s.grid={}; s.mono=[]; s.note="";
+        row.querySelectorAll(".cng-cell.on").forEach(c=>{c.classList.remove("on");c.textContent="";});
+        row.querySelectorAll(".cn-chip.on").forEach(c=>c.classList.remove("on"));
+        row.querySelector("[data-cnnote]").value=""; }
+      tog.classList.toggle("on",s.abn); tog.textContent=s.abn?"異常":"正常";
+      row.classList.toggle("abn",s.abn); detail.classList.toggle("show",s.abn);
+      touch();
+    };
+    row.querySelectorAll("[data-cell]").forEach(c=>{
+      c.onclick=()=>{ const s=get(); const key=c.getAttribute("data-cell");
+        s.grid[key]=!s.grid[key]; c.classList.toggle("on",s.grid[key]); c.textContent=s.grid[key]?"✓":""; touch(); };
+    });
+    row.querySelectorAll("[data-cm]").forEach(b=>{
+      b.onclick=()=>{ const s=get(); const m=b.getAttribute("data-cm");
+        const i=s.mono.indexOf(m); if(i>=0)s.mono.splice(i,1); else s.mono.push(m);
+        b.classList.toggle("on"); touch(); };
+    });
+    const note=row.querySelector("[data-cnnote]");
+    note.addEventListener("input",()=>{ get().note=note.value; touch(); });
+    panel.appendChild(row);
+  });
+  return panel;
+}
+
+/* ---------- 自訂 widget：DTR 格點、Babinski 分邊 ---------- */
+const DTR_SITES=[
+  {k:"biceps",l:"Biceps 肱二頭肌"},{k:"triceps",l:"Triceps 肱三頭肌"},
+  {k:"brachi",l:"Brachioradialis 肱橈肌"},{k:"knee",l:"Knee 膝反射"},{k:"ankle",l:"Ankle 踝反射"},
+];
+const DTR_GRADES=["","0","1+","2+","3+","4+"];
+const PLANTAR_OPTS=["屈曲↓ (正常)","伸直↑ Babinski(+)","無反應"];
+
+const SENSORY_STATUS=["","正常 Intact","異常 Abnormal"];
+const SENSORY_SIDES=["左上肢 LUE","右上肢 RUE","雙上肢 Bilateral UE","左手 L hand","右手 R hand","左下肢 LLE","右下肢 RLE","雙下肢 Bilateral LE","左足 L foot","右足 R foot","軀幹 Trunk","顏面 Face","其他 Other"];
+const SENSORY_CHANGES=["感覺減退 Hypoesthesia","感覺消失 Anesthesia","感覺增強 Hyperesthesia","異感 Paresthesia","痛覺過敏 Hyperalgesia","觸痛 Allodynia"];
+const SENSORY_PATTERNS=["皮節 Dermatomal","周邊神經 Peripheral nerve","襪套/手套 Stocking-glove","半身 Hemisensory","散在/斑片 Patchy","其他 Other"];
+const SENSORY_MODALITIES=["輕觸 Light touch","針刺/痛覺 Pinprick","溫度 Temperature","震動 Vibration","本體覺 Proprioception"];
+function sensoryState(v){
+  if(!v.sensory){
+    v.sensory={status:v.sel||"",findings:[]};
+    if(v.sel==="異常 Abnormal" && v.fu){
+      const mods=v.fu.sens_mod?[v.fu.sens_mod]:[];
+      v.sensory.findings.push({id:"sf"+Date.now().toString(36),side:"",change:"感覺減退 Hypoesthesia",pattern:"",modalities:mods,location:v.fu.sens_loc||"",note:""});
+    }
+  }
+  if(!Array.isArray(v.sensory.findings))v.sensory.findings=[];
+  return v.sensory;
+}
+function newSensoryFinding(){return {id:"sf"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),side:"",change:"",pattern:"",modalities:[],location:"",note:""};}
+function buildSensory(it,v){
+  const s=sensoryState(v), wrap=document.createElement("div"); wrap.className="sensory-wrap";
+  wrap.innerHTML=`<div class="sensory-top"><button class="icycle ${s.status==="異常 Abnormal"?"abn":(s.status?"norm":"")}" data-sens-status>${escapeHtml(s.status||"未評估")}</button>
+    <span class="sensory-hint">異常時可為同一肢體新增多筆「型態 × 分布/皮節」</span><button class="btn sm primary sensory-add ${s.status==="異常 Abnormal"?"show":""}" data-sens-add>＋ 新增異常</button></div>
+    <div class="sensory-list ${s.status==="異常 Abnormal"?"show":""}" data-sens-list></div>`;
+  const list=wrap.querySelector("[data-sens-list]"), addBtn=wrap.querySelector("[data-sens-add]"), statusBtn=wrap.querySelector("[data-sens-status]");
+  const refresh=()=>{touch();refreshCountFor(wrap);};
+  const draw=()=>{
+    list.innerHTML="";
+    if(!s.findings.length){list.innerHTML='<div class="sensory-empty">尚無異常紀錄，請按「新增異常」。</div>';return;}
+    s.findings.forEach((f,idx)=>{
+      if(!Array.isArray(f.modalities))f.modalities=[];
+      const e=document.createElement("div"); e.className="sensory-entry";
+      const opts=(arr,cur)=>`<option value="">—</option>${arr.map(o=>`<option value="${escapeHtml(o)}" ${o===cur?"selected":""}>${escapeHtml(o)}</option>`).join("")}`;
+      e.innerHTML=`<div class="sensory-ehead"><span class="sensory-num">異常 ${idx+1}</span><button class="sensory-del" data-sf-del>刪除</button></div>
+        <div class="sensory-grid">
+          <div class="sensory-field"><label>側別 / 部位</label><select data-sf="side">${opts(SENSORY_SIDES,f.side||"")}</select></div>
+          <div class="sensory-field"><label>異常性質</label><select data-sf="change">${opts(SENSORY_CHANGES,f.change||"")}</select></div>
+          <div class="sensory-field"><label>分布型態</label><select data-sf="pattern">${opts(SENSORY_PATTERNS,f.pattern||"")}</select></div>
+          <div class="sensory-field full"><label>感覺模態（可複選）</label><div class="sensory-chips">${SENSORY_MODALITIES.map(m=>`<button class="sensory-chip ${f.modalities.includes(m)?"on":""}" data-sf-mod="${escapeHtml(m)}">${escapeHtml(m)}</button>`).join("")}</div></div>
+          <div class="sensory-field full"><label>精確分布 / 皮節 / 周邊神經</label><textarea rows="1" class="autogrow" data-sf="location" placeholder="例：左 L4 輕觸減退；左 S1 震動覺消失">${escapeHtml(f.location||"")}</textarea></div>
+          <div class="sensory-field full"><label>此筆註記</label><textarea rows="1" class="autogrow" data-sf="note" placeholder="比較基準、遠近端差異、檢查限制…">${escapeHtml(f.note||"")}</textarea></div>
+        </div>`;
+      e.querySelector("[data-sf-del]").onclick=()=>{s.findings=s.findings.filter(x=>x.id!==f.id);draw();refresh();};
+      e.querySelectorAll("[data-sf]").forEach(inp=>{const k=inp.getAttribute("data-sf"),ev=inp.tagName==="SELECT"?"change":"input";inp.addEventListener(ev,()=>{f[k]=inp.value;refresh();});});
+      e.querySelectorAll("[data-sf-mod]").forEach(ch=>{ch.onclick=()=>{const m=ch.getAttribute("data-sf-mod"),ix=f.modalities.indexOf(m);if(ix>=0)f.modalities.splice(ix,1);else f.modalities.push(m);ch.classList.toggle("on",f.modalities.includes(m));refresh();};});
+      list.appendChild(e);
+    });
+    resizeAutogrow(list);
+  };
+  statusBtn.onclick=()=>{
+    let i=SENSORY_STATUS.indexOf(s.status||""); s.status=SENSORY_STATUS[(i+1)%SENSORY_STATUS.length];
+    if(s.status==="異常 Abnormal" && !s.findings.length)s.findings.push(newSensoryFinding());
+    statusBtn.textContent=s.status||"未評估"; statusBtn.className="icycle "+(s.status==="異常 Abnormal"?"abn":(s.status?"norm":""));
+    const on=s.status==="異常 Abnormal"; list.classList.toggle("show",on); addBtn.classList.toggle("show",on); draw(); refresh();
+  };
+  addBtn.onclick=()=>{s.findings.push(newSensoryFinding());draw();refresh();const last=list.lastChild,sel=last&&last.querySelector("select");if(sel)sel.focus();};
+  draw(); return wrap;
+}
+function buildCustom(it,v){
+  if(it.custom==="dtr") return buildDTR(it,v);
+  if(it.custom==="plantar") return buildPlantar(it,v);
+  if(it.custom==="sensory") return buildSensory(it,v);
+  return document.createElement("div");
+}
+function buildDTR(it,v){
+  if(!v.dtr) v.dtr={};
+  const wrap=document.createElement("div"); wrap.className="dtr-grid";
+  const cellHtml=(key)=>{ const cur=v.dtr[key]||""; const abn=cur&&cur!=="2+";
+    return `<button class="dtr-cell ${abn?"abn":""}" data-dtr="${key}">${cur||"–"}</button>`; };
+  let html=`<div class="dtr-head"><span></span><span>左 L</span><span>右 R</span></div>`;
+  DTR_SITES.forEach(s=>{ html+=`<div class="dtr-row"><span class="dtr-site">${s.l}</span>${cellHtml(s.k+"_L")}${cellHtml(s.k+"_R")}</div>`; });
+  wrap.innerHTML=html;
+  wrap.querySelectorAll("[data-dtr]").forEach(btn=>{
+    const key=btn.getAttribute("data-dtr");
+    btn.addEventListener("click",()=>{
+      let idx=DTR_GRADES.indexOf(v.dtr[key]||"");
+      v.dtr[key]=DTR_GRADES[(idx+1)%DTR_GRADES.length];
+      const cur=v.dtr[key]; btn.textContent=cur||"–";
+      btn.classList.toggle("abn", cur&&cur!=="2+");
+      touch(); refreshCountFor(btn);
+    });
+  });
+  return wrap;
+}
+function buildPlantar(it,v){
+  if(!v.plantar) v.plantar={};
+  const cycle=["",...PLANTAR_OPTS];
+  const wrap=document.createElement("div"); wrap.className="plantar-wrap";
+  ["L","R"].forEach(side=>{
+    const cur=v.plantar[side]||""; const abn=cur&&cur!==PLANTAR_OPTS[0];
+    const f=document.createElement("div"); f.className="plantar-field";
+    f.innerHTML=`<span>${side==="L"?"左 L":"右 R"}</span><button class="icycle ${abn?"abn":(cur?"norm":"")}" data-plantar="${side}">${escapeHtml(cur||"未評估")}</button>`;
+    const btn=f.querySelector("[data-plantar]");
+    btn.addEventListener("click",()=>{
+      let idx=cycle.indexOf(v.plantar[side]||"");
+      v.plantar[side]=cycle[(idx+1)%cycle.length];
+      const cur2=v.plantar[side]; const abn2=cur2&&cur2!==PLANTAR_OPTS[0];
+      btn.textContent=cur2||"未評估"; btn.className="icycle "+(abn2?"abn":(cur2?"norm":""));
+      touch(); refreshCountFor(btn);
+    });
+    wrap.appendChild(f);
+  });
+  return wrap;
+}
+
+/* ---------- 事件綁定 ---------- */
+function wireItem(el,it){
+  const p=CUR, v=vOf(p,it.id);
+
+  const tgl=el.querySelector("[data-toggle]");
+  if(tgl){
+    tgl.addEventListener("click",()=>{
+      v.on=!v.on;
+      tgl.classList.toggle("on",v.on);
+      tgl.textContent=v.on?"(+) 陽性":"(−) 陰性";
+      const sub=el.querySelector(".subwrap"); if(sub) sub.classList.toggle("show",v.on);
+      applyItemHitClass(el,it); touch(); refreshCountFor(el);
+    });
+  }
+
+  const cyc=el.querySelector("[data-cycle]");
+  if(cyc){
+    cyc.addEventListener("click",()=>{
+      const cycle=["",...it.opts];
+      let idx=cycle.indexOf(v.sel||"");
+      v.sel=cycle[(idx+1)%cycle.length];
+      const abn=v.sel && v.sel!==it.normal;
+      cyc.textContent=v.sel||"未評估";
+      cyc.className="icycle "+(abn?"abn":(v.sel?"norm":""));
+      if(it.fu){ const sub=el.querySelector(".subwrap"); if(sub) sub.classList.toggle("show", v.sel===it.fuOn); }
+      if(it.cnPanel){ const cp=el.querySelector(".cnpanel"); if(cp) cp.classList.toggle("show", v.sel===it.cnOn); }
+      applyItemHitClass(el,it); touch(); refreshCountFor(el);
+    });
+  }
+
+  el.querySelectorAll("[data-grp]").forEach(gs=>{
+    gs.addEventListener("input",()=>{
+      if(!v.grp)v.grp={};
+      const fid=gs.getAttribute("data-grp");
+      v.grp[fid]=gs.value;
+      const f=it.fields.find(x=>x.id===fid);
+      const fld=gs.closest(".grow-field");
+      if(fld){ fld.classList.toggle("abn", gs.value!==f.normal); const vs=fld.querySelector(".gf-val"); if(vs) vs.textContent=gs.value; }
+      updateGroupTotal(el,it,v);
+      applyItemHitClass(el,it); touch(); refreshCountFor(el);
+    });
+  });
+  el.querySelectorAll("[data-grp-clear]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      if(!v.grp)v.grp={};
+      const fid=btn.getAttribute("data-grp-clear"), f=it.fields.find(x=>x.id===fid);
+      delete v.grp[fid];
+      const fld=btn.closest(".grow-field"), slider=fld&&fld.querySelector(`[data-grp="${fid}"]`), vs=fld&&fld.querySelector(".gf-val");
+      if(slider)slider.value=f.normal; if(vs)vs.textContent="—"; if(fld)fld.classList.remove("abn");
+      updateGroupTotal(el,it,v); applyItemHitClass(el,it); touch(); refreshCountFor(el);
+    });
+  });
+  if(it.type==="group") updateGroupTotal(el,it,v);
+
+  const tf=el.querySelector("[data-textfield]");
+  if(tf){
+    tf.addEventListener("input",()=>{ v.text=tf.value; applyItemHitClass(el,it); touch(); refreshCountFor(el); });
+  }
+
+  el.querySelectorAll("[data-fu]").forEach(f=>{
+    const fid=f.getAttribute("data-fu");
+    const ev = f.tagName==="SELECT"?"change":"input";
+    f.addEventListener(ev,()=>{ if(!v.fu)v.fu={}; v.fu[fid]=f.value; touch(); });
+  });
+  el.querySelectorAll("[data-futoggle]").forEach(b=>{
+    const fid=b.getAttribute("data-futoggle");
+    b.addEventListener("click",()=>{
+      if(!v.fu)v.fu={};
+      const on=v.fu[fid]==="1"; v.fu[fid]=on?"":"1";
+      b.classList.toggle("on",!on);
+      const base=b.textContent.replace(/\s*\(\+\)\s*$/,"").trim();
+      b.textContent = !on?base+" (+)":base;
+      touch();
+    });
+  });
+
+  const nb=el.querySelector("[data-notebtn]");
+  const ni=el.querySelector("[data-noteinput]");
+  nb.addEventListener("click",()=>{
+    const show=ni.classList.toggle("show");
+    nb.classList.toggle("active", show || !!v.note);
+    if(show){ ni.focus(); autoGrow(ni); }
+  });
+  ni.addEventListener("input",()=>{
+    v.note=ni.value;
+    nb.classList.toggle("active", ni.classList.contains("show")|| !!v.note);
+    applyItemHitClass(el,it); touch(); refreshCountFor(el);
+  });
+}
+
+function applyItemHitClass(el,it){
+  el.classList.toggle("hit", hasFinding(CUR,it) && it.type==="toggle" && (CUR.values[it.id]||{}).on);
+}
+
+/* ---------- 各區塊陽性計數 ---------- */
+function refreshCountFor(el){
+  const sec=el.closest(".section"); if(sec) updateSecCount(sec);
+  updateSummary();
+}
+function updateSecCount(sec){
+  const badge=sec.querySelector(".cnt"); if(!badge)return;
+  const items=sec._items||[];
+  let n=items.reduce((a,it)=>a+(hasFinding(CUR,it)?1:0),0);
+  badge.textContent=n; badge.classList.toggle("zero",n===0);
+}
+function refreshAllCounts(){ document.querySelectorAll(".section").forEach(updateSecCount); }
+
+/* ---------- 匯出選單 ---------- */
+function toggleMenu(){ const m=$("#exportMenu"); const open=m.classList.toggle("show"); scrim.classList.toggle("show",open); }
+function closeMenu(){ const m=$("#exportMenu"); if(m)m.classList.remove("show"); scrim.classList.remove("show"); }
+
+/* =======================================================================
+   匯出：文字模型 → TXT / PDF(列印)
+   ======================================================================= */
+function labelPlain(it){ return it.en ? `${it.en}（${it.label}）` : it.label; }
+
+function fuParts(it,v){
+  const parts=[];
+  (it.fu||[]).forEach(f=>{
+    const fv=(v.fu||{})[f.id];
+    if(f.type==="toggle"){ if(fv==="1") parts.push(f.label+"(+)"); }
+    else if(fv && String(fv).trim()){ parts.push(`${f.label}: ${fv}`); }
+  });
+  return parts;
+}
+function itemLine(it){
+  const v=CUR.values[it.id]||{};
+  let val="", pos=false;
+  if(it.type==="toggle"){
+    pos=!!v.on;
+    val = pos?"(+) 陽性":"(−) 陰性";
+    if(pos && it.fu){ const parts=fuParts(it,v); if(parts.length) val += "｜"+parts.join("；"); }
+  }else if(it.type==="select"){
+    val = v.sel || "未評估";
+    pos = v.sel && v.sel!==it.normal;
+    if(it.fu && v.sel===it.fuOn){ const parts=fuParts(it,v); if(parts.length) val += "｜"+parts.join("；"); }
+    if(it.cnPanel){
+      const cn=v.cn||{}; const parts=[];
+      it.cnPanel.forEach(n=>{ const s=cn[n.id]; if(s&&s.abn){
+        const seg=[];
+        (n.sides||[]).forEach(sd=>{ const g=s.grid||{}; const sides=[g[sd.k+"_L"]?"L":"",g[sd.k+"_R"]?"R":""].filter(Boolean).join("/"); if(sides) seg.push(`${sd.l}(${sides})`); });
+        (s.mono||[]).forEach(m=>seg.push(m));
+        if(s.note&&s.note.trim()) seg.push(s.note.trim());
+        parts.push(n.label+(seg.length?`：${seg.join("、")}`:"：異常")); } });
+      if(parts.length){ val += "｜異常 → "+parts.join("；"); pos=true; }
+    }
+  }else if(it.type==="custom"){
+    if(it.custom==="dtr"){
+      const d=v.dtr||{}; const parts=[]; let any=false, abn=false;
+      DTR_SITES.forEach(s=>{ const L=d[s.k+"_L"]||"", R=d[s.k+"_R"]||"";
+        if(L||R){ any=true; parts.push(`${s.l.split(" ")[0]} L${L||"–"}/R${R||"–"}`); if((L&&L!=="2+")||(R&&R!=="2+"))abn=true; } });
+      val = any? parts.join("；") : "未評估"; pos=abn;
+    }else if(it.custom==="plantar"){
+      const pl=v.plantar||{}; const L=pl.L||"未評估", R=pl.R||"未評估";
+      val = `左 ${L} / 右 ${R}`;
+      pos = (pl.L&&pl.L!==PLANTAR_OPTS[0])||(pl.R&&pl.R!==PLANTAR_OPTS[0]);
+    }else if(it.custom==="sensory"){
+      const s=v.sensory||{}; val=s.status||"未評估"; pos=s.status==="異常 Abnormal";
+      if(pos && (s.findings||[]).length){
+        const fs=(s.findings||[]).map((f,i)=>{const a=[f.side,f.change,(f.modalities||[]).join("/"),f.pattern,f.location].filter(Boolean);if(f.note&&f.note.trim())a.push("註："+f.note.trim());return `#${i+1} ${a.join("｜")||"未描述"}`;});
+        val += "｜"+fs.join("；");
+      }
+    }
+  }else if(it.type==="group"){
+    const g=v.grp||{};
+    const parts=it.fields.map(f=>`${f.label}${g[f.id]||"–"}`);
+    let s=parts.join("");
+    if(it.total && it.fields.every(f=>g[f.id])){
+      const sum=it.fields.reduce((a,f)=>a+parseInt(g[f.id],10),0);
+      s+=` (${sum})`;
+    }
+    val=s;
+    pos=it.fields.some(f=>g[f.id] && g[f.id]!==f.normal);
+  }else if(it.type==="text"){
+    val = v.text && v.text.trim() ? v.text : "—";
+    pos = v.text && v.text.trim();
+  }
+  const note = (v.note&&v.note.trim())?`　※${v.note.trim()}`:"";
+  return {label:labelPlain(it), val, pos:!!pos, note, hasNote:!!(v.note&&v.note.trim())};
+}
+
+/* 建立匯出模型：limited=true 只留 Focus∪異常∪備註 */
+function buildModel(limited){
+  const p=CUR;
+  const bn=p.blockNotes||{};
+  const spec=SPEC_INDEX[p.specialty]||SPEC_INDEX.general;
+  const focusSet=new Set(spec.focus);
+  const alwaysKeys=new Set(["ros_const","pe_general"]); // 限縮版也整段匯出
+  const out=[];
+
+  lqqModels(p).forEach(m=>out.push(m)); // LQQOPERA 置最前，一律匯出
+  const pom=postopModel(p); if(pom) out.push(pom); // 外科術後照護一律匯出
+
+  if(spec.focus.length){
+    const fitems=spec.focus.map(id=>ITEM_INDEX[id]&&ITEM_INDEX[id].item).filter(Boolean).filter(it=>itemVisible(it,p));
+    const fRos=fitems.filter(it=>it.kind==="ROS");
+    const fPe =fitems.filter(it=>it.kind==="PE");
+    if(fRos.length||bn.focus_ros) out.push({title:"★ Focus ROS（重點問診）", note:bn.focus_ros||"", lines:fRos.map(itemLine)});
+    if(fPe.length||bn.focus_pe)   out.push({title:"★ Focus PE（重點理學檢查）", note:bn.focus_pe||"", lines:fPe.map(itemLine)});
+  }
+  out.push(adlModel(p)); // ADL 一律匯出（含限縮版）
+  SECTIONS.forEach(sec=>{
+    if(!sectionVisible(sec,p)) return;
+    let items=sec.items.filter(it=>!focusSet.has(it.id));
+    const always=alwaysKeys.has(sec.key);
+    if(limited && !always) items=items.filter(it=>hasFinding(p,it));
+    const note=bn[sec.key]||"";
+    if(items.length===0 && !note) return;
+    const f=flipLabel(sec.label);
+    out.push({title:`${f.en}${f.zh?"（"+f.zh+"）":""} · ${sec.kind}`, note, lines:items.map(itemLine)});
+  });
+  return out;
+}
+
+function exportHeader(){
+  const p=CUR;
+  const spec=SPEC_INDEX[p.specialty]||SPEC_INDEX.general;
+  const demo=[];
+  if(p.sex) demo.push(p.sex);
+  if(p.age) demo.push(p.age+(/^\d+$/.test(String(p.age))?" 歲":""));
+  return {code:p.code, spec:spec.label, time:fmtTime(Date.now()),
+    demo:demo.join(" · "), problem:(p.problem||"").trim()};
+}
+
+/* ----- TXT ----- */
+function buildText(limited){
+  const h=exportHeader();
+  const L=[];
+  L.push("查房紀錄 ROS / PE Rounding Note");
+  L.push(`病人代號：${h.code}`);
+  if(h.demo) L.push(`基本資料：${h.demo}`);
+  if(h.problem) L.push(`主要問題：${h.problem}`);
+  L.push(`科別：${h.spec}`);
+  L.push(`匯出時間：${h.time}`);
+  L.push(limited?"（限縮版：重點＋陽性/異常＋備註）":"（完整版：全部項目）");
+  L.push("".padEnd(40,"="));
+  buildModel(limited).forEach(sec=>{
+    L.push("");
+    L.push(`【${sec.title}】`);
+    if(sec.note) L.push(`  § 區塊備註：${sec.note}`);
+    sec.lines.forEach(ln=>{
+      L.push(`  ${ln.pos?"●":"○"} ${ln.label}：${ln.val}${ln.note}`);
+    });
+  });
+  const gn=(CUR.globalNote||"").trim();
+  L.push("");
+  L.push("【其他備註 Additional notes】");
+  L.push(gn?("  "+gn.split("\n").join("\n  ")):"  （無）");
+
+  const todos=sortedTodos();
+  L.push("");
+  L.push("【待辦事項 To-do】");
+  if(todos.length===0){ L.push("  （無）"); }
+  else todos.forEach(t=>{
+    const mark = t.status==="done"?"[✓完成]":"[待辦]";
+    const imp = t.important?"★":"　";
+    L.push(`  ${imp}${mark} ${t.text||"（未填）"}  (${fmtShort(t.createdAt)})`);
+  });
+  L.push("");
+  L.push("".padEnd(40,"="));
+  L.push("※ 本紀錄為臨床輔助草稿，請自行核對後再正式記載。");
+  return L.join("\n");
+}
+
+function downloadText(filename,text){
+  const blob=new Blob([text],{type:"text/plain;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
+}
+
+/* ----- PDF（列印） ----- */
+function buildPrintHtml(limited){
+  const h=exportHeader();
+  let html=`<div class="pr-h">
+      <h1>查房紀錄 ROS / PE</h1>
+      <div class="pr-meta">病人代號：<b>${escapeHtml(h.code)}</b>${h.demo?`　｜　${escapeHtml(h.demo)}`:""}　｜　科別：${escapeHtml(h.spec)}　｜　${h.time}<br>
+      ${h.problem?`主要問題：${escapeHtml(h.problem)}<br>`:""}${limited?"限縮版（重點＋陽性/異常＋備註）":"完整版（全部項目）"}</div>
+    </div>`;
+  buildModel(limited).forEach(sec=>{
+    html+=`<div class="pr-sec"><h2>${escapeHtml(sec.title)}</h2>`;
+    if(sec.note) html+=`<div class="pr-line" style="color:#0a5460"><b>§ 區塊備註：</b>${escapeHtml(sec.note)}</div>`;
+    sec.lines.forEach(ln=>{
+      html+=`<div class="pr-line ${ln.pos?"pos":""}">${ln.pos?"● ":"○ "}<span class="k">${escapeHtml(ln.label)}</span>：${escapeHtml(ln.val)}${ln.note?` <i>${escapeHtml(ln.note)}</i>`:""}</div>`;
+    });
+    html+=`</div>`;
+  });
+  const gn=(CUR.globalNote||"").trim();
+  html+=`<div class="pr-sec"><h2>其他備註 Additional notes</h2><div class="pr-note">${gn?escapeHtml(gn):"（無）"}</div></div>`;
+  const todos=sortedTodos();
+  html+=`<div class="pr-sec"><h2>待辦事項 To-do</h2>`;
+  if(todos.length===0){ html+=`<div class="pr-line">（無）</div>`; }
+  else todos.forEach(t=>{
+    const mark=t.status==="done"?"✓ 完成":"待辦";
+    html+=`<div class="pr-line ${t.status!=="done"?"pos":""}">${t.important?"★ ":""}[${mark}] ${escapeHtml(t.text||"（未填）")} <i>(${fmtShort(t.createdAt)})</i></div>`;
+  });
+  html+=`</div>`;
+  html+=`<div style="margin-top:14px;font-size:11px;color:#666">※ 本紀錄為臨床輔助草稿，請自行核對後再正式記載。列印對話框請選擇「另存為 PDF」。</div>`;
+  return html;
+}
+
+/* 完整可列印 HTML 文件（新視窗用，自帶樣式，避免 iframe 列印外層空白頁） */
+function printDocument(limited){
+  return `<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>查房紀錄</title>
+<style>
+body{font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;color:#111;margin:22px;line-height:1.5}
+.pr-h{border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:14px}
+.pr-h h1{font-size:19px;margin:0 0 4px}.pr-meta{font-size:12.5px;color:#333}
+.pr-sec{margin:0 0 12px}.pr-sec h2{font-size:14px;margin:0 0 4px;padding:3px 0;border-bottom:1px solid #999}
+.pr-line{font-size:12.5px;padding:2px 0;line-height:1.5}.pr-line .k{font-weight:700}.pr-line i{color:#b45309;font-style:normal}
+.pr-note{white-space:pre-wrap;font-size:12.5px;border:1px solid #999;padding:8px;border-radius:6px}
+.noprint{margin:18px 0;text-align:center}
+.noprint button{font-size:15px;padding:11px 22px;border-radius:9px;border:1px solid #0e6b7a;background:#0e6b7a;color:#fff;font-weight:700}
+@media print{@page{margin:14mm}.noprint{display:none}}
+</style></head><body>
+${buildPrintHtml(limited)}
+<div class="noprint"><button onclick="window.print()">列印 / 存成 PDF</button></div>
+</body></html>`;
+}
+
+/* 穩健列印：優先開新視窗（自帶內容），失敗才退回頁內列印 */
+function robustPrint(limited){
+  let w=null;
+  try{ w=window.open("","_blank"); }catch(e){ w=null; }
+  if(w && w.document){
+    try{
+      w.document.open(); w.document.write(printDocument(limited)); w.document.close();
+      const go=()=>{ try{ w.focus(); w.print(); }catch(e){} };
+      if(w.document.readyState==="complete") setTimeout(go,300);
+      else w.onload=()=>setTimeout(go,250);
+      return;
+    }catch(e){ try{ w.close(); }catch(_){} }
+  }
+  const pa=$("#printArea");
+  pa.innerHTML=buildPrintHtml(limited);
+  const done=()=>{ pa.innerHTML=""; window.removeEventListener("afterprint",done); };
+  window.addEventListener("afterprint",done);
+  setTimeout(()=>{ try{ window.print(); }catch(e){} },80);
+}
+
+/* 複製全文（clipboard API，退回 execCommand） */
+function copyText(text){
+  if(navigator.clipboard && navigator.clipboard.writeText)
+    return navigator.clipboard.writeText(text).then(()=>true).catch(()=>fallbackCopy(text));
+  return Promise.resolve(fallbackCopy(text));
+}
+function fallbackCopy(text){
+  try{
+    const ta=document.createElement("textarea"); ta.value=text;
+    ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta);
+    ta.focus(); ta.select(); const ok=document.execCommand("copy"); ta.remove(); return ok;
+  }catch(e){ return false; }
+}
+
+/* 匯出 → 開啟預覽 modal（先看到內容，證明不空白；並提供複製作為保底） */
+function doExport(kind){
+  const limited = kind.indexOf("lim")===0;
+  const isPdf   = kind.indexOf("pdf")>=0;
+  openExportModal(limited,isPdf);
+}
+function mkBtn(label,cls,fn){ const b=document.createElement("button"); b.className="btn "+cls; b.textContent=label; b.onclick=fn; return b; }
+function closeExportModal(){ $("#exportModal").classList.remove("show"); }
+
+function openExportModal(limited,isPdf){
+  const h=exportHeader();
+  const stamp=(h.code||"note").replace(/[^\w\u4e00-\u9fa5-]/g,"_");
+  const text=buildText(limited);
+  const modal=$("#exportModal");
+  $("#modalTitle").textContent = `${isPdf?"PDF":"TXT"} 預覽 · ${limited?"限縮版":"完整版"}`;
+  const scroll=$("#modalScroll");
+  if(isPdf){
+    scroll.innerHTML=`<div class="docprev">${buildPrintHtml(limited)}</div>`;
+  }else{
+    scroll.innerHTML="";
+    const pre=document.createElement("div"); pre.className="txtprev"; pre.textContent=text;
+    scroll.appendChild(pre);
+  }
+  const foot=$("#modalFoot"); foot.innerHTML="";
+  const btnCopy=mkBtn("📋 複製全文","",()=>{ copyText(text).then(ok=>toast(ok?"已複製到剪貼簿":"複製失敗，請長按選取")); });
+  if(isPdf){
+    foot.appendChild(mkBtn("🖨 列印 / 存成 PDF","primary",()=>robustPrint(limited)));
+    foot.appendChild(btnCopy);
+  }else{
+    foot.appendChild(mkBtn("⬇ 下載 .txt","primary",()=>{ downloadText(`ROS_PE_${stamp}_${limited?"限縮":"完整"}.txt`, text); toast("已下載 .txt"); }));
+    foot.appendChild(btnCopy);
+  }
+  modal.classList.add("show");
+}
+
+/* ---------- utils ---------- */
+function escapeHtml(s){ return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+/* 關閉匯出選單（點外部） */
+document.addEventListener("click",e=>{
+  const m=$("#exportMenu");
+  if(m&&m.classList.contains("show") && !e.target.closest("#exportMenu") && !e.target.closest("#exportBtn")) closeMenu();
+});
+
+/* ---------- 自動長高（field-sizing 後備） ---------- */
+function autoGrow(el){ if(!el||el.tagName!=="TEXTAREA")return; el.style.height="auto"; el.style.height=(el.scrollHeight+2)+"px"; }
+function resizeAutogrow(root){ (root||document).querySelectorAll("textarea.autogrow").forEach(el=>{ if(el.offsetParent!==null) autoGrow(el); }); }
+document.addEventListener("input",e=>{ const t=e.target; if(t&&t.classList&&t.classList.contains("autogrow")) autoGrow(t); });
+
+/* ---------- 匯出 modal 關閉 ---------- */
+(function(){
+  const mc=$("#modalClose"), mm=$("#exportModal");
+  if(mc) mc.onclick=closeExportModal;
+  if(mm) mm.addEventListener("click",e=>{ if(e.target.id==="exportModal") closeExportModal(); });
+})();
+
+/* ---------- 啟動：先載入資料再渲染 ---------- */
+(async function boot(){
+  try{ DB = (await Store.read()) || {patients:[]}; }
+  catch(e){ DB = {patients:[]}; }
+  if(!DB.patients) DB.patients=[];
+  renderList();
+})();
+</script>
+</body>
+</html>
