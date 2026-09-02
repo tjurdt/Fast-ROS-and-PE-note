@@ -21,12 +21,15 @@ npm start
 - `npm run build:v2` 產生自包含的 `dist-v2/index.html`，但不覆蓋正式入口。
 - `npm run verify` 執行 legacy baseline、TypeScript、lint、單元測試、單檔契約與 Playwright parity。
 
+目前 v2 已包含完整 25 區塊／194 題／16 科別 typed catalog、Focus/gate、一般題型 renderer、陽性計數與本機重載。DTR、Babinski、Sensory、CN detail 等 custom widgets，以及 Admission、PMH、組套、匯出與 Google 同步仍待 parity 遷移。
+
 ## 專案地圖
 
 ```text
 index.html                正式 legacy 單檔成品，尚未改變
 src/legacy/               受 baseline 保護的既有應用
 src/domain/               v2 純資料模型與規則
+src/domain/clinical/      從 legacy oracle 同步並驗證的 clinical catalog
 src/application/          v2 use cases 與 infrastructure ports
 src/infrastructure/       v2 local / Google adapters
 src/features/             v2 垂直功能切片

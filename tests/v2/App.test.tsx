@@ -46,8 +46,17 @@ describe("v2 app shell", () => {
     await user.clear(screen.getByLabelText("主要問題"));
     await user.type(screen.getByLabelText("主要問題"), "Improving pneumonia");
 
+    await user.click(screen.getByRole("button", { name: /一般全身 Constitutional/ }));
+    await user.click(screen.getByTestId("finding-control-fever"));
+    expect(screen.getByTestId("finding-total").textContent).toContain("1");
+    await user.type(screen.getByLabelText("體溫/描述"), "38.5°C");
+
     await waitFor(() => expect(repository.saveCount).toBeGreaterThan(1));
     expect(repository.database.patients).toHaveLength(1);
     expect(repository.database.patients[0]?.problem).toBe("Improving pneumonia");
+    expect(repository.database.patients[0]?.findings.fever).toEqual({
+      on: true,
+      fu: { fever_t: "38.5°C" },
+    });
   });
 });

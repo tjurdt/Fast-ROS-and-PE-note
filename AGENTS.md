@@ -15,9 +15,11 @@ These rules apply to human and AI-assisted changes in this repository.
 - Treat `src/legacy/app.js` and `src/styles/app.css` as a frozen behavioral reference, not extension points.
 - Put each v2 capability in `src/features/<feature-name>/` with a local `README.md` that states intent, non-goals, data changes, and integration points.
 - v2 feature code uses ES modules and explicit imports. `config/assets.mjs` and IIFE wrapping apply only to an intentional legacy-track patch.
+- `src/domain/clinical/catalog.generated.json` is generated from the frozen legacy oracle. Do not hand-edit it; run `npm run sync:clinical-catalog` and keep `check:clinical-catalog` passing.
 - Keep dependencies pointing inward: UI/features → application → domain. Infrastructure implements application ports; domain must not import React, browser APIs, storage, or network code.
 - Put code in `src/ui/` only when it is genuinely presentation-only and shared. Do not create catch-all utility or service files.
 - Add a narrow adapter or port instead of reading legacy globals, DOM fragments, storage keys, or Google synchronization state from v2.
+- Keep `npm run check:v2-boundaries` passing; do not bypass layer or cross-feature dependency failures with re-export barrels.
 
 ## Compatibility and safety
 

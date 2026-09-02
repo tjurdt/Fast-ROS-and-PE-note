@@ -2,6 +2,7 @@ index.html
 src/index.template.html
 src/legacy/app.js
 src/styles/app.css
+src/domain/clinical/catalog.generated.json
 node_modules
 coverage
 dist-v2

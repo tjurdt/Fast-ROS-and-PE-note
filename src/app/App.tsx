@@ -3,14 +3,17 @@ import { useMemo, useRef, useState } from "react";
 import type { PatientRepository } from "../application/patient-repository";
 import {
   createPatientInDatabase,
+  updateFindingInDatabase,
   updatePatientInDatabase,
 } from "../application/patient-workflows";
 import type {
+  FindingValue,
   PatientDraft,
   PatientEditableFields,
   PatientFactoryDependencies,
 } from "../domain/patient";
 import { emptyPatientDatabase, type PatientDatabase } from "../domain/patient-database";
+import { ClinicalNote } from "../features/clinical-note/ClinicalNote";
 import { PatientList } from "../features/patient-list/PatientList";
 import { PatientNote } from "../features/patient-note/PatientNote";
 import { StorageChoice } from "../features/storage-choice/StorageChoice";
@@ -103,6 +106,23 @@ export function App({ repository: suppliedRepository, patientFactory }: AppProps
     persist(result.database);
   }
 
+  function updateActiveFinding(itemId: string, finding: FindingValue) {
+    if (activePatientId === null) return;
+    const patient = databaseRef.current.patients.find(
+      (candidate) => candidate.id === activePatientId,
+    );
+    if (!patient) return;
+
+    const result = updateFindingInDatabase(
+      databaseRef.current,
+      patient,
+      itemId,
+      finding,
+      factory.now(),
+    );
+    persist(result.database);
+  }
+
   const activePatient =
     activePatientId === null
       ? undefined
@@ -141,7 +161,9 @@ export function App({ repository: suppliedRepository, patientFactory }: AppProps
             setView("list");
           }}
           onChange={updateActivePatient}
-        />
+        >
+          <ClinicalNote patient={activePatient} onFindingChange={updateActiveFinding} />
+        </PatientNote>
       ) : null}
     </>
   );

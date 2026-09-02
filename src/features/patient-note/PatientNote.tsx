@@ -1,3 +1,5 @@
+import type { PropsWithChildren } from "react";
+
 import type { Gender, Patient, PatientEditableFields } from "../../domain/patient";
 import { SPECIALTIES } from "../../domain/specialty";
 import { Button } from "../../ui/Button";
@@ -9,7 +11,13 @@ interface PatientNoteProps {
   onChange: (patch: Partial<PatientEditableFields>) => void;
 }
 
-export function PatientNote({ patient, saving, onBack, onChange }: PatientNoteProps) {
+export function PatientNote({
+  patient,
+  saving,
+  onBack,
+  onChange,
+  children,
+}: PropsWithChildren<PatientNoteProps>) {
   return (
     <main className="v2-shell">
       <header className="v2-topbar v2-topbar--note">
@@ -81,9 +89,11 @@ export function PatientNote({ patient, saving, onBack, onChange }: PatientNotePr
         </label>
       </section>
 
+      {children}
+
       <section className="v2-card v2-parity-notice">
         <strong>尚未切換正式入口</strong>
-        <p>ROS / PE、組套、匯出與 Google 同步會在 parity 測試保護下逐步遷入。</p>
+        <p>Custom widgets、組套、匯出與 Google 同步會在 parity 測試保護下逐步遷入。</p>
       </section>
     </main>
   );

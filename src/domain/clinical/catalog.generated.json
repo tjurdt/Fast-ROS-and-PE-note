@@ -1,0 +1,3270 @@
+{
+  "sections": [
+    {
+      "key": "ros_const",
+      "kind": "ROS",
+      "label": "一般全身 Constitutional",
+      "items": [
+        {
+          "id": "fever",
+          "kind": "ROS",
+          "system": "ros_const",
+          "type": "toggle",
+          "label": "發燒",
+          "en": "Fever",
+          "star": true,
+          "fu": [
+            {
+              "id": "fever_t",
+              "type": "text",
+              "label": "體溫/描述"
+            }
+          ]
+        },
+        {
+          "id": "chills",
+          "kind": "ROS",
+          "system": "ros_const",
+          "type": "toggle",
+          "label": "畏寒",
+          "en": "Chills",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "night_sweats",
+          "kind": "ROS",
+          "system": "ros_const",
+          "type": "toggle",
+          "label": "盜汗",
+          "en": "Night sweats",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "wt_loss",
+          "kind": "ROS",
+          "system": "ros_const",
+          "type": "toggle",
+          "label": "體重減輕",
+          "en": "Weight loss",
+          "star": true,
+          "fu": [
+            {
+              "id": "wt_loss_a",
+              "type": "text",
+              "label": "公斤 / 期間"
+            }
+          ]
+        },
+        {
+          "id": "wt_gain",
+          "kind": "ROS",
+          "system": "ros_const",
+          "type": "toggle",
+          "label": "體重增加",
+          "en": "Weight gain",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "fatigue",
+          "kind": "ROS",
+          "system": "ros_const",
+          "type": "toggle",
+          "label": "疲倦",
+          "en": "Fatigue",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "anorexia",
+          "kind": "ROS",
+          "system": "ros_const",
+          "type": "toggle",
+          "label": "食慾不振",
+          "en": "Anorexia",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "malaise",
+          "kind": "ROS",
+          "system": "ros_const",
+          "type": "toggle",
+          "label": "全身倦怠",
+          "en": "Malaise",
+          "star": false,
+          "fu": null
+        }
+      ]
+    },
+    {
+      "key": "ros_skin",
+      "kind": "ROS",
+      "label": "皮膚 Skin",
+      "items": [
+        {
+          "id": "rash",
+          "kind": "ROS",
+          "system": "ros_skin",
+          "type": "toggle",
+          "label": "皮疹",
+          "en": "Rash",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "pruritus",
+          "kind": "ROS",
+          "system": "ros_skin",
+          "type": "toggle",
+          "label": "搔癢",
+          "en": "Pruritus",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "easy_bruise",
+          "kind": "ROS",
+          "system": "ros_skin",
+          "type": "toggle",
+          "label": "容易瘀青",
+          "en": "Easy bruising",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "skin_lesion",
+          "kind": "ROS",
+          "system": "ros_skin",
+          "type": "toggle",
+          "label": "皮膚病灶/腫塊",
+          "en": "Skin lesion",
+          "star": false,
+          "fu": [
+            {
+              "id": "skin_lesion_d",
+              "type": "text",
+              "label": "描述"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "ros_heent",
+      "kind": "ROS",
+      "label": "頭頸五官 HEENT / Neck",
+      "items": [
+        {
+          "id": "headache",
+          "kind": "ROS",
+          "system": "ros_heent",
+          "type": "toggle",
+          "label": "頭痛",
+          "en": "Headache",
+          "star": true,
+          "fu": [
+            {
+              "id": "headache_d",
+              "type": "text",
+              "label": "部位/性質"
+            }
+          ]
+        },
+        {
+          "id": "dizziness",
+          "kind": "ROS",
+          "system": "ros_heent",
+          "type": "toggle",
+          "label": "頭暈",
+          "en": "Dizziness",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "vertigo",
+          "kind": "ROS",
+          "system": "ros_heent",
+          "type": "toggle",
+          "label": "眩暈",
+          "en": "Vertigo",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "vision_change",
+          "kind": "ROS",
+          "system": "ros_heent",
+          "type": "toggle",
+          "label": "視力改變",
+          "en": "Vision change",
+          "star": false,
+          "fu": [
+            {
+              "id": "vision_d",
+              "type": "text",
+              "label": "描述"
+            }
+          ]
+        },
+        {
+          "id": "diplopia",
+          "kind": "ROS",
+          "system": "ros_heent",
+          "type": "toggle",
+          "label": "複視",
+          "en": "Diplopia",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "eye_pain",
+          "kind": "ROS",
+          "system": "ros_heent",
+          "type": "toggle",
+          "label": "眼痛/眼紅",
+          "en": "Eye pain/redness",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "hearing_loss",
+          "kind": "ROS",
+          "system": "ros_heent",
+          "type": "toggle",
+          "label": "聽力下降",
+          "en": "Hearing loss",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "tinnitus",
+          "kind": "ROS",
+          "system": "ros_heent",
+          "type": "toggle",
+          "label": "耳鳴",
+          "en": "Tinnitus",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "ear_pain",
+          "kind": "ROS",
+          "system": "ros_heent",
+          "type": "toggle",
+          "label": "耳痛",
+          "en": "Otalgia",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "nasal_cong",
+          "kind": "ROS",
+          "system": "ros_heent",
+          "type": "toggle",
+          "label": "鼻塞",
+          "en": "Nasal congestion",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "rhinorrhea",
+          "kind": "ROS",
+          "system": "ros_heent",
+          "type": "toggle",
+          "label": "流鼻水",
+          "en": "Rhinorrhea",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "epistaxis",
+          "kind": "ROS",
+          "system": "ros_heent",
+          "type": "toggle",
+          "label": "鼻出血",
+          "en": "Epistaxis",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "sore_throat",
+          "kind": "ROS",
+          "system": "ros_heent",
+          "type": "toggle",
+          "label": "喉嚨痛",
+          "en": "Sore throat",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "hoarseness",
+          "kind": "ROS",
+          "system": "ros_heent",
+          "type": "toggle",
+          "label": "聲音沙啞",
+          "en": "Hoarseness",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "dysphagia",
+          "kind": "ROS",
+          "system": "ros_heent",
+          "type": "toggle",
+          "label": "吞嚥困難",
+          "en": "Dysphagia",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "odynophagia",
+          "kind": "ROS",
+          "system": "ros_heent",
+          "type": "toggle",
+          "label": "吞嚥疼痛",
+          "en": "Odynophagia",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "neck_mass",
+          "kind": "ROS",
+          "system": "ros_heent",
+          "type": "toggle",
+          "label": "頸部腫塊",
+          "en": "Neck mass",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "neck_stiff_ros",
+          "kind": "ROS",
+          "system": "ros_heent",
+          "type": "toggle",
+          "label": "頸部僵硬",
+          "en": "Neck stiffness",
+          "star": false,
+          "fu": null
+        }
+      ]
+    },
+    {
+      "key": "ros_resp",
+      "kind": "ROS",
+      "label": "呼吸 Respiratory",
+      "items": [
+        {
+          "id": "cough",
+          "kind": "ROS",
+          "system": "ros_resp",
+          "type": "toggle",
+          "label": "咳嗽",
+          "en": "Cough",
+          "star": true,
+          "fu": [
+            {
+              "id": "cough_type",
+              "type": "select",
+              "label": "型態",
+              "opts": [
+                "乾咳 dry",
+                "有痰 productive"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "sputum",
+          "kind": "ROS",
+          "system": "ros_resp",
+          "type": "toggle",
+          "label": "痰",
+          "en": "Sputum",
+          "star": false,
+          "fu": [
+            {
+              "id": "sputum_c",
+              "type": "select",
+              "label": "顏色",
+              "opts": [
+                "白 white",
+                "黃 yellow",
+                "綠 green",
+                "血絲 blood-tinged",
+                "鐵鏽色 rusty"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "hemoptysis",
+          "kind": "ROS",
+          "system": "ros_resp",
+          "type": "toggle",
+          "label": "咳血",
+          "en": "Hemoptysis",
+          "star": true,
+          "fu": null
+        },
+        {
+          "id": "dyspnea",
+          "kind": "ROS",
+          "system": "ros_resp",
+          "type": "toggle",
+          "label": "呼吸困難",
+          "en": "Dyspnea",
+          "star": true,
+          "fu": [
+            {
+              "id": "dyspnea_g",
+              "type": "select",
+              "label": "程度",
+              "opts": [
+                "勞力性 exertional",
+                "休息時 at rest"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "wheezing_ros",
+          "kind": "ROS",
+          "system": "ros_resp",
+          "type": "toggle",
+          "label": "喘鳴",
+          "en": "Wheezing",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "pleuritic",
+          "kind": "ROS",
+          "system": "ros_resp",
+          "type": "toggle",
+          "label": "胸膜性胸痛",
+          "en": "Pleuritic pain",
+          "star": false,
+          "fu": null
+        }
+      ]
+    },
+    {
+      "key": "ros_cv",
+      "kind": "ROS",
+      "label": "心血管 Cardiovascular",
+      "items": [
+        {
+          "id": "chest_pain",
+          "kind": "ROS",
+          "system": "ros_cv",
+          "type": "toggle",
+          "label": "胸痛",
+          "en": "Chest pain",
+          "star": true,
+          "fu": [
+            {
+              "id": "cp_char",
+              "type": "select",
+              "label": "性質",
+              "opts": [
+                "壓迫感 pressure",
+                "緊縮 tightness",
+                "刺痛 sharp",
+                "灼熱 burning"
+              ]
+            },
+            {
+              "id": "cp_rad",
+              "type": "select",
+              "label": "放射",
+              "opts": [
+                "左臂 left arm",
+                "下顎 jaw",
+                "背部 back",
+                "無 none"
+              ]
+            },
+            {
+              "id": "cp_trig",
+              "type": "select",
+              "label": "誘發",
+              "opts": [
+                "勞力 exertion",
+                "休息 rest",
+                "進食 eating",
+                "情緒 emotion"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "palpitation",
+          "kind": "ROS",
+          "system": "ros_cv",
+          "type": "toggle",
+          "label": "心悸",
+          "en": "Palpitations",
+          "star": true,
+          "fu": null
+        },
+        {
+          "id": "exert_dyspnea",
+          "kind": "ROS",
+          "system": "ros_cv",
+          "type": "toggle",
+          "label": "勞力性呼吸困難",
+          "en": "Exertional dyspnea",
+          "star": true,
+          "fu": null
+        },
+        {
+          "id": "orthopnea",
+          "kind": "ROS",
+          "system": "ros_cv",
+          "type": "toggle",
+          "label": "端坐呼吸",
+          "en": "Orthopnea",
+          "star": true,
+          "fu": null
+        },
+        {
+          "id": "pnd",
+          "kind": "ROS",
+          "system": "ros_cv",
+          "type": "toggle",
+          "label": "陣發性夜間呼吸困難",
+          "en": "PND",
+          "star": true,
+          "fu": null
+        },
+        {
+          "id": "leg_edema",
+          "kind": "ROS",
+          "system": "ros_cv",
+          "type": "toggle",
+          "label": "下肢水腫",
+          "en": "Leg edema",
+          "star": true,
+          "fu": null
+        },
+        {
+          "id": "syncope",
+          "kind": "ROS",
+          "system": "ros_cv",
+          "type": "toggle",
+          "label": "暈厥",
+          "en": "Syncope",
+          "star": true,
+          "fu": null
+        },
+        {
+          "id": "presyncope",
+          "kind": "ROS",
+          "system": "ros_cv",
+          "type": "toggle",
+          "label": "昏厥前",
+          "en": "Presyncope",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "claudication",
+          "kind": "ROS",
+          "system": "ros_cv",
+          "type": "toggle",
+          "label": "間歇性跛行",
+          "en": "Claudication",
+          "star": false,
+          "fu": null
+        }
+      ]
+    },
+    {
+      "key": "ros_gi",
+      "kind": "ROS",
+      "label": "消化 Gastrointestinal",
+      "items": [
+        {
+          "id": "nausea",
+          "kind": "ROS",
+          "system": "ros_gi",
+          "type": "toggle",
+          "label": "噁心",
+          "en": "Nausea",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "vomiting",
+          "kind": "ROS",
+          "system": "ros_gi",
+          "type": "toggle",
+          "label": "嘔吐",
+          "en": "Vomiting",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "hematemesis",
+          "kind": "ROS",
+          "system": "ros_gi",
+          "type": "toggle",
+          "label": "嘔血",
+          "en": "Hematemesis",
+          "star": true,
+          "fu": null
+        },
+        {
+          "id": "heartburn",
+          "kind": "ROS",
+          "system": "ros_gi",
+          "type": "toggle",
+          "label": "胃灼熱",
+          "en": "Heartburn",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "abd_pain_ros",
+          "kind": "ROS",
+          "system": "ros_gi",
+          "type": "toggle",
+          "label": "腹痛",
+          "en": "Abdominal pain",
+          "star": true,
+          "fu": [
+            {
+              "id": "abdp_loc",
+              "type": "select",
+              "label": "部位",
+              "opts": [
+                "右上 RUQ",
+                "左上 LUQ",
+                "右下 RLQ",
+                "左下 LLQ",
+                "上腹 epigastric",
+                "臍周 periumbilical",
+                "下腹 suprapubic",
+                "全腹 diffuse"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "bloating",
+          "kind": "ROS",
+          "system": "ros_gi",
+          "type": "toggle",
+          "label": "腹脹",
+          "en": "Bloating",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "diarrhea",
+          "kind": "ROS",
+          "system": "ros_gi",
+          "type": "toggle",
+          "label": "腹瀉",
+          "en": "Diarrhea",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "constipation",
+          "kind": "ROS",
+          "system": "ros_gi",
+          "type": "toggle",
+          "label": "便秘",
+          "en": "Constipation",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "hematochezia",
+          "kind": "ROS",
+          "system": "ros_gi",
+          "type": "toggle",
+          "label": "血便",
+          "en": "Hematochezia",
+          "star": true,
+          "fu": null
+        },
+        {
+          "id": "melena",
+          "kind": "ROS",
+          "system": "ros_gi",
+          "type": "toggle",
+          "label": "黑便",
+          "en": "Melena",
+          "star": true,
+          "fu": null
+        },
+        {
+          "id": "jaundice_ros",
+          "kind": "ROS",
+          "system": "ros_gi",
+          "type": "toggle",
+          "label": "黃疸",
+          "en": "Jaundice",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "bowel_change",
+          "kind": "ROS",
+          "system": "ros_gi",
+          "type": "toggle",
+          "label": "排便習慣改變",
+          "en": "Bowel habit change",
+          "star": false,
+          "fu": null
+        }
+      ]
+    },
+    {
+      "key": "ros_gu",
+      "kind": "ROS",
+      "label": "泌尿生殖 Genitourinary",
+      "items": [
+        {
+          "id": "renal_oliguria",
+          "kind": "ROS",
+          "system": "ros_gu",
+          "type": "toggle",
+          "label": "尿量減少／少尿",
+          "en": "Decreased urine output / Oliguria",
+          "star": true,
+          "fu": null
+        },
+        {
+          "id": "renal_foamy",
+          "kind": "ROS",
+          "system": "ros_gu",
+          "type": "toggle",
+          "label": "泡沫尿",
+          "en": "Foamy urine",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "renal_periorbital_edema",
+          "kind": "ROS",
+          "system": "ros_gu",
+          "type": "toggle",
+          "label": "眼周水腫",
+          "en": "Periorbital edema",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "renal_weight_gain",
+          "kind": "ROS",
+          "system": "ros_gu",
+          "type": "toggle",
+          "label": "近期快速體重增加／體液滯留",
+          "en": "Rapid weight gain / Fluid retention",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "gu_freq",
+          "kind": "ROS",
+          "system": "ros_gu",
+          "type": "toggle",
+          "label": "頻尿",
+          "en": "Frequency",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "gu_urg",
+          "kind": "ROS",
+          "system": "ros_gu",
+          "type": "toggle",
+          "label": "急尿",
+          "en": "Urgency",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "nocturia",
+          "kind": "ROS",
+          "system": "ros_gu",
+          "type": "toggle",
+          "label": "夜尿",
+          "en": "Nocturia",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "dysuria",
+          "kind": "ROS",
+          "system": "ros_gu",
+          "type": "toggle",
+          "label": "排尿疼痛",
+          "en": "Dysuria",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "hematuria",
+          "kind": "ROS",
+          "system": "ros_gu",
+          "type": "toggle",
+          "label": "血尿",
+          "en": "Hematuria",
+          "star": true,
+          "fu": null
+        },
+        {
+          "id": "incontinence",
+          "kind": "ROS",
+          "system": "ros_gu",
+          "type": "toggle",
+          "label": "尿失禁",
+          "en": "Incontinence",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "flank_pain",
+          "kind": "ROS",
+          "system": "ros_gu",
+          "type": "toggle",
+          "label": "腰痛",
+          "en": "Flank pain",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "hesitancy",
+          "kind": "ROS",
+          "system": "ros_gu",
+          "type": "toggle",
+          "label": "排尿猶豫/細小",
+          "en": "Hesitancy",
+          "star": false,
+          "fu": null
+        }
+      ]
+    },
+    {
+      "key": "ros_gyn",
+      "kind": "ROS",
+      "gate": "gyn",
+      "label": "婦科 Gynecologic",
+      "items": [
+        {
+          "id": "lmp",
+          "type": "text",
+          "label": "末次月經 LMP",
+          "en": "LMP",
+          "kind": "ROS",
+          "system": "ros_gyn"
+        },
+        {
+          "id": "menses",
+          "type": "select",
+          "label": "月經規則性",
+          "en": "Menstrual cycle",
+          "opts": [
+            "規則 Regular",
+            "不規則 Irregular",
+            "停經 Menopause"
+          ],
+          "normal": "規則 Regular",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "ROS",
+          "system": "ros_gyn"
+        },
+        {
+          "id": "dysmenorrhea",
+          "kind": "ROS",
+          "system": "ros_gyn",
+          "type": "toggle",
+          "label": "經痛",
+          "en": "Dysmenorrhea",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "menorrhagia",
+          "kind": "ROS",
+          "system": "ros_gyn",
+          "type": "toggle",
+          "label": "經量過多",
+          "en": "Menorrhagia",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "intermenstrual_bleed",
+          "kind": "ROS",
+          "system": "ros_gyn",
+          "type": "toggle",
+          "label": "經間出血",
+          "en": "Intermenstrual bleeding",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "postmenopausal_bleed",
+          "kind": "ROS",
+          "system": "ros_gyn",
+          "type": "toggle",
+          "label": "停經後出血",
+          "en": "Postmenopausal bleeding",
+          "star": true,
+          "fu": null
+        },
+        {
+          "id": "vaginal_discharge",
+          "kind": "ROS",
+          "system": "ros_gyn",
+          "type": "toggle",
+          "label": "陰道分泌物",
+          "en": "Vaginal discharge",
+          "star": false,
+          "fu": [
+            {
+              "id": "vd_char",
+              "type": "select",
+              "label": "性狀",
+              "opts": [
+                "白色 white",
+                "黃綠 yellow-green",
+                "血絲 blood-tinged",
+                "有異味 malodorous"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "pelvic_pain",
+          "kind": "ROS",
+          "system": "ros_gyn",
+          "type": "toggle",
+          "label": "骨盆腔疼痛",
+          "en": "Pelvic pain",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "dyspareunia",
+          "kind": "ROS",
+          "system": "ros_gyn",
+          "type": "toggle",
+          "label": "性交疼痛",
+          "en": "Dyspareunia",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "contraception",
+          "type": "text",
+          "label": "避孕方式",
+          "en": "Contraception",
+          "kind": "ROS",
+          "system": "ros_gyn"
+        }
+      ]
+    },
+    {
+      "key": "ros_obs",
+      "kind": "ROS",
+      "gate": "obs",
+      "label": "產科 Obstetric",
+      "items": [
+        {
+          "id": "ga",
+          "type": "text",
+          "label": "妊娠週數 GA",
+          "en": "Gestational age",
+          "kind": "ROS",
+          "system": "ros_obs"
+        },
+        {
+          "id": "edc",
+          "type": "text",
+          "label": "預產期 EDC",
+          "en": "EDC",
+          "kind": "ROS",
+          "system": "ros_obs"
+        },
+        {
+          "id": "gravida_para",
+          "type": "text",
+          "label": "孕產史 GxPxAx",
+          "en": "Gravida/Para",
+          "kind": "ROS",
+          "system": "ros_obs"
+        },
+        {
+          "id": "fetal_movement",
+          "type": "select",
+          "label": "胎動",
+          "en": "Fetal movement",
+          "opts": [
+            "正常 normal",
+            "減少 decreased",
+            "無 absent"
+          ],
+          "normal": "正常 normal",
+          "star": true,
+          "fu": null,
+          "fuOn": null,
+          "kind": "ROS",
+          "system": "ros_obs"
+        },
+        {
+          "id": "contractions",
+          "kind": "ROS",
+          "system": "ros_obs",
+          "type": "toggle",
+          "label": "子宮收縮/陣痛",
+          "en": "Contractions",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "vaginal_bleeding_preg",
+          "kind": "ROS",
+          "system": "ros_obs",
+          "type": "toggle",
+          "label": "孕期陰道出血",
+          "en": "Vaginal bleeding",
+          "star": true,
+          "fu": null
+        },
+        {
+          "id": "leaking_fluid",
+          "kind": "ROS",
+          "system": "ros_obs",
+          "type": "toggle",
+          "label": "破水/漏液",
+          "en": "Leaking fluid",
+          "star": true,
+          "fu": null
+        },
+        {
+          "id": "preeclampsia_sx",
+          "kind": "ROS",
+          "system": "ros_obs",
+          "type": "toggle",
+          "label": "子癇前症症狀",
+          "en": "Pre-eclampsia sx",
+          "star": true,
+          "fu": [
+            {
+              "id": "preec_which",
+              "type": "select",
+              "label": "項目",
+              "opts": [
+                "頭痛 headache",
+                "視力模糊 blurred vision",
+                "上腹痛 epigastric pain",
+                "水腫 edema"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "ros_msk",
+      "kind": "ROS",
+      "label": "骨骼肌肉 Musculoskeletal",
+      "items": [
+        {
+          "id": "arthralgia",
+          "kind": "ROS",
+          "system": "ros_msk",
+          "type": "toggle",
+          "label": "關節痛",
+          "en": "Arthralgia",
+          "star": false,
+          "fu": [
+            {
+              "id": "arth_loc",
+              "type": "text",
+              "label": "部位"
+            }
+          ]
+        },
+        {
+          "id": "joint_swell_ros",
+          "kind": "ROS",
+          "system": "ros_msk",
+          "type": "toggle",
+          "label": "關節腫脹",
+          "en": "Joint swelling",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "morning_stiff",
+          "kind": "ROS",
+          "system": "ros_msk",
+          "type": "toggle",
+          "label": "晨僵",
+          "en": "Morning stiffness",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "myalgia",
+          "kind": "ROS",
+          "system": "ros_msk",
+          "type": "toggle",
+          "label": "肌肉痛",
+          "en": "Myalgia",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "back_pain",
+          "kind": "ROS",
+          "system": "ros_msk",
+          "type": "toggle",
+          "label": "背痛",
+          "en": "Back pain",
+          "star": false,
+          "fu": null
+        }
+      ]
+    },
+    {
+      "key": "ros_neuro",
+      "kind": "ROS",
+      "label": "神經 Neurological",
+      "items": [
+        {
+          "id": "numbness",
+          "kind": "ROS",
+          "system": "ros_neuro",
+          "type": "toggle",
+          "label": "感覺異常/麻木",
+          "en": "Numbness",
+          "star": false,
+          "fu": [
+            {
+              "id": "numb_loc",
+              "type": "text",
+              "label": "部位"
+            }
+          ]
+        },
+        {
+          "id": "limb_weak",
+          "kind": "ROS",
+          "system": "ros_neuro",
+          "type": "toggle",
+          "label": "肢體無力",
+          "en": "Limb weakness",
+          "star": true,
+          "fu": [
+            {
+              "id": "weak_loc",
+              "type": "text",
+              "label": "部位"
+            }
+          ]
+        },
+        {
+          "id": "gait_prob",
+          "kind": "ROS",
+          "system": "ros_neuro",
+          "type": "toggle",
+          "label": "步態不穩",
+          "en": "Gait disturbance",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "tremor",
+          "kind": "ROS",
+          "system": "ros_neuro",
+          "type": "toggle",
+          "label": "顫抖",
+          "en": "Tremor",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "seizure",
+          "kind": "ROS",
+          "system": "ros_neuro",
+          "type": "toggle",
+          "label": "癲癇/抽搐",
+          "en": "Seizure",
+          "star": true,
+          "fu": null
+        },
+        {
+          "id": "loc",
+          "kind": "ROS",
+          "system": "ros_neuro",
+          "type": "toggle",
+          "label": "意識喪失",
+          "en": "LOC",
+          "star": true,
+          "fu": null
+        },
+        {
+          "id": "speech_diff",
+          "kind": "ROS",
+          "system": "ros_neuro",
+          "type": "toggle",
+          "label": "語言障礙",
+          "en": "Speech difficulty",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "memory_change",
+          "kind": "ROS",
+          "system": "ros_neuro",
+          "type": "toggle",
+          "label": "記憶/認知改變",
+          "en": "Memory change",
+          "star": false,
+          "fu": null
+        }
+      ]
+    },
+    {
+      "key": "ros_psych",
+      "kind": "ROS",
+      "label": "精神 Psychiatric",
+      "items": [
+        {
+          "id": "dep_mood",
+          "kind": "ROS",
+          "system": "ros_psych",
+          "type": "toggle",
+          "label": "情緒低落",
+          "en": "Depressed mood",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "anhedonia",
+          "kind": "ROS",
+          "system": "ros_psych",
+          "type": "toggle",
+          "label": "興趣喪失",
+          "en": "Anhedonia",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "anxiety",
+          "kind": "ROS",
+          "system": "ros_psych",
+          "type": "toggle",
+          "label": "焦慮",
+          "en": "Anxiety",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "sleep_dist",
+          "kind": "ROS",
+          "system": "ros_psych",
+          "type": "toggle",
+          "label": "睡眠障礙",
+          "en": "Sleep disturbance",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "suicidal",
+          "kind": "ROS",
+          "system": "ros_psych",
+          "type": "toggle",
+          "label": "自殺/自傷意念",
+          "en": "Suicidal ideation",
+          "star": true,
+          "fu": [
+            {
+              "id": "sui_d",
+              "type": "text",
+              "label": "描述/風險"
+            }
+          ]
+        },
+        {
+          "id": "hallucination",
+          "kind": "ROS",
+          "system": "ros_psych",
+          "type": "toggle",
+          "label": "幻覺",
+          "en": "Hallucination",
+          "star": false,
+          "fu": null
+        }
+      ]
+    },
+    {
+      "key": "ros_endo",
+      "kind": "ROS",
+      "label": "內分泌 Endocrine",
+      "items": [
+        {
+          "id": "heat_intol",
+          "kind": "ROS",
+          "system": "ros_endo",
+          "type": "toggle",
+          "label": "怕熱",
+          "en": "Heat intolerance",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "cold_intol",
+          "kind": "ROS",
+          "system": "ros_endo",
+          "type": "toggle",
+          "label": "怕冷",
+          "en": "Cold intolerance",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "polydipsia",
+          "kind": "ROS",
+          "system": "ros_endo",
+          "type": "toggle",
+          "label": "多飲",
+          "en": "Polydipsia",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "polyuria",
+          "kind": "ROS",
+          "system": "ros_endo",
+          "type": "toggle",
+          "label": "多尿",
+          "en": "Polyuria",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "polyphagia",
+          "kind": "ROS",
+          "system": "ros_endo",
+          "type": "toggle",
+          "label": "多食",
+          "en": "Polyphagia",
+          "star": false,
+          "fu": null
+        }
+      ]
+    },
+    {
+      "key": "ros_heme",
+      "kind": "ROS",
+      "label": "血液淋巴 Hematologic",
+      "items": [
+        {
+          "id": "lymphadeno_ros",
+          "kind": "ROS",
+          "system": "ros_heme",
+          "type": "toggle",
+          "label": "淋巴結腫大",
+          "en": "Lymphadenopathy",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "recur_infx",
+          "kind": "ROS",
+          "system": "ros_heme",
+          "type": "toggle",
+          "label": "反覆感染",
+          "en": "Recurrent infection",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "bleeding_tend",
+          "kind": "ROS",
+          "system": "ros_heme",
+          "type": "toggle",
+          "label": "出血傾向",
+          "en": "Bleeding tendency",
+          "star": false,
+          "fu": null
+        }
+      ]
+    },
+    {
+      "key": "pe_general",
+      "kind": "PE",
+      "label": "一般外觀・生命徵象 General",
+      "items": [
+        {
+          "id": "consciousness",
+          "type": "select",
+          "label": "意識狀態",
+          "en": "Consciousness",
+          "opts": [
+            "清醒 Alert",
+            "嗜睡 Drowsy",
+            "木僵 Stuporous",
+            "昏迷 Comatose"
+          ],
+          "normal": "清醒 Alert",
+          "star": true,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_general"
+        },
+        {
+          "id": "gcs",
+          "type": "group",
+          "label": "GCS",
+          "en": "",
+          "fields": [
+            {
+              "id": "E",
+              "label": "E",
+              "opts": [
+                "1",
+                "2",
+                "3",
+                "4"
+              ],
+              "normal": "4"
+            },
+            {
+              "id": "V",
+              "label": "V",
+              "opts": [
+                "1",
+                "2",
+                "3",
+                "4",
+                "5"
+              ],
+              "normal": "5"
+            },
+            {
+              "id": "M",
+              "label": "M",
+              "opts": [
+                "1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6"
+              ],
+              "normal": "6"
+            }
+          ],
+          "star": true,
+          "total": 15,
+          "kind": "PE",
+          "system": "pe_general"
+        },
+        {
+          "id": "appearance",
+          "type": "select",
+          "label": "一般外觀",
+          "en": "Appearance",
+          "opts": [
+            "無急性病容 Not acutely ill",
+            "急性病容 Acutely ill",
+            "慢性病容 Chronically ill",
+            "惡病質 Cachectic"
+          ],
+          "normal": "無急性病容 Not acutely ill",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_general"
+        },
+        {
+          "id": "resp_distress",
+          "kind": "PE",
+          "system": "pe_general",
+          "type": "toggle",
+          "label": "呼吸窘迫",
+          "en": "Respiratory distress",
+          "star": true,
+          "fu": null
+        },
+        {
+          "id": "hydration",
+          "type": "select",
+          "label": "水分狀態",
+          "en": "Hydration",
+          "opts": [
+            "正常 Normal",
+            "脫水 Dehydrated"
+          ],
+          "normal": "正常 Normal",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_general"
+        }
+      ]
+    },
+    {
+      "key": "pe_skin",
+      "kind": "PE",
+      "label": "皮膚 Skin",
+      "items": [
+        {
+          "id": "pe_pallor",
+          "kind": "PE",
+          "system": "pe_skin",
+          "type": "toggle",
+          "label": "蒼白",
+          "en": "Pallor",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "pe_jaundice",
+          "kind": "PE",
+          "system": "pe_skin",
+          "type": "toggle",
+          "label": "黃疸",
+          "en": "Jaundice",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "pe_cyanosis",
+          "kind": "PE",
+          "system": "pe_skin",
+          "type": "toggle",
+          "label": "發紺",
+          "en": "Cyanosis",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "pe_rash",
+          "kind": "PE",
+          "system": "pe_skin",
+          "type": "toggle",
+          "label": "皮疹",
+          "en": "Rash",
+          "star": false,
+          "fu": [
+            {
+              "id": "pe_rash_d",
+              "type": "text",
+              "label": "描述"
+            }
+          ]
+        },
+        {
+          "id": "pe_turgor",
+          "type": "select",
+          "label": "皮膚張力",
+          "en": "Skin turgor",
+          "opts": [
+            "正常 Normal",
+            "下降 Decreased"
+          ],
+          "normal": "正常 Normal",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_skin"
+        },
+        {
+          "id": "pe_petechiae",
+          "kind": "PE",
+          "system": "pe_skin",
+          "type": "toggle",
+          "label": "出血點/瘀斑",
+          "en": "Petechiae/purpura",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "pe_clubbing",
+          "kind": "PE",
+          "system": "pe_skin",
+          "type": "toggle",
+          "label": "杵狀指",
+          "en": "Clubbing",
+          "star": false,
+          "fu": null
+        }
+      ]
+    },
+    {
+      "key": "pe_heent",
+      "kind": "PE",
+      "label": "頭頸五官 HEENT",
+      "items": [
+        {
+          "id": "pe_conj",
+          "type": "select",
+          "label": "結膜",
+          "en": "Conjunctiva",
+          "opts": [
+            "紅潤 Normal",
+            "蒼白 Pale"
+          ],
+          "normal": "紅潤 Normal",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_heent"
+        },
+        {
+          "id": "pe_sclera",
+          "type": "select",
+          "label": "鞏膜",
+          "en": "Sclera",
+          "opts": [
+            "無黃疸 Anicteric",
+            "黃疸 Icteric"
+          ],
+          "normal": "無黃疸 Anicteric",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_heent"
+        },
+        {
+          "id": "pe_pupil",
+          "type": "select",
+          "label": "瞳孔",
+          "en": "Pupil",
+          "opts": [
+            "PERRLA 正常",
+            "異常 Abnormal"
+          ],
+          "normal": "PERRLA 正常",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_heent"
+        },
+        {
+          "id": "pe_eom",
+          "type": "select",
+          "label": "眼球運動",
+          "en": "EOM",
+          "opts": [
+            "正常 Full",
+            "受限 Limited"
+          ],
+          "normal": "正常 Full",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_heent"
+        },
+        {
+          "id": "pe_throat",
+          "kind": "PE",
+          "system": "pe_heent",
+          "type": "toggle",
+          "label": "咽部充血",
+          "en": "Pharyngeal injection",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "pe_tonsil",
+          "kind": "PE",
+          "system": "pe_heent",
+          "type": "toggle",
+          "label": "扁桃腺腫大",
+          "en": "Tonsillar enlargement",
+          "star": false,
+          "fu": [
+            {
+              "id": "pe_tonsil_ex",
+              "type": "toggle",
+              "label": "有滲出物 exudate"
+            }
+          ]
+        },
+        {
+          "id": "pe_tm",
+          "type": "select",
+          "label": "鼓膜",
+          "en": "Tympanic membrane",
+          "opts": [
+            "正常 Normal",
+            "異常 Abnormal"
+          ],
+          "normal": "正常 Normal",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_heent"
+        }
+      ]
+    },
+    {
+      "key": "pe_neck",
+      "kind": "PE",
+      "label": "頸部 Neck",
+      "items": [
+        {
+          "id": "pe_jvd",
+          "kind": "PE",
+          "system": "pe_neck",
+          "type": "toggle",
+          "label": "頸靜脈怒張",
+          "en": "JVD",
+          "star": true,
+          "fu": null
+        },
+        {
+          "id": "pe_thyroid",
+          "kind": "PE",
+          "system": "pe_neck",
+          "type": "toggle",
+          "label": "甲狀腺腫大",
+          "en": "Thyroid enlargement",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "pe_carotid",
+          "kind": "PE",
+          "system": "pe_neck",
+          "type": "toggle",
+          "label": "頸動脈雜音",
+          "en": "Carotid bruit",
+          "star": false,
+          "fu": [
+            {
+              "id": "pe_carotid_s",
+              "type": "select",
+              "label": "側別",
+              "opts": [
+                "左 Left",
+                "右 Right",
+                "雙側 Bilateral"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "pe_trachea",
+          "type": "select",
+          "label": "氣管位置",
+          "en": "Trachea",
+          "opts": [
+            "置中 Midline",
+            "偏移 Deviated"
+          ],
+          "normal": "置中 Midline",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_neck"
+        },
+        {
+          "id": "pe_nuchal",
+          "kind": "PE",
+          "system": "pe_neck",
+          "type": "toggle",
+          "label": "頸部僵硬",
+          "en": "Nuchal rigidity",
+          "star": true,
+          "fu": [
+            {
+              "id": "pe_kernig",
+              "type": "toggle",
+              "label": "Kernig sign (+)"
+            },
+            {
+              "id": "pe_brudz",
+              "type": "toggle",
+              "label": "Brudzinski sign (+)"
+            }
+          ]
+        },
+        {
+          "id": "pe_lymph_neck",
+          "kind": "PE",
+          "system": "pe_neck",
+          "type": "toggle",
+          "label": "頸部淋巴結腫大",
+          "en": "Cervical lymphadenopathy",
+          "star": false,
+          "fu": null
+        }
+      ]
+    },
+    {
+      "key": "pe_chest",
+      "kind": "PE",
+      "label": "胸部・肺 Chest / Lungs",
+      "items": [
+        {
+          "id": "pe_expansion",
+          "type": "select",
+          "label": "胸廓擴張",
+          "en": "Chest expansion",
+          "opts": [
+            "對稱 Symmetric",
+            "不對稱 Asymmetric"
+          ],
+          "normal": "對稱 Symmetric",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_chest"
+        },
+        {
+          "id": "pe_breath",
+          "type": "select",
+          "label": "呼吸音",
+          "en": "Breath sounds",
+          "opts": [
+            "清晰 Clear",
+            "減弱 Decreased",
+            "消失 Absent"
+          ],
+          "normal": "清晰 Clear",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_chest"
+        },
+        {
+          "id": "pe_crackles",
+          "kind": "PE",
+          "system": "pe_chest",
+          "type": "toggle",
+          "label": "囉音",
+          "en": "Crackles",
+          "star": true,
+          "fu": [
+            {
+              "id": "pe_crackles_side",
+              "type": "select",
+              "label": "位置",
+              "opts": [
+                "左肺 Left",
+                "右肺 Right",
+                "雙側 Bilateral"
+              ]
+            },
+            {
+              "id": "pe_crackles_zone",
+              "type": "select",
+              "label": "肺野",
+              "opts": [
+                "上肺野 Upper",
+                "下肺野 Lower",
+                "全肺野 Diffuse"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "pe_wheezes",
+          "kind": "PE",
+          "system": "pe_chest",
+          "type": "toggle",
+          "label": "喘鳴",
+          "en": "Wheezes",
+          "star": true,
+          "fu": [
+            {
+              "id": "pe_wheezes_side",
+              "type": "select",
+              "label": "位置",
+              "opts": [
+                "左肺 Left",
+                "右肺 Right",
+                "雙側 Bilateral"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "pe_rhonchi",
+          "kind": "PE",
+          "system": "pe_chest",
+          "type": "toggle",
+          "label": "乾囉音",
+          "en": "Rhonchi",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "pe_percussion",
+          "type": "select",
+          "label": "叩診",
+          "en": "Percussion",
+          "opts": [
+            "清音 Resonant",
+            "濁音 Dull",
+            "過度反響 Hyperresonant"
+          ],
+          "normal": "清音 Resonant",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_chest"
+        },
+        {
+          "id": "pe_fremitus",
+          "type": "select",
+          "label": "觸覺震顫",
+          "en": "Tactile fremitus",
+          "opts": [
+            "正常 Normal",
+            "增強 Increased",
+            "減弱 Decreased"
+          ],
+          "normal": "正常 Normal",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_chest"
+        }
+      ]
+    },
+    {
+      "key": "pe_cv",
+      "kind": "PE",
+      "label": "心血管 Cardiovascular",
+      "items": [
+        {
+          "id": "pe_rhythm",
+          "type": "select",
+          "label": "心律",
+          "en": "Rhythm",
+          "opts": [
+            "規則 Regular",
+            "不規則 Irregular"
+          ],
+          "normal": "規則 Regular",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_cv"
+        },
+        {
+          "id": "pe_heartsound",
+          "type": "select",
+          "label": "心音 S1S2",
+          "en": "Heart sounds",
+          "opts": [
+            "正常 Normal",
+            "異常 Abnormal"
+          ],
+          "normal": "正常 Normal",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_cv"
+        },
+        {
+          "id": "pe_murmur",
+          "kind": "PE",
+          "system": "pe_cv",
+          "type": "toggle",
+          "label": "心雜音",
+          "en": "Murmur",
+          "star": true,
+          "fu": [
+            {
+              "id": "mur_time",
+              "type": "select",
+              "label": "時期",
+              "opts": [
+                "收縮期 Systolic",
+                "舒張期 Diastolic",
+                "連續 Continuous"
+              ]
+            },
+            {
+              "id": "mur_loc",
+              "type": "select",
+              "label": "位置",
+              "opts": [
+                "主動脈瓣區 Aortic",
+                "肺動脈瓣區 Pulmonic",
+                "三尖瓣區 Tricuspid",
+                "二尖瓣區 Mitral",
+                "Erb's point"
+              ]
+            },
+            {
+              "id": "mur_grade",
+              "type": "select",
+              "label": "強度",
+              "opts": [
+                "I/VI",
+                "II/VI",
+                "III/VI",
+                "IV/VI",
+                "V/VI",
+                "VI/VI"
+              ]
+            },
+            {
+              "id": "mur_rad",
+              "type": "text",
+              "label": "放射"
+            }
+          ]
+        },
+        {
+          "id": "pe_s3",
+          "kind": "PE",
+          "system": "pe_cv",
+          "type": "toggle",
+          "label": "S3 奔馬律",
+          "en": "S3 gallop",
+          "star": true,
+          "fu": null
+        },
+        {
+          "id": "pe_s4",
+          "kind": "PE",
+          "system": "pe_cv",
+          "type": "toggle",
+          "label": "S4",
+          "en": "S4",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "pe_pericard",
+          "kind": "PE",
+          "system": "pe_cv",
+          "type": "toggle",
+          "label": "心包摩擦音",
+          "en": "Pericardial rub",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "pe_pmi",
+          "type": "select",
+          "label": "心尖搏動 PMI",
+          "en": "PMI",
+          "opts": [
+            "正常 Normal",
+            "移位 Displaced"
+          ],
+          "normal": "正常 Normal",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_cv"
+        },
+        {
+          "id": "pe_thrill",
+          "kind": "PE",
+          "system": "pe_cv",
+          "type": "toggle",
+          "label": "震顫 Thrill / Heave",
+          "en": "Thrill/Heave",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "pe_pulse",
+          "type": "select",
+          "label": "周邊脈搏",
+          "en": "Peripheral pulses",
+          "opts": [
+            "正常對稱 Normal",
+            "減弱 Decreased",
+            "消失 Absent"
+          ],
+          "normal": "正常對稱 Normal",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_cv"
+        },
+        {
+          "id": "pe_pedema",
+          "type": "select",
+          "label": "下肢凹陷性水腫",
+          "en": "Pitting edema",
+          "opts": [
+            "無 None",
+            "1+",
+            "2+",
+            "3+",
+            "4+"
+          ],
+          "normal": "無 None",
+          "star": true,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_cv"
+        },
+        {
+          "id": "pe_caprefill",
+          "type": "select",
+          "label": "微血管回填",
+          "en": "Cap refill",
+          "opts": [
+            "< 2 秒",
+            "> 2 秒"
+          ],
+          "normal": "< 2 秒",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_cv"
+        }
+      ]
+    },
+    {
+      "key": "pe_abd",
+      "kind": "PE",
+      "label": "腹部 Abdomen",
+      "items": [
+        {
+          "id": "pe_abd_appear",
+          "type": "select",
+          "label": "外形",
+          "en": "Appearance",
+          "opts": [
+            "平軟 Soft/flat",
+            "膨隆 Distended",
+            "舟狀 Scaphoid"
+          ],
+          "normal": "平軟 Soft/flat",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_abd"
+        },
+        {
+          "id": "pe_bowel",
+          "type": "select",
+          "label": "腸音",
+          "en": "Bowel sounds",
+          "opts": [
+            "正常 Normoactive",
+            "亢進 Hyperactive",
+            "減弱 Hypoactive",
+            "消失 Absent"
+          ],
+          "normal": "正常 Normoactive",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_abd"
+        },
+        {
+          "id": "pe_abd_tender",
+          "kind": "PE",
+          "system": "pe_abd",
+          "type": "toggle",
+          "label": "壓痛",
+          "en": "Tenderness",
+          "star": true,
+          "fu": [
+            {
+              "id": "abdt_loc",
+              "type": "select",
+              "label": "部位",
+              "opts": [
+                "右上 RUQ",
+                "左上 LUQ",
+                "右下 RLQ",
+                "左下 LLQ",
+                "上腹 Epigastric",
+                "臍周 Periumbilical",
+                "下腹 Suprapubic",
+                "全腹 Diffuse"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "pe_rebound",
+          "kind": "PE",
+          "system": "pe_abd",
+          "type": "toggle",
+          "label": "反彈痛",
+          "en": "Rebound tenderness",
+          "star": true,
+          "fu": null
+        },
+        {
+          "id": "pe_guarding",
+          "kind": "PE",
+          "system": "pe_abd",
+          "type": "toggle",
+          "label": "肌肉防衛",
+          "en": "Guarding",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "pe_rigidity",
+          "kind": "PE",
+          "system": "pe_abd",
+          "type": "toggle",
+          "label": "僵硬",
+          "en": "Rigidity",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "pe_hepatomeg",
+          "kind": "PE",
+          "system": "pe_abd",
+          "type": "toggle",
+          "label": "肝腫大",
+          "en": "Hepatomegaly",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "pe_splenomeg",
+          "kind": "PE",
+          "system": "pe_abd",
+          "type": "toggle",
+          "label": "脾腫大",
+          "en": "Splenomegaly",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "pe_murphy",
+          "kind": "PE",
+          "system": "pe_abd",
+          "type": "toggle",
+          "label": "Murphy sign",
+          "en": "",
+          "star": true,
+          "fu": null
+        },
+        {
+          "id": "pe_mcburney",
+          "kind": "PE",
+          "system": "pe_abd",
+          "type": "toggle",
+          "label": "McBurney 壓痛",
+          "en": "",
+          "star": true,
+          "fu": null
+        },
+        {
+          "id": "pe_cva",
+          "kind": "PE",
+          "system": "pe_abd",
+          "type": "toggle",
+          "label": "CVA tenderness",
+          "en": "",
+          "star": true,
+          "fu": [
+            {
+              "id": "cva_side",
+              "type": "select",
+              "label": "側別",
+              "opts": [
+                "左 Left",
+                "右 Right",
+                "雙側 Bilateral"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "pe_shifting",
+          "kind": "PE",
+          "system": "pe_abd",
+          "type": "toggle",
+          "label": "移動性濁音",
+          "en": "Shifting dullness",
+          "star": false,
+          "fu": null
+        },
+        {
+          "id": "pe_abd_mass",
+          "kind": "PE",
+          "system": "pe_abd",
+          "type": "toggle",
+          "label": "腹部腫塊",
+          "en": "Abdominal mass",
+          "star": false,
+          "fu": [
+            {
+              "id": "abd_mass_d",
+              "type": "text",
+              "label": "描述"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "pe_obgyn",
+      "kind": "PE",
+      "gate": "gyn",
+      "label": "婦產科 OB/GYN",
+      "items": [
+        {
+          "id": "fundal_height",
+          "type": "text",
+          "label": "宮底高度 cm",
+          "en": "Fundal height",
+          "kind": "PE",
+          "system": "pe_obgyn"
+        },
+        {
+          "id": "fetal_heart",
+          "type": "select",
+          "label": "胎心音",
+          "en": "Fetal heart",
+          "opts": [
+            "正常 normal",
+            "異常 abnormal",
+            "未測 n/a"
+          ],
+          "normal": "正常 normal",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_obgyn"
+        },
+        {
+          "id": "speculum",
+          "type": "select",
+          "label": "陰道窺鏡",
+          "en": "Speculum",
+          "opts": [
+            "正常 normal",
+            "異常 abnormal"
+          ],
+          "normal": "正常 normal",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_obgyn"
+        },
+        {
+          "id": "cervix_os",
+          "type": "select",
+          "label": "子宮頸口",
+          "en": "Cervical os",
+          "opts": [
+            "閉合 closed",
+            "擴張 dilated",
+            "異常 abnormal"
+          ],
+          "normal": "閉合 closed",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_obgyn"
+        },
+        {
+          "id": "bimanual",
+          "type": "select",
+          "label": "雙合診",
+          "en": "Bimanual",
+          "opts": [
+            "正常 normal",
+            "壓痛 tender",
+            "腫塊 mass"
+          ],
+          "normal": "正常 normal",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_obgyn"
+        },
+        {
+          "id": "adnexal",
+          "kind": "PE",
+          "system": "pe_obgyn",
+          "type": "toggle",
+          "label": "附件壓痛/腫塊",
+          "en": "Adnexal tenderness/mass",
+          "star": false,
+          "fu": null
+        }
+      ]
+    },
+    {
+      "key": "pe_msk",
+      "kind": "PE",
+      "label": "骨骼肌肉 Musculoskeletal",
+      "items": [
+        {
+          "id": "pe_joint_swell",
+          "kind": "PE",
+          "system": "pe_msk",
+          "type": "toggle",
+          "label": "關節腫脹",
+          "en": "Joint swelling",
+          "star": false,
+          "fu": [
+            {
+              "id": "pe_js_loc",
+              "type": "text",
+              "label": "部位"
+            }
+          ]
+        },
+        {
+          "id": "pe_joint_tender",
+          "kind": "PE",
+          "system": "pe_msk",
+          "type": "toggle",
+          "label": "關節壓痛",
+          "en": "Joint tenderness",
+          "star": false,
+          "fu": [
+            {
+              "id": "pe_jt_loc",
+              "type": "text",
+              "label": "部位"
+            }
+          ]
+        },
+        {
+          "id": "pe_rom",
+          "type": "select",
+          "label": "關節活動度",
+          "en": "ROM",
+          "opts": [
+            "正常 Full",
+            "受限 Limited"
+          ],
+          "normal": "正常 Full",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_msk"
+        },
+        {
+          "id": "pe_deformity",
+          "kind": "PE",
+          "system": "pe_msk",
+          "type": "toggle",
+          "label": "變形",
+          "en": "Deformity",
+          "star": false,
+          "fu": [
+            {
+              "id": "pe_def_d",
+              "type": "text",
+              "label": "描述"
+            }
+          ]
+        },
+        {
+          "id": "pe_gait",
+          "type": "select",
+          "label": "步態",
+          "en": "Gait",
+          "opts": [
+            "正常 Normal",
+            "跛行 Antalgic",
+            "運動失調 Ataxic",
+            "無法行走 Unable"
+          ],
+          "normal": "正常 Normal",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_msk"
+        }
+      ]
+    },
+    {
+      "key": "pe_neuro",
+      "kind": "PE",
+      "label": "神經 Neurological",
+      "items": [
+        {
+          "id": "pe_cn",
+          "type": "select",
+          "label": "顱神經 Cranial nerves",
+          "en": "CN I–XII",
+          "opts": [
+            "大致正常 Intact",
+            "異常 Abnormal"
+          ],
+          "normal": "大致正常 Intact",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_neuro",
+          "cnOn": "異常 Abnormal",
+          "cnPanel": [
+            {
+              "id": "cn1",
+              "label": "CN I 嗅神經 Olfactory",
+              "sides": [
+                {
+                  "k": "anosmia",
+                  "l": "嗅覺喪失 anosmia"
+                }
+              ],
+              "mono": []
+            },
+            {
+              "id": "cn2",
+              "label": "CN II 視神經 Optic",
+              "sides": [
+                {
+                  "k": "acuity",
+                  "l": "視力下降 ↓acuity"
+                },
+                {
+                  "k": "field",
+                  "l": "視野缺損 field defect"
+                },
+                {
+                  "k": "rapd",
+                  "l": "RAPD"
+                }
+              ],
+              "mono": [
+                "偏盲 hemianopia",
+                "乳頭水腫 papilledema"
+              ]
+            },
+            {
+              "id": "cn346",
+              "label": "CN III·IV·VI 眼動・瞳孔",
+              "sides": [
+                {
+                  "k": "ptosis",
+                  "l": "眼瞼下垂 ptosis"
+                },
+                {
+                  "k": "dilated",
+                  "l": "瞳孔散大 dilated"
+                },
+                {
+                  "k": "sluggish",
+                  "l": "對光遲鈍 sluggish"
+                },
+                {
+                  "k": "abduct",
+                  "l": "外展受限 abduction↓"
+                }
+              ],
+              "mono": [
+                "眼位偏斜 gaze deviation",
+                "複視 diplopia"
+              ]
+            },
+            {
+              "id": "cn5",
+              "label": "CN V 三叉 Trigeminal",
+              "sides": [
+                {
+                  "k": "sens",
+                  "l": "顏面感覺↓ sensation↓"
+                },
+                {
+                  "k": "masseter",
+                  "l": "咀嚼肌無力 masseter↓"
+                },
+                {
+                  "k": "corneal",
+                  "l": "角膜反射消失 corneal↓"
+                }
+              ],
+              "mono": []
+            },
+            {
+              "id": "cn7",
+              "label": "CN VII 顏面 Facial",
+              "sides": [
+                {
+                  "k": "central",
+                  "l": "中樞型（額頭保留）central"
+                },
+                {
+                  "k": "periph",
+                  "l": "周邊型（全臉）peripheral"
+                }
+              ],
+              "mono": []
+            },
+            {
+              "id": "cn8",
+              "label": "CN VIII 聽/前庭",
+              "sides": [
+                {
+                  "k": "hearing",
+                  "l": "聽力下降 ↓hearing"
+                }
+              ],
+              "mono": [
+                "眼球震顫 nystagmus",
+                "眩暈 vertigo"
+              ]
+            },
+            {
+              "id": "cn910",
+              "label": "CN IX·X 舌咽・迷走",
+              "sides": [
+                {
+                  "k": "palate",
+                  "l": "軟顎上抬無力 palate↓"
+                },
+                {
+                  "k": "uvula",
+                  "l": "懸雍垂偏向 uvula→"
+                }
+              ],
+              "mono": [
+                "咽反射消失 gag absent",
+                "聲音沙啞 hoarseness",
+                "吞嚥困難 dysphagia"
+              ]
+            },
+            {
+              "id": "cn11",
+              "label": "CN XI 副神經 Accessory",
+              "sides": [
+                {
+                  "k": "shrug",
+                  "l": "聳肩無力 shrug↓(trapezius)"
+                },
+                {
+                  "k": "scm",
+                  "l": "轉頭無力 SCM↓"
+                }
+              ],
+              "mono": []
+            },
+            {
+              "id": "cn12",
+              "label": "CN XII 舌下 Hypoglossal",
+              "sides": [
+                {
+                  "k": "tongue",
+                  "l": "舌偏向 tongue→"
+                },
+                {
+                  "k": "atrophy",
+                  "l": "舌肌萎縮 atrophy"
+                }
+              ],
+              "mono": [
+                "舌顫動 fasciculation"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "pe_tone",
+          "type": "select",
+          "label": "肌張力",
+          "en": "Tone",
+          "opts": [
+            "正常 Normal",
+            "痙攣 Spasticity",
+            "僵直 Rigidity",
+            "低張 Flaccid"
+          ],
+          "normal": "正常 Normal",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_neuro"
+        },
+        {
+          "id": "pe_strength",
+          "type": "group",
+          "label": "四肢肌力",
+          "en": "Motor power 0–5",
+          "fields": [
+            {
+              "id": "RUE",
+              "label": "RUE",
+              "opts": [
+                "0",
+                "1",
+                "2",
+                "3",
+                "4",
+                "5"
+              ],
+              "normal": "5"
+            },
+            {
+              "id": "LUE",
+              "label": "LUE",
+              "opts": [
+                "0",
+                "1",
+                "2",
+                "3",
+                "4",
+                "5"
+              ],
+              "normal": "5"
+            },
+            {
+              "id": "RLE",
+              "label": "RLE",
+              "opts": [
+                "0",
+                "1",
+                "2",
+                "3",
+                "4",
+                "5"
+              ],
+              "normal": "5"
+            },
+            {
+              "id": "LLE",
+              "label": "LLE",
+              "opts": [
+                "0",
+                "1",
+                "2",
+                "3",
+                "4",
+                "5"
+              ],
+              "normal": "5"
+            }
+          ],
+          "star": true,
+          "total": null,
+          "kind": "PE",
+          "system": "pe_neuro"
+        },
+        {
+          "id": "pe_sensory",
+          "type": "custom",
+          "custom": "sensory",
+          "label": "感覺",
+          "en": "Sensory",
+          "star": false,
+          "kind": "PE",
+          "system": "pe_neuro"
+        },
+        {
+          "id": "pe_dtr",
+          "type": "custom",
+          "custom": "dtr",
+          "label": "深部肌腱反射",
+          "en": "DTR (0–4+)",
+          "star": true,
+          "kind": "PE",
+          "system": "pe_neuro"
+        },
+        {
+          "id": "pe_plantar",
+          "type": "custom",
+          "custom": "plantar",
+          "label": "蹠反射 / Babinski",
+          "en": "Plantar response",
+          "star": true,
+          "kind": "PE",
+          "system": "pe_neuro"
+        },
+        {
+          "id": "pe_clonus",
+          "kind": "PE",
+          "system": "pe_neuro",
+          "type": "toggle",
+          "label": "陣攣 Clonus",
+          "en": "",
+          "star": false,
+          "fu": [
+            {
+              "id": "clonus_side",
+              "type": "select",
+              "label": "側別",
+              "opts": [
+                "左 L",
+                "右 R",
+                "雙側 Bilateral"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "pe_romberg",
+          "type": "select",
+          "label": "Romberg",
+          "en": "Romberg",
+          "opts": [
+            "陰性 Negative",
+            "陽性 Positive"
+          ],
+          "normal": "陰性 Negative",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_neuro"
+        },
+        {
+          "id": "pe_coord",
+          "type": "select",
+          "label": "協調",
+          "en": "Coordination",
+          "opts": [
+            "正常 Normal",
+            "異常 Abnormal"
+          ],
+          "normal": "正常 Normal",
+          "star": false,
+          "fu": [
+            {
+              "id": "coord_d",
+              "type": "text",
+              "label": "描述（finger-nose / heel-shin / 輪替）"
+            }
+          ],
+          "fuOn": "異常 Abnormal",
+          "kind": "PE",
+          "system": "pe_neuro"
+        }
+      ]
+    },
+    {
+      "key": "pe_psych",
+      "kind": "PE",
+      "label": "精神狀態 Mental status",
+      "items": [
+        {
+          "id": "pe_orient",
+          "type": "select",
+          "label": "定向感",
+          "en": "Orientation",
+          "opts": [
+            "人時地清楚 x3",
+            "部分障礙",
+            "完全障礙"
+          ],
+          "normal": "人時地清楚 x3",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_psych"
+        },
+        {
+          "id": "pe_mood",
+          "type": "select",
+          "label": "情緒/情感",
+          "en": "Mood/Affect",
+          "opts": [
+            "正常 Normal",
+            "低落 Depressed",
+            "焦慮 Anxious",
+            "躁動 Agitated"
+          ],
+          "normal": "正常 Normal",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_psych"
+        },
+        {
+          "id": "pe_mmse",
+          "type": "text",
+          "label": "MMSE 分數",
+          "en": "MMSE score",
+          "kind": "PE",
+          "system": "pe_psych"
+        },
+        {
+          "id": "pe_insight",
+          "type": "select",
+          "label": "洞察力",
+          "en": "Insight",
+          "opts": [
+            "良好 Good",
+            "部分 Partial",
+            "缺乏 Poor"
+          ],
+          "normal": "良好 Good",
+          "star": false,
+          "fu": null,
+          "fuOn": null,
+          "kind": "PE",
+          "system": "pe_psych"
+        }
+      ]
+    }
+  ],
+  "specialties": [
+    {
+      "key": "cvs",
+      "label": "CV / CVS 心臟內外科",
+      "focus": [
+        "chest_pain",
+        "exert_dyspnea",
+        "orthopnea",
+        "pnd",
+        "palpitation",
+        "leg_edema",
+        "syncope",
+        "claudication",
+        "pe_jvd",
+        "pe_rhythm",
+        "pe_heartsound",
+        "pe_murmur",
+        "pe_s3",
+        "pe_pedema",
+        "pe_pulse",
+        "pe_carotid"
+      ]
+    },
+    {
+      "key": "cms",
+      "label": "CM / CS 胸腔內外科",
+      "focus": [
+        "cough",
+        "sputum",
+        "hemoptysis",
+        "dyspnea",
+        "wheezing_ros",
+        "pleuritic",
+        "pe_expansion",
+        "pe_breath",
+        "pe_crackles",
+        "pe_wheezes",
+        "pe_rhonchi",
+        "pe_percussion",
+        "pe_clubbing"
+      ]
+    },
+    {
+      "key": "gigs",
+      "label": "GI / GS 消化內科・一般外科",
+      "focus": [
+        "nausea",
+        "vomiting",
+        "hematemesis",
+        "heartburn",
+        "abd_pain_ros",
+        "bloating",
+        "diarrhea",
+        "constipation",
+        "hematochezia",
+        "melena",
+        "jaundice_ros",
+        "bowel_change",
+        "pe_abd_appear",
+        "pe_bowel",
+        "pe_abd_tender",
+        "pe_rebound",
+        "pe_guarding",
+        "pe_hepatomeg",
+        "pe_splenomeg",
+        "pe_murphy",
+        "pe_mcburney",
+        "pe_shifting"
+      ]
+    },
+    {
+      "key": "neuro",
+      "label": "Neuro / NS 神經內外科",
+      "focus": [
+        "headache",
+        "dizziness",
+        "vertigo",
+        "numbness",
+        "limb_weak",
+        "gait_prob",
+        "tremor",
+        "seizure",
+        "loc",
+        "speech_diff",
+        "memory_change",
+        "consciousness",
+        "gcs",
+        "pe_cn",
+        "pe_tone",
+        "pe_strength",
+        "pe_sensory",
+        "pe_dtr",
+        "pe_plantar",
+        "pe_clonus",
+        "pe_romberg",
+        "pe_coord",
+        "pe_nuchal"
+      ]
+    },
+    {
+      "key": "nephrogu",
+      "label": "Nephro / GU 腎臟・泌尿科",
+      "focus": [
+        "renal_oliguria",
+        "renal_foamy",
+        "renal_periorbital_edema",
+        "renal_weight_gain",
+        "gu_freq",
+        "gu_urg",
+        "nocturia",
+        "dysuria",
+        "hematuria",
+        "incontinence",
+        "flank_pain",
+        "hesitancy",
+        "leg_edema",
+        "pe_cva",
+        "pe_pedema",
+        "hydration",
+        "pe_abd_tender"
+      ]
+    },
+    {
+      "key": "crs",
+      "label": "CRS 大腸直腸外科",
+      "focus": [
+        "abd_pain_ros",
+        "bloating",
+        "diarrhea",
+        "constipation",
+        "hematochezia",
+        "melena",
+        "bowel_change",
+        "wt_loss",
+        "pe_abd_appear",
+        "pe_bowel",
+        "pe_abd_tender",
+        "pe_rebound",
+        "pe_guarding",
+        "pe_abd_mass"
+      ]
+    },
+    {
+      "key": "obs",
+      "label": "OBS 產科",
+      "focus": [
+        "ga",
+        "edc",
+        "gravida_para",
+        "fetal_movement",
+        "contractions",
+        "leaking_fluid",
+        "vaginal_bleeding_preg",
+        "preeclampsia_sx",
+        "abd_pain_ros",
+        "leg_edema",
+        "fundal_height",
+        "fetal_heart",
+        "pe_abd_tender",
+        "pe_pedema"
+      ]
+    },
+    {
+      "key": "gyn",
+      "label": "GYN 婦科",
+      "focus": [
+        "lmp",
+        "menses",
+        "dysmenorrhea",
+        "menorrhagia",
+        "intermenstrual_bleed",
+        "postmenopausal_bleed",
+        "vaginal_discharge",
+        "pelvic_pain",
+        "dyspareunia",
+        "abd_pain_ros",
+        "pe_abd_tender",
+        "speculum",
+        "cervix_os",
+        "bimanual",
+        "adnexal"
+      ]
+    },
+    {
+      "key": "air",
+      "label": "AIR 過敏免疫風濕科",
+      "focus": [
+        "arthralgia",
+        "joint_swell_ros",
+        "morning_stiff",
+        "myalgia",
+        "rash",
+        "pruritus",
+        "fever",
+        "fatigue",
+        "pe_joint_swell",
+        "pe_joint_tender",
+        "pe_rom",
+        "pe_rash",
+        "pe_lymph_neck"
+      ]
+    },
+    {
+      "key": "psy",
+      "label": "PSY 精神科",
+      "focus": [
+        "dep_mood",
+        "anhedonia",
+        "anxiety",
+        "sleep_dist",
+        "suicidal",
+        "hallucination",
+        "memory_change",
+        "fatigue",
+        "consciousness",
+        "pe_orient",
+        "pe_mood",
+        "pe_mmse",
+        "pe_insight"
+      ]
+    },
+    {
+      "key": "ortho",
+      "label": "Ortho 骨科",
+      "focus": [
+        "arthralgia",
+        "joint_swell_ros",
+        "morning_stiff",
+        "myalgia",
+        "back_pain",
+        "limb_weak",
+        "numbness",
+        "pe_joint_swell",
+        "pe_joint_tender",
+        "pe_rom",
+        "pe_deformity",
+        "pe_gait",
+        "pe_strength",
+        "pe_sensory"
+      ]
+    },
+    {
+      "key": "hemonc",
+      "label": "Hema / Onco 血液腫瘤科",
+      "focus": [
+        "fever",
+        "night_sweats",
+        "wt_loss",
+        "fatigue",
+        "easy_bruise",
+        "bleeding_tend",
+        "lymphadeno_ros",
+        "recur_infx",
+        "pe_pallor",
+        "pe_petechiae",
+        "pe_lymph_neck",
+        "pe_splenomeg",
+        "pe_hepatomeg",
+        "pe_jaundice"
+      ]
+    },
+    {
+      "key": "inf",
+      "label": "INF 感染科",
+      "focus": [
+        "fever",
+        "chills",
+        "night_sweats",
+        "cough",
+        "dysuria",
+        "diarrhea",
+        "rash",
+        "headache",
+        "consciousness",
+        "pe_nuchal",
+        "pe_lymph_neck",
+        "pe_throat"
+      ]
+    },
+    {
+      "key": "ent",
+      "label": "ENT 耳鼻喉科",
+      "focus": [
+        "sore_throat",
+        "hoarseness",
+        "dysphagia",
+        "odynophagia",
+        "ear_pain",
+        "hearing_loss",
+        "tinnitus",
+        "nasal_cong",
+        "rhinorrhea",
+        "epistaxis",
+        "neck_mass",
+        "pe_throat",
+        "pe_tonsil",
+        "pe_tm",
+        "pe_lymph_neck",
+        "pe_thyroid"
+      ]
+    },
+    {
+      "key": "dermaps",
+      "label": "Derma / PS 皮膚・整形外科",
+      "focus": [
+        "rash",
+        "pruritus",
+        "skin_lesion",
+        "easy_bruise",
+        "pe_rash",
+        "pe_pallor",
+        "pe_jaundice",
+        "pe_cyanosis",
+        "pe_petechiae",
+        "pe_clubbing",
+        "pe_turgor"
+      ]
+    },
+    {
+      "key": "general",
+      "label": "一般內科／不分科／其他",
+      "focus": []
+    }
+  ]
+}

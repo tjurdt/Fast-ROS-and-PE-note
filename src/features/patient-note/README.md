@@ -6,8 +6,9 @@
 
 ## Non-goals
 
-- ROS/PE、組套、待辦與匯出尚未遷入；未達 parity 前不取代正式入口。
-- 元件不直接呼叫 repository。
+- 本元件只處理病人基本資料與版面容器；ROS/PE 由 App 組合 `clinical-note` feature。
+- 組套、待辦與匯出尚未遷入；未達 parity 前不取代正式入口。
+- 元件不直接呼叫 repository，也不直接 import 其他 feature。
 
 ## Data and integration
 

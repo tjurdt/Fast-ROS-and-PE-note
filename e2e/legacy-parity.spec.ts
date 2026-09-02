@@ -22,6 +22,7 @@ test("legacy local workflow persists findings and preserves export semantics", a
   await feverSection.locator(".sec-head").click();
   await fever.locator("[data-toggle]").click();
   await fever.locator('[data-fu="fever_t"]').fill("38.5°C");
+  await expect(page.locator("#summary")).toContainText("1");
 
   const limitedExport = await page.evaluate(() => {
     const legacyWindow = window as typeof window & {
@@ -47,6 +48,32 @@ test("legacy local workflow persists findings and preserves export semantics", a
   );
   expect(stored.patients).toHaveLength(1);
   expect(stored.patients[0].values.fever.on).toBe(true);
+});
+
+test("legacy specialty focus and gynecology gates remain stable", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /單機使用/ }).click();
+  await page.locator("#fabNew").click();
+  await page.locator("#nf_code").fill("GATE-TEST");
+  await page.locator("#nf_sex").selectOption("女 F");
+  await page.locator("#nf_spec").selectOption("general");
+  await page.locator("#nf_create").click();
+
+  await expect(page.locator('[data-item="lmp"]')).toHaveCount(1);
+  await expect(page.locator('[data-item="ga"]')).toHaveCount(0);
+
+  await page.locator("#specSel").selectOption("obs");
+  await expect(page.locator('[data-item="ga"]')).toHaveCount(1);
+  await expect(page.locator('[data-item="fetal_heart"]')).toHaveCount(1);
+
+  await page.locator("#specSel").selectOption("cms");
+  const cough = page.locator('[data-item="cough"]');
+  await expect(cough).toHaveCount(1);
+  await expect(
+    cough.locator(
+      "xpath=ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' section ')][1]",
+    ),
+  ).toHaveClass(/focus/);
 });
 
 test("legacy landing and patient list remain usable at a mobile viewport", async ({

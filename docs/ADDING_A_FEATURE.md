@@ -27,6 +27,8 @@ v2 使用標準 ES module import，不加入 `config/assets.mjs`。Vite 會把 m
 
 只有修正正式 legacy 行為時才使用 classic-script manifest 與 baseline 例外流程。
 
+Clinical 題目定義不得直接修改 `catalog.generated.json`。來源仍在 frozen legacy 時，執行 `npm run sync:clinical-catalog` 產生差異；未來正式切換後會另立 v2 catalog 的 source-of-truth ADR。
+
 ## 4. 以風險決定測試
 
 - domain、格式化、合併、validation：Vitest 單元測試。

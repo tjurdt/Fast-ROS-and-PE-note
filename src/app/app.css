@@ -302,3 +302,212 @@ textarea:focus-visible {
     grid-template-columns: 1fr;
   }
 }
+
+.v2-clinical {
+  display: grid;
+  gap: 10px;
+  margin: 16px 14px;
+}
+
+.v2-clinical-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 4px;
+}
+
+.v2-clinical-summary h2 {
+  margin: 2px 0 0;
+}
+
+.v2-clinical-summary > strong {
+  padding: 5px 10px;
+  border-radius: 999px;
+  color: #92400e;
+  background: #fdf3e3;
+  font-size: 13px;
+}
+
+.v2-clinical-section {
+  overflow: hidden;
+  border: 1px solid #d6e0e4;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 5px 18px rgb(18 48 61 / 6%);
+}
+
+.v2-clinical-section.is-focus {
+  border-color: #9bcfd6;
+  background: #f7fcfc;
+}
+
+.v2-clinical-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 11px 14px;
+  border: 0;
+  color: #12303d;
+  background: transparent;
+  font-weight: 800;
+  text-align: left;
+}
+
+.v2-clinical-section__header span:last-child {
+  color: #6f8794;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.v2-clinical-section__body {
+  border-top: 1px solid #e7eef1;
+}
+
+.v2-clinical-item {
+  padding: 11px 12px;
+  border-bottom: 1px solid #e7eef1;
+}
+
+.v2-clinical-item:last-child {
+  border-bottom: 0;
+}
+
+.v2-clinical-item.is-positive {
+  background: #fff9ef;
+}
+
+.v2-clinical-item__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.v2-clinical-label {
+  display: grid;
+  min-width: 0;
+}
+
+.v2-clinical-label strong {
+  font-size: 14px;
+}
+
+.v2-clinical-label small {
+  color: #6f8794;
+}
+
+.v2-finding-toggle,
+.v2-cycle {
+  min-width: 104px;
+  min-height: 36px;
+  padding: 6px 9px;
+  font-size: 12px;
+}
+
+.v2-finding-toggle.is-positive,
+.v2-cycle.is-positive,
+.v2-finding-group .is-positive {
+  border-color: #d89b52;
+  color: #92400e;
+  background: #fdf3e3;
+}
+
+.v2-cycle.is-normal {
+  border-color: #91c9ae;
+  color: #166534;
+  background: #effaf4;
+}
+
+.v2-finding-text {
+  width: min(48%, 280px);
+  min-height: 38px;
+  padding: 7px 8px;
+  border: 1px solid #d6e0e4;
+  border-radius: 8px;
+  resize: vertical;
+}
+
+.v2-finding-group {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.v2-finding-group label {
+  display: grid;
+  gap: 2px;
+  color: #6f8794;
+  font-size: 11px;
+}
+
+.v2-finding-group select {
+  min-width: 54px;
+  padding: 5px;
+  border: 1px solid #d6e0e4;
+  border-radius: 7px;
+  background: #fff;
+}
+
+.v2-follow-up {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.4fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  color: #3d5a67;
+  font-size: 12px;
+}
+
+.v2-follow-up select,
+.v2-follow-up textarea,
+.v2-item-note textarea {
+  width: 100%;
+  padding: 7px 8px;
+  border: 1px solid #d6e0e4;
+  border-radius: 8px;
+  resize: vertical;
+}
+
+.v2-item-note {
+  margin-top: 7px;
+  color: #6f8794;
+  font-size: 12px;
+}
+
+.v2-item-note summary {
+  cursor: pointer;
+  width: fit-content;
+}
+
+.v2-item-note textarea {
+  margin-top: 5px;
+}
+
+.v2-custom-pending {
+  padding: 5px 8px;
+  border-radius: 7px;
+  color: #6f8794;
+  background: #eef2f4;
+  font-size: 11px;
+}
+
+@media (max-width: 560px) {
+  .v2-clinical-item__row {
+    align-items: flex-start;
+  }
+
+  .v2-finding-group {
+    width: 56%;
+  }
+
+  .v2-follow-up {
+    grid-template-columns: 1fr;
+  }
+}

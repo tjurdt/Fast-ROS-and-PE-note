@@ -1,6 +1,8 @@
 import {
   createPatient,
+  updatePatientFinding,
   updatePatientDetails,
+  type FindingValue,
   type Patient,
   type PatientDraft,
   type PatientEditableFields,
@@ -33,5 +35,16 @@ export function updatePatientInDatabase(
   now: number,
 ): CreatePatientResult {
   const updated = updatePatientDetails(patient, patch, now);
+  return { database: replacePatient(database, updated), patient: updated };
+}
+
+export function updateFindingInDatabase(
+  database: PatientDatabase,
+  patient: Patient,
+  itemId: string,
+  finding: FindingValue,
+  now: number,
+): CreatePatientResult {
+  const updated = updatePatientFinding(patient, itemId, finding, now);
   return { database: replacePatient(database, updated), patient: updated };
 }

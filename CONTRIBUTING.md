@@ -9,6 +9,8 @@
 5. 執行 `npm run build && npm run build:v2 && npm run verify`。
 6. legacy 未變時根目錄 `index.html` 應保持原 hash；v2 成品在 CI 重建，不提交 `dist-v2/`。
 
+若 intentional legacy 修正改動 `SECTIONS` 或 `SPECIALTIES`，必須執行 `npm run sync:clinical-catalog`，審查生成 catalog 差異並更新相應 parity 測試。
+
 ## 不可破壞的契約
 
 - 根目錄 `index.html` 必須維持單檔可執行，不增加本機靜態資源依賴。

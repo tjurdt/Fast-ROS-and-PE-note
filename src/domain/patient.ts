@@ -1,5 +1,20 @@
 import { z } from "zod";
 
+export const FindingValueSchema = z
+  .object({
+    on: z.boolean().optional(),
+    sel: z.string().optional(),
+    text: z.string().optional(),
+    grp: z.record(z.string(), z.string()).optional(),
+    fu: z.record(z.string(), z.string()).optional(),
+    note: z.string().optional(),
+    dtr: z.record(z.string(), z.string()).optional(),
+    plantar: z.record(z.string(), z.string()).optional(),
+    sensory: z.record(z.string(), z.unknown()).optional(),
+    cn: z.record(z.string(), z.unknown()).optional(),
+  })
+  .passthrough();
+
 export const GenderSchema = z.enum(["", "男 M", "女 F", "其他 Other"]);
 
 export const TodoSchema = z
@@ -22,13 +37,14 @@ export const PatientSchema = z
     problem: z.string(),
     createdAt: z.number().int().nonnegative(),
     updatedAt: z.number().int().nonnegative(),
-    findings: z.record(z.string(), z.unknown()),
+    findings: z.record(z.string(), FindingValueSchema),
     blockNotes: z.record(z.string(), z.string()),
     todos: z.array(TodoSchema),
   })
   .strict();
 
 export type Gender = z.infer<typeof GenderSchema>;
+export type FindingValue = z.infer<typeof FindingValueSchema>;
 export type Patient = z.infer<typeof PatientSchema>;
 
 export interface PatientDraft {
@@ -77,6 +93,22 @@ export function updatePatientDetails(
   return PatientSchema.parse({
     ...patient,
     ...patch,
+    updatedAt: now,
+  });
+}
+
+export function updatePatientFinding(
+  patient: Patient,
+  itemId: string,
+  finding: FindingValue,
+  now: number,
+): Patient {
+  return PatientSchema.parse({
+    ...patient,
+    findings: {
+      ...patient.findings,
+      [itemId]: FindingValueSchema.parse(finding),
+    },
     updatedAt: now,
   });
 }
