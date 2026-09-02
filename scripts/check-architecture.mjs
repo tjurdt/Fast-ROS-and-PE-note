@@ -8,6 +8,19 @@ const failures = [];
 const fail = (message) => failures.push(message);
 const slash = (value) => value.replaceAll("\\", "/");
 
+async function collectSourceText(directory) {
+  const chunks = [];
+  const entries = await readdir(directory, { withFileTypes: true });
+  for (const entry of entries) {
+    const absolutePath = path.join(directory, entry.name);
+    if (entry.isDirectory()) chunks.push(await collectSourceText(absolutePath));
+    else if (/\.(?:css|html|js|ts|tsx)$/.test(entry.name)) {
+      chunks.push(await readFile(absolutePath, "utf8"));
+    }
+  }
+  return chunks.join("\n");
+}
+
 if (assetManifest.styles[0] !== "src/styles/app.css") {
   fail("src/styles/app.css must remain the first style source.");
 }
@@ -106,7 +119,8 @@ const secretPatterns = [
   /-----BEGIN (?:RSA |EC )?PRIVATE KEY-----/,
   /AIza[0-9A-Za-z_-]{35}/,
 ];
-const securityInput = `${template}\n${cssSources.join("\n")}\n${jsSources.join("\n")}`;
+const allSourceText = await collectSourceText(path.join(rootDir, "src"));
+const securityInput = `${template}\n${cssSources.join("\n")}\n${jsSources.join("\n")}\n${allSourceText}`;
 for (const pattern of secretPatterns) {
   if (pattern.test(securityInput))
     fail(`Possible committed secret matched ${pattern}.`);
@@ -115,6 +129,16 @@ for (const pattern of secretPatterns) {
 const legacyEntries = await readdir(path.join(rootDir, "src", "legacy"));
 if (legacyEntries.length !== 1 || legacyEntries[0] !== "app.js") {
   fail("src/legacy/ is frozen and may contain only app.js.");
+}
+
+const featureEntries = await readdir(path.join(rootDir, "src", "features"), {
+  withFileTypes: true,
+});
+for (const entry of featureEntries) {
+  if (!entry.isDirectory()) continue;
+  await access(path.join(rootDir, "src", "features", entry.name, "README.md")).catch(
+    () => fail(`Feature ${entry.name} needs its own README.md contract.`),
+  );
 }
 
 if (failures.length > 0) {

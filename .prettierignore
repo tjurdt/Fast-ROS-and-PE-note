@@ -4,3 +4,6 @@ src/legacy/app.js
 src/styles/app.css
 node_modules
 coverage
+dist-v2
+playwright-report
+test-results

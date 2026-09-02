@@ -1,6 +1,6 @@
 # Fast ROS and PE Note
 
-一個可離線使用的單檔 ROS / PE 查房筆記工具。部署與分享的成品仍是根目錄的 `index.html`；開發來源已拆分，避免未來所有功能持續堆進同一個 HTML。
+一個可離線使用的單檔 ROS / PE 查房筆記工具。目前採雙軌開發：根目錄 `index.html` 是尚未改變的正式 legacy 成品；TypeScript／React v2 在 parity 測試保護下逐步重建，尚未切換正式入口。
 
 ## 開始開發
 
@@ -8,29 +8,33 @@
 
 ```bash
 npm install
+npx playwright install chromium
 npm run build
+npm run build:v2
 npm run verify
 npm start
 ```
 
-- 編輯 `src/`，不要直接編輯根目錄的 `index.html`。
-- `npm run build` 依 `config/assets.mjs` 產生單檔成品。
-- `npm run verify` 執行生成檔、legacy、架構、語法、格式、lint 與冒煙測試檢查。
-- `npm start` 在 `http://127.0.0.1:4173` 預覽成品。
+- 不要直接編輯根目錄的 `index.html`。
+- `npm start` 在 `http://127.0.0.1:4173` 預覽正式 legacy 成品。
+- `npm run dev:v2` 在 `http://127.0.0.1:4174` 啟動 v2 開發環境。
+- `npm run build:v2` 產生自包含的 `dist-v2/index.html`，但不覆蓋正式入口。
+- `npm run verify` 執行 legacy baseline、TypeScript、lint、單元測試、單檔契約與 Playwright parity。
 
 ## 專案地圖
 
 ```text
-src/index.template.html   HTML 外殼
-src/styles/app.css        既有樣式（legacy）
-src/legacy/app.js         既有應用，受 baseline 保護
-src/core/                 未來可共用的穩定邊界
-src/features/             未來功能的垂直切片
-config/assets.mjs         單檔成品的載入順序
-scripts/                  建置與品質檢查
-tests/                    行為與契約測試
-docs/                     架構決策與開發指南
-index.html                自動生成、可離線執行的發布成品
+index.html                正式 legacy 單檔成品，尚未改變
+src/legacy/               受 baseline 保護的既有應用
+src/domain/               v2 純資料模型與規則
+src/application/          v2 use cases 與 infrastructure ports
+src/infrastructure/       v2 local / Google adapters
+src/features/             v2 垂直功能切片
+src/app/                  v2 orchestration 與啟動
+src/v2/index.html         Vite HTML 入口
+dist-v2/index.html        v2 單檔候選成品（不提交）
+tests/v2/                 v2 單元與元件測試
+e2e/                      legacy parity 與 v2 瀏覽器測試
 ```
 
 新增功能前請讀 [新增功能指南](docs/ADDING_A_FEATURE.md)；整體設計與目前風險見 [架構說明](docs/ARCHITECTURE.md)。

@@ -4,13 +4,15 @@
 
 1. 從最新主分支建立小而單一目的的變更。
 2. 新功能建立在 `src/features/<feature-name>/`，先寫該功能的 `README.md` 契約。
-3. 需要進入單檔成品的 CSS/JS，依執行順序明確加入 `config/assets.mjs`。
-4. 執行 `npm run build`，再執行 `npm run verify`。
-5. 一併提交來源、測試與生成後的 `index.html`。
+3. 新功能預設進入 TypeScript/React v2，以 ES module 明確匯入；不要加入 legacy asset manifest。
+4. 先為要搬移的既有行為加入 parity 或 contract test。
+5. 執行 `npm run build && npm run build:v2 && npm run verify`。
+6. legacy 未變時根目錄 `index.html` 應保持原 hash；v2 成品在 CI 重建，不提交 `dist-v2/`。
 
 ## 不可破壞的契約
 
 - 根目錄 `index.html` 必須維持單檔可執行，不增加本機靜態資源依賴。
+- `dist-v2/index.html` 也必須是單檔，且未達 parity gate 前不得取代根目錄成品。
 - 既有 localStorage key、Google Drive schema 與離線資料必須向後相容。
 - migration 必須可重複執行，且不得刪除未知欄位。
 - 不提交 Client Secret、private key、病人資料或測試用真實識別資訊。
@@ -28,6 +30,7 @@
 ```bash
 npm run accept:legacy -- --reason "修正哪個既有契約，以及為何無法從 feature 邊界處理"
 npm run build
+npm run build:v2
 npm run verify
 ```
 

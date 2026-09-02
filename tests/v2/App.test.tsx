@@ -1,0 +1,53 @@
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it } from "vitest";
+
+import { App } from "../../src/app/App";
+import type { PatientRepository } from "../../src/application/patient-repository";
+import {
+  emptyPatientDatabase,
+  type PatientDatabase,
+} from "../../src/domain/patient-database";
+
+class MemoryPatientRepository implements PatientRepository {
+  database = emptyPatientDatabase();
+  saveCount = 0;
+
+  async load(): Promise<PatientDatabase> {
+    return structuredClone(this.database);
+  }
+
+  async save(database: PatientDatabase): Promise<void> {
+    this.database = structuredClone(database);
+    this.saveCount += 1;
+  }
+}
+
+describe("v2 app shell", () => {
+  it("creates, edits, and persists a local patient", async () => {
+    const user = userEvent.setup();
+    const repository = new MemoryPatientRepository();
+    render(
+      <App
+        repository={repository}
+        patientFactory={{ createId: () => "patient-1", now: () => 100 }}
+      />,
+    );
+
+    await user.click(screen.getByTestId("choose-local-v2"));
+    await screen.findByRole("heading", { name: "查房快速紀錄" });
+    await user.click(screen.getByRole("button", { name: "＋ 新增病人" }));
+    await user.type(screen.getByLabelText("病人代號 Patient code"), "TEST-01");
+    await user.type(screen.getByLabelText("年齡 Age"), "72");
+    await user.type(screen.getByLabelText("主要問題"), "Pneumonia");
+    await user.click(screen.getByRole("button", { name: "建立並開始" }));
+
+    expect(await screen.findByDisplayValue("TEST-01")).toBeTruthy();
+    await user.clear(screen.getByLabelText("主要問題"));
+    await user.type(screen.getByLabelText("主要問題"), "Improving pneumonia");
+
+    await waitFor(() => expect(repository.saveCount).toBeGreaterThan(1));
+    expect(repository.database.patients).toHaveLength(1);
+    expect(repository.database.patients[0]?.problem).toBe("Improving pneumonia");
+  });
+});
