@@ -1,0 +1,7 @@
+{
+  "file": "src/legacy/app.js",
+  "normalizedSha256": "567bb3ddbef40c2a681971ac885468b535417f1ed278dd52298eacddc4092ce8",
+  "normalizedLineCount": 3498,
+  "acceptedAt": "2026-09-02",
+  "reason": "Initial behavior-preserving extraction from the original index.html"
+}

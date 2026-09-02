@@ -1,0 +1,6 @@
+index.html
+src/index.template.html
+src/legacy/app.js
+src/styles/app.css
+node_modules
+coverage

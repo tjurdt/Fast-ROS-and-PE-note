@@ -1,0 +1,30 @@
+{
+  "name": "fast-ros-and-pe-note",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Maintainability toolchain for the offline PE Note application.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check:architecture": "node scripts/check-architecture.mjs",
+    "check:generated": "node scripts/check-generated.mjs",
+    "check:legacy": "node scripts/check-legacy-baseline.mjs",
+    "check:syntax": "node --check src/legacy/app.js && node --check config/assets.mjs",
+    "accept:legacy": "node scripts/update-legacy-baseline.mjs",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "start": "node scripts/serve.mjs",
+    "test": "node --test --test-isolation=none",
+    "verify": "npm run check:generated && npm run check:legacy && npm run check:architecture && npm run check:syntax && npm run lint && npm run format:check && npm test"
+  },
+  "devDependencies": {
+    "eslint": "^10.9.1",
+    "globals": "^17.12.0",
+    "jsdom": "^30.0.1",
+    "prettier": "^3.9.6"
+  }
+}

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="google-oauth-client-id" content="253312388327-crbnpnapqatie469tmgl657ksj60lc2i.apps.googleusercontent.com">
+<title>查房快速紀錄 · 感染評分、透析日與 DNR 修正版</title>
+<style>{{APP_CSS}}</style>
+</head>
+<body>
+<div class="wrap" id="wrap"></div>
+<div class="scrim" id="scrim"></div>
+<div class="toast" id="toast"></div>
+<div class="modal" id="exportModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <span class="mt" id="modalTitle">匯出預覽</span>
+      <button class="mx" id="modalClose" title="關閉">×</button>
+    </div>
+    <div class="modal-scroll" id="modalScroll"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+<div id="printArea"></div>
+
+<div class="set-editor" id="setEditor">
+  <div class="se-card">
+    <div class="se-head">
+      <button class="se-x" id="seBack" style="display:none">‹</button>
+      <span class="se-title" id="seTitle">組套編輯器</span>
+      <button class="se-x" id="seClose" title="關閉">×</button>
+    </div>
+    <div class="se-scroll" id="seScroll"></div>
+    <div class="se-foot" id="seFoot"></div>
+  </div>
+</div>
+
+<div class="modal" id="storageModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <span class="mt">資料儲存與同步</span>
+      <button class="mx" id="storageModalClose" title="關閉">×</button>
+    </div>
+    <div class="modal-scroll" id="storageModalBody"></div>
+    <div class="modal-foot" id="storageModalFoot"></div>
+  </div>
+</div>
+
+<div class="modal" id="syncConflictModal">
+  <div class="modal-card">
+    <div class="modal-head"><span class="mt">同步衝突</span></div>
+    <div class="modal-scroll" id="syncConflictBody"></div>
+    <div class="modal-foot" id="syncConflictFoot"></div>
+  </div>
+</div>
+
+<script>{{APP_JS}}</script>
+</body>
+</html>
