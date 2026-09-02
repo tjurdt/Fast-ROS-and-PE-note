@@ -7,6 +7,8 @@ import { rootDir } from "./render-app.mjs";
 const START_MARKER = "function T(";
 const END_MARKER =
   "const SPEC_INDEX = {}; SPECIALTIES.forEach(s=>SPEC_INDEX[s.key]=s);";
+const WIDGET_START_MARKER = "const DTR_SITES=[";
+const WIDGET_END_MARKER = "function sensoryState(v){";
 
 export const clinicalCatalogPath = path.join(
   rootDir,
@@ -21,8 +23,10 @@ export async function readLegacyClinicalCatalog() {
   const source = await readFile(legacyPath, "utf8");
   const start = source.indexOf(START_MARKER);
   const endMarkerStart = source.indexOf(END_MARKER, start);
+  const widgetStart = source.indexOf(WIDGET_START_MARKER, endMarkerStart);
+  const widgetEnd = source.indexOf(WIDGET_END_MARKER, widgetStart);
 
-  if (start < 0 || endMarkerStart < 0) {
+  if (start < 0 || endMarkerStart < 0 || widgetStart < 0 || widgetEnd < 0) {
     throw new Error("Cannot locate the legacy clinical catalog boundaries.");
   }
 
@@ -33,6 +37,27 @@ export async function readLegacyClinicalCatalog() {
     timeout: 1_000,
   });
   const catalog = JSON.parse(serialized);
+  const widgetSource = `${source.slice(widgetStart, widgetEnd)}
+JSON.stringify({
+  dtr: {
+    sites: DTR_SITES.map(({ k, l }) => ({ key: k, label: l })),
+    grades: DTR_GRADES,
+  },
+  plantar: { options: PLANTAR_OPTS },
+  sensory: {
+    statuses: SENSORY_STATUS,
+    sides: SENSORY_SIDES,
+    changes: SENSORY_CHANGES,
+    patterns: SENSORY_PATTERNS,
+    modalities: SENSORY_MODALITIES,
+  },
+});`;
+  const widgets = JSON.parse(
+    vm.runInNewContext(widgetSource, Object.create(null), {
+      filename: "legacy-clinical-widgets.vm.js",
+      timeout: 1_000,
+    }),
+  );
 
   const itemIds = catalog.sections.flatMap((section) =>
     section.items.map((item) => item.id),
@@ -41,7 +66,7 @@ export async function readLegacyClinicalCatalog() {
     throw new Error("Legacy clinical catalog contains duplicate item IDs.");
   }
 
-  return catalog;
+  return { ...catalog, widgets };
 }
 
 export function serializeClinicalCatalog(catalog) {

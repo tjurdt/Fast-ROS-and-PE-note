@@ -1,19 +1,10 @@
 import { z } from "zod";
 
-export const FindingValueSchema = z
-  .object({
-    on: z.boolean().optional(),
-    sel: z.string().optional(),
-    text: z.string().optional(),
-    grp: z.record(z.string(), z.string()).optional(),
-    fu: z.record(z.string(), z.string()).optional(),
-    note: z.string().optional(),
-    dtr: z.record(z.string(), z.string()).optional(),
-    plantar: z.record(z.string(), z.string()).optional(),
-    sensory: z.record(z.string(), z.unknown()).optional(),
-    cn: z.record(z.string(), z.unknown()).optional(),
-  })
-  .passthrough();
+import { FindingValueSchema } from "./clinical/finding";
+import type { FindingValue } from "./clinical/finding";
+
+export { FindingValueSchema } from "./clinical/finding";
+export type { FindingValue } from "./clinical/finding";
 
 export const GenderSchema = z.enum(["", "男 M", "女 F", "其他 Other"]);
 
@@ -44,7 +35,6 @@ export const PatientSchema = z
   .strict();
 
 export type Gender = z.infer<typeof GenderSchema>;
-export type FindingValue = z.infer<typeof FindingValueSchema>;
 export type Patient = z.infer<typeof PatientSchema>;
 
 export interface PatientDraft {

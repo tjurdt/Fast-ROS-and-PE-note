@@ -93,7 +93,7 @@ export function PatientNote({
 
       <section className="v2-card v2-parity-notice">
         <strong>尚未切換正式入口</strong>
-        <p>Custom widgets、組套、匯出與 Google 同步會在 parity 測試保護下逐步遷入。</p>
+        <p>Admission、PMH、組套、匯出與 Google 同步會在 parity 測試保護下逐步遷入。</p>
       </section>
     </main>
   );

@@ -27,6 +27,22 @@ const ToggleItemSchema = ItemCommonSchema.extend({
   fu: z.array(FollowUpSchema).nullable(),
 }).passthrough();
 
+const CranialNerveSideSchema = z
+  .object({
+    k: z.string().min(1),
+    l: z.string(),
+  })
+  .strict();
+
+export const CranialNerveDefinitionSchema = z
+  .object({
+    id: z.string().min(1),
+    label: z.string(),
+    sides: z.array(CranialNerveSideSchema),
+    mono: z.array(z.string()),
+  })
+  .strict();
+
 const SelectItemSchema = ItemCommonSchema.extend({
   type: z.literal("select"),
   opts: z.array(z.string()).min(1),
@@ -34,6 +50,8 @@ const SelectItemSchema = ItemCommonSchema.extend({
   star: z.boolean(),
   fu: z.array(FollowUpSchema).nullable(),
   fuOn: z.string().nullable(),
+  cnOn: z.string().optional(),
+  cnPanel: z.array(CranialNerveDefinitionSchema).optional(),
 }).passthrough();
 
 const GroupFieldSchema = z
@@ -88,10 +106,34 @@ export const ClinicalSpecialtySchema = z
   })
   .strict();
 
+const ClinicalWidgetDefinitionsSchema = z
+  .object({
+    dtr: z
+      .object({
+        sites: z
+          .array(z.object({ key: z.string(), label: z.string() }).strict())
+          .min(1),
+        grades: z.array(z.string()).min(1),
+      })
+      .strict(),
+    plantar: z.object({ options: z.array(z.string()).min(1) }).strict(),
+    sensory: z
+      .object({
+        statuses: z.array(z.string()).min(1),
+        sides: z.array(z.string()).min(1),
+        changes: z.array(z.string()).min(1),
+        patterns: z.array(z.string()).min(1),
+        modalities: z.array(z.string()).min(1),
+      })
+      .strict(),
+  })
+  .strict();
+
 export const ClinicalCatalogSchema = z
   .object({
     sections: z.array(ClinicalSectionSchema),
     specialties: z.array(ClinicalSpecialtySchema),
+    widgets: ClinicalWidgetDefinitionsSchema,
   })
   .strict();
 
@@ -100,3 +142,4 @@ export type ClinicalSection = z.infer<typeof ClinicalSectionSchema>;
 export type ClinicalSpecialty = z.infer<typeof ClinicalSpecialtySchema>;
 export type ClinicalCatalog = z.infer<typeof ClinicalCatalogSchema>;
 export type FollowUp = z.infer<typeof FollowUpSchema>;
+export type CranialNerveDefinition = z.infer<typeof CranialNerveDefinitionSchema>;

@@ -21,7 +21,7 @@ npm start
 - `npm run build:v2` 產生自包含的 `dist-v2/index.html`，但不覆蓋正式入口。
 - `npm run verify` 執行 legacy baseline、TypeScript、lint、單元測試、單檔契約與 Playwright parity。
 
-目前 v2 已包含完整 25 區塊／194 題／16 科別 typed catalog、Focus/gate、一般題型 renderer、陽性計數與本機重載。DTR、Babinski、Sensory、CN detail 等 custom widgets，以及 Admission、PMH、組套、匯出與 Google 同步仍待 parity 遷移。
+目前 v2 已包含完整 25 區塊／194 題／16 科別 typed catalog、Focus/gate、全部 ROS/PE 題型（含 DTR、Babinski、Sensory、CN detail）、陽性計數與本機重載。Admission、PMH、組套、匯出與 Google 同步仍待 parity 遷移。
 
 ## 專案地圖
 

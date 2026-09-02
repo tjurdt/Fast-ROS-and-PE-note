@@ -5,6 +5,8 @@ import type {
 } from "../../domain/clinical/catalog-schema";
 import type { FindingValue } from "../../domain/patient";
 import { Button } from "../../ui/Button";
+import { CranialNerveWidget } from "./CranialNerveWidget";
+import { CustomClinicalWidget } from "./CustomClinicalWidget";
 
 interface ClinicalItemProps {
   item: ClinicalItemDefinition;
@@ -76,6 +78,8 @@ export function ClinicalItem({ item, finding, onChange }: ClinicalItemProps) {
   const showFollowUps =
     followUps !== null &&
     (item.type === "toggle" ? finding.on === true : finding.sel === item.fuOn);
+  const cranialNerves = item.type === "select" ? item.cnPanel : undefined;
+  const showCranialNerves = cranialNerves !== undefined && finding.sel === item.cnOn;
 
   let control;
   if (item.type === "toggle") {
@@ -151,15 +155,15 @@ export function ClinicalItem({ item, finding, onChange }: ClinicalItemProps) {
     );
   } else {
     control = (
-      <span className="v2-custom-pending" data-testid={`finding-control-${item.id}`}>
-        {item.custom} widget 待 parity
-      </span>
+      <div className="v2-custom-widget" data-testid={`finding-control-${item.id}`}>
+        <CustomClinicalWidget item={item} finding={finding} onChange={onChange} />
+      </div>
     );
   }
 
   return (
     <article
-      className={`v2-clinical-item ${positive ? "is-positive" : ""}`}
+      className={`v2-clinical-item ${positive ? "is-positive" : ""} ${item.type === "custom" ? "has-custom-widget" : ""}`}
       data-clinical-item={item.id}
     >
       <div className="v2-clinical-item__row">
@@ -183,6 +187,14 @@ export function ClinicalItem({ item, finding, onChange }: ClinicalItemProps) {
             />
           ))
         : null}
+
+      {showCranialNerves ? (
+        <CranialNerveWidget
+          definitions={cranialNerves}
+          finding={finding}
+          onChange={onChange}
+        />
+      ) : null}
 
       <details className="v2-item-note" open={Boolean(finding.note)}>
         <summary>備註</summary>

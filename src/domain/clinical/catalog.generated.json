@@ -3266,5 +3266,91 @@
       "label": "一般內科／不分科／其他",
       "focus": []
     }
-  ]
+  ],
+  "widgets": {
+    "dtr": {
+      "sites": [
+        {
+          "key": "biceps",
+          "label": "Biceps 肱二頭肌"
+        },
+        {
+          "key": "triceps",
+          "label": "Triceps 肱三頭肌"
+        },
+        {
+          "key": "brachi",
+          "label": "Brachioradialis 肱橈肌"
+        },
+        {
+          "key": "knee",
+          "label": "Knee 膝反射"
+        },
+        {
+          "key": "ankle",
+          "label": "Ankle 踝反射"
+        }
+      ],
+      "grades": [
+        "",
+        "0",
+        "1+",
+        "2+",
+        "3+",
+        "4+"
+      ]
+    },
+    "plantar": {
+      "options": [
+        "屈曲↓ (正常)",
+        "伸直↑ Babinski(+)",
+        "無反應"
+      ]
+    },
+    "sensory": {
+      "statuses": [
+        "",
+        "正常 Intact",
+        "異常 Abnormal"
+      ],
+      "sides": [
+        "左上肢 LUE",
+        "右上肢 RUE",
+        "雙上肢 Bilateral UE",
+        "左手 L hand",
+        "右手 R hand",
+        "左下肢 LLE",
+        "右下肢 RLE",
+        "雙下肢 Bilateral LE",
+        "左足 L foot",
+        "右足 R foot",
+        "軀幹 Trunk",
+        "顏面 Face",
+        "其他 Other"
+      ],
+      "changes": [
+        "感覺減退 Hypoesthesia",
+        "感覺消失 Anesthesia",
+        "感覺增強 Hyperesthesia",
+        "異感 Paresthesia",
+        "痛覺過敏 Hyperalgesia",
+        "觸痛 Allodynia"
+      ],
+      "patterns": [
+        "皮節 Dermatomal",
+        "周邊神經 Peripheral nerve",
+        "襪套/手套 Stocking-glove",
+        "半身 Hemisensory",
+        "散在/斑片 Patchy",
+        "其他 Other"
+      ],
+      "modalities": [
+        "輕觸 Light touch",
+        "針刺/痛覺 Pinprick",
+        "溫度 Temperature",
+        "震動 Vibration",
+        "本體覺 Proprioception"
+      ]
+    }
+  }
 }
