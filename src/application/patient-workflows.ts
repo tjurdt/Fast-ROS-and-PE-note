@@ -1,15 +1,18 @@
 import {
   createPatient,
+  updatePatientBundles,
   updatePatientFinding,
   updatePatientDetails,
   updatePatientWorkspace,
   type FindingValue,
   type Patient,
+  type PatientBundleFields,
   type PatientDraft,
   type PatientEditableFields,
   type PatientFactoryDependencies,
   type PatientWorkspaceFields,
 } from "../domain/patient";
+import { applyPmhAutoBundles } from "../domain/bundles";
 import {
   addPatient,
   replacePatient,
@@ -57,6 +60,33 @@ export function updateWorkspaceInDatabase(
   patch: Partial<PatientWorkspaceFields>,
   now: number,
 ): CreatePatientResult {
-  const updated = updatePatientWorkspace(patient, patch, now);
+  let updated = updatePatientWorkspace(patient, patch, now);
+  if (patch.pmh) {
+    const automatic = applyPmhAutoBundles(
+      updated.customSets,
+      updated.autoTriggered,
+      patch.pmh,
+    );
+    if (automatic.addedIds.length > 0) {
+      updated = updatePatientBundles(
+        updated,
+        {
+          customSets: automatic.instances,
+          autoTriggered: automatic.triggered,
+        },
+        now,
+      );
+    }
+  }
+  return { database: replacePatient(database, updated), patient: updated };
+}
+
+export function updateBundlesInDatabase(
+  database: PatientDatabase,
+  patient: Patient,
+  patch: Partial<PatientBundleFields>,
+  now: number,
+): CreatePatientResult {
+  const updated = updatePatientBundles(patient, patch, now);
   return { database: replacePatient(database, updated), patient: updated };
 }

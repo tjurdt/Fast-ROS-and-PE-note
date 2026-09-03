@@ -215,3 +215,192 @@ test("v2 note workspace persists todo, history, ADL, and block notes", async ({
   );
   expect(hasHorizontalOverflow).toBe(false);
 });
+
+test("v2 LQQOPERA, dialysis, and DNR bundles persist and reload", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("http://127.0.0.1:4174/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload();
+
+  await page.getByTestId("choose-local-v2").click();
+  await page.getByRole("button", { name: "＋ 新增病人" }).click();
+  await page.getByLabel("病人代號 Patient code").fill("BUNDLES-V2");
+  await page.getByRole("button", { name: "建立並開始" }).click();
+
+  await page.getByTestId("add-lqq").click();
+  await page.getByLabel("症狀分析 1 名稱").fill("胸痛 Chest pain");
+  await page.getByRole("button", { name: "壓迫 pressure" }).click();
+  await page.getByLabel("症狀分析 1 嚴重度").fill("8");
+  await page.getByLabel("症狀分析 1 發作型態").selectOption("突發 sudden");
+
+  await page.getByTestId("add-bundle-sys_dialysis").click();
+  await page
+    .getByLabel("洗腎 Dialysis 透析方式", { exact: true })
+    .selectOption("血液透析 HD");
+  await page.getByTestId("bundle-day-W1").click();
+  await page.getByTestId("bundle-day-W3").click();
+  await page.getByLabel("洗腎 Dialysis 乾體重 kg").fill("58.5");
+
+  await page.getByTestId("add-bundle-sys_orders").click();
+  await page.getByTestId("bundle-toggle-f_sys_orders_0").click();
+  await expect(page.getByTestId("dnr-state-0")).toHaveText("同意");
+  await page.getByTestId("dnr-state-0").click();
+  await expect(page.getByTestId("dnr-state-0")).toHaveText("未同意");
+
+  await expect
+    .poll(async () => {
+      const stored = await page.evaluate(() =>
+        JSON.parse(window.localStorage.getItem("pe_note_v2") ?? "null"),
+      );
+      return stored?.patients?.[0]?.customSets?.sys_dialysis?.f_sys_dialysis_3;
+    })
+    .toBe("58.5");
+
+  await page.getByRole("button", { name: /病人清單/ }).click();
+  await page.reload();
+  await page.getByTestId("choose-local-v2").click();
+  await page.getByRole("button", { name: /BUNDLES-V2/ }).click();
+
+  await expect(page.getByLabel("症狀分析 1 名稱")).toHaveValue("胸痛 Chest pain");
+  await expect(page.getByRole("button", { name: "壓迫 pressure" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.getByLabel("症狀分析 1 嚴重度")).toHaveValue("8");
+  await expect(page.getByLabel("洗腎 Dialysis 透析方式", { exact: true })).toHaveValue(
+    "血液透析 HD",
+  );
+  await expect(page.getByTestId("bundle-day-W1")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.getByTestId("dnr-state-0")).toHaveText("未同意");
+
+  const stored = await page.evaluate(() =>
+    JSON.parse(window.localStorage.getItem("pe_note_v2") ?? "null"),
+  );
+  expect(stored.patients[0].lqq[0]).toMatchObject({
+    name: "胸痛 Chest pain",
+    quality: ["壓迫 pressure"],
+    sev: 8,
+    onset: "突發 sudden",
+  });
+  expect(stored.patients[0].customSets.sys_dialysis.f_sys_dialysis_1).toEqual([
+    "W1",
+    "W3",
+  ]);
+  expect(
+    stored.patients[0].customSets.sys_orders.f_sys_orders_1["不施行心肺復甦術"],
+  ).toBe("disagree");
+
+  const hasHorizontalOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > window.innerWidth + 1,
+  );
+  expect(hasHorizontalOverflow).toBe(false);
+});
+
+test("v2 postoperative care preserves POD, multi-findings, and repeatable drains", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("http://127.0.0.1:4174/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload();
+
+  await page.getByTestId("choose-local-v2").click();
+  await page.getByRole("button", { name: "＋ 新增病人" }).click();
+  await page.getByLabel("病人代號 Patient code").fill("POSTOP-V2");
+  await page.getByRole("button", { name: "建立並開始" }).click();
+  await page.getByTestId("add-bundle-postop").click();
+
+  const today = await page.evaluate(() => {
+    const now = new Date();
+    const year = String(now.getFullYear()).padStart(4, "0");
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  });
+  await page
+    .getByLabel("術後照護 手術", { exact: true })
+    .fill("Laparoscopic colectomy");
+  await page.getByLabel("術後照護 手術日期").fill(today);
+  await expect(page.getByTestId("postop-pod")).toHaveText("POD 0");
+  await page.getByLabel("術後照護 疼痛", { exact: true }).fill("8");
+  await page.getByTestId("postop-cycle-vitals").click();
+  await page.getByTestId("postop-cycle-vitals").click();
+
+  const nausea = page.getByRole("group", { name: "術後照護 噁心嘔吐" });
+  await nausea.getByRole("button", { name: "無 None" }).click();
+  await nausea.getByRole("button", { name: "嘔吐 Vomiting" }).click();
+  const wound = page.getByRole("group", { name: "術後照護 傷口" });
+  await wound.getByRole("button", { name: "乾淨乾燥完整 CDI" }).click();
+  await wound.getByRole("button", { name: "出血 Bleeding" }).click();
+
+  await page.getByTestId("postop-add-drain").click();
+  const drain = page.getByTestId("postop-drain-1");
+  await drain.getByLabel("Drain 1 種類位置").fill("JP, RUQ");
+  await drain.getByLabel("Drain 1 量").fill("120");
+  await page.getByTestId("postop-drain-1-period").click();
+  await drain.getByRole("button", { name: "膿性 Purulent" }).click();
+  await page.getByTestId("postop-drain-1-patency").click();
+  await page.getByTestId("postop-drain-1-patency").click();
+  await drain.getByRole("button", { name: "周圍乾淨" }).click();
+  await drain.getByRole("button", { name: "滲漏" }).click();
+  await drain.getByLabel("Drain 1 註記").fill("持續觀察趨勢");
+
+  await expect
+    .poll(async () => {
+      const stored = await page.evaluate(() =>
+        JSON.parse(window.localStorage.getItem("pe_note_v2") ?? "null"),
+      );
+      return stored?.patients?.[0]?.postop?.drains?.[0]?.note;
+    })
+    .toBe("持續觀察趨勢");
+
+  await page.getByRole("button", { name: /病人清單/ }).click();
+  await page.reload();
+  await page.getByTestId("choose-local-v2").click();
+  await page.getByRole("button", { name: /POSTOP-V2/ }).click();
+
+  await expect(page.getByLabel("術後照護 手術", { exact: true })).toHaveValue(
+    "Laparoscopic colectomy",
+  );
+  await expect(page.getByLabel("術後照護 疼痛", { exact: true })).toHaveValue("8");
+  await expect(page.getByTestId("postop-cycle-vitals")).toHaveText("需留意 Concern");
+  await expect(
+    page
+      .getByRole("group", { name: "術後照護 噁心嘔吐" })
+      .getByRole("button", { name: "嘔吐 Vomiting" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByLabel("Drain 1 種類位置")).toHaveValue("JP, RUQ");
+  await expect(page.getByTestId("postop-drain-1-patency")).toHaveText(
+    "疑阻塞 Blocked?",
+  );
+  await expect(page.getByLabel("Drain 1 註記")).toHaveValue("持續觀察趨勢");
+
+  const stored = await page.evaluate(() =>
+    JSON.parse(window.localStorage.getItem("pe_note_v2") ?? "null"),
+  );
+  expect(stored.patients[0].postop).toMatchObject({
+    surgery: "Laparoscopic colectomy",
+    surgeryDate: today,
+    pain: "8",
+    vitals: "需留意 Concern",
+    nauseaSymptoms: ["嘔吐 Vomiting"],
+    woundFindings: ["出血 Bleeding"],
+  });
+  expect(stored.patients[0].postop.drains[0]).toMatchObject({
+    site: "JP, RUQ",
+    amount: "120",
+    period: "單次",
+    patency: "疑阻塞 Blocked?",
+    characterFindings: ["膿性 Purulent"],
+    surroundFindings: ["滲漏"],
+    note: "持續觀察趨勢",
+  });
+
+  const hasHorizontalOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > window.innerWidth + 1,
+  );
+  expect(hasHorizontalOverflow).toBe(false);
+});

@@ -1,5 +1,13 @@
 import { z } from "zod";
 
+import {
+  AutoTriggeredBundlesFieldSchema,
+  CustomBundleInstancesFieldSchema,
+  LqqEntriesFieldSchema,
+  type AutoTriggeredBundles,
+  type CustomBundleInstances,
+  type LqqEntry,
+} from "./bundles";
 import { FindingValueSchema } from "./clinical/finding";
 import type { FindingValue } from "./clinical/finding";
 import {
@@ -12,6 +20,10 @@ import {
   type PastMedicalHistoryEntry,
   type Todo,
 } from "./note-workspace";
+import {
+  PostoperativeCareFieldSchema,
+  type PostoperativeCare,
+} from "./postoperative-care";
 
 export { FindingValueSchema } from "./clinical/finding";
 export type { FindingValue } from "./clinical/finding";
@@ -38,6 +50,10 @@ export const PatientSchema = z
     pmh: z.array(PastMedicalHistoryEntrySchema).default([]),
     admission: AdmissionFieldSchema,
     adl: AdlFieldSchema,
+    lqq: LqqEntriesFieldSchema,
+    customSets: CustomBundleInstancesFieldSchema,
+    autoTriggered: AutoTriggeredBundlesFieldSchema,
+    postop: PostoperativeCareFieldSchema,
   })
   .strict();
 
@@ -78,6 +94,10 @@ export function createPatient(
     pmh: [],
     admission: {},
     adl: {},
+    lqq: [],
+    customSets: {},
+    autoTriggered: {},
+    postop: null,
   });
 }
 
@@ -93,6 +113,13 @@ export interface PatientWorkspaceFields {
   pmh: PastMedicalHistoryEntry[];
   admission: Admission;
   adl: Adl;
+}
+
+export interface PatientBundleFields {
+  lqq: LqqEntry[];
+  customSets: CustomBundleInstances;
+  autoTriggered: AutoTriggeredBundles;
+  postop: PostoperativeCare | null;
 }
 
 export function updatePatientDetails(
@@ -126,6 +153,18 @@ export function updatePatientFinding(
 export function updatePatientWorkspace(
   patient: Patient,
   patch: Partial<PatientWorkspaceFields>,
+  now: number,
+): Patient {
+  return PatientSchema.parse({
+    ...patient,
+    ...patch,
+    updatedAt: now,
+  });
+}
+
+export function updatePatientBundles(
+  patient: Patient,
+  patch: Partial<PatientBundleFields>,
   now: number,
 ): Patient {
   return PatientSchema.parse({

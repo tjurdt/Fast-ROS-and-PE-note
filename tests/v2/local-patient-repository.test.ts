@@ -79,6 +79,9 @@ describe("LocalPatientRepository", () => {
     expect(loaded.patients[0]?.globalNote).toBe("");
     expect(loaded.patients[0]?.pmh).toEqual([]);
     expect(loaded.patients[0]?.admission.habits).toEqual([]);
+    expect(loaded.patients[0]?.lqq).toEqual([]);
+    expect(loaded.patients[0]?.customSets).toEqual({});
+    expect(loaded.patients[0]?.postop).toBeNull();
     expect(storage.getItem(V2_LOCAL_STORAGE_KEY)).toBe(serialized);
   });
 });

@@ -129,6 +129,88 @@ const ClinicalWidgetDefinitionsSchema = z
   })
   .strict();
 
+export const BundleFieldSchema = z
+  .object({
+    id: z.string().min(1),
+    type: z.enum([
+      "toggle",
+      "select",
+      "multi",
+      "chips",
+      "days",
+      "text",
+      "date",
+      "dnrstates",
+    ]),
+    label: z.string(),
+    options: z.array(z.string()),
+  })
+  .strict();
+
+export const BundleTemplateSchema = z
+  .object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    builtin: z.literal(true),
+    auto: z
+      .object({ pmh: z.array(z.string()).min(1) })
+      .strict()
+      .optional(),
+    fields: z.array(BundleFieldSchema),
+  })
+  .strict();
+
+const BundleDefinitionsSchema = z
+  .object({
+    lqq: z
+      .object({
+        qualities: z.array(z.string()).min(1),
+        onsets: z.array(z.string()).min(1),
+      })
+      .strict(),
+    dnrOptions: z.array(z.string()).min(1),
+    dialysisDays: z
+      .array(z.object({ key: z.string(), label: z.string() }).strict())
+      .min(1),
+    builtinSets: z.array(BundleTemplateSchema).min(1),
+    postop: z
+      .object({
+        cycles: z.record(
+          z.string(),
+          z
+            .array(
+              z
+                .object({
+                  value: z.string(),
+                  tone: z.enum(["", "norm", "warn", "danger"]),
+                })
+                .strict(),
+            )
+            .min(1),
+        ),
+        multi: z.record(
+          z.string(),
+          z
+            .object({
+              normal: z.string().nullable(),
+              options: z
+                .array(
+                  z
+                    .object({
+                      value: z.string(),
+                      tone: z.enum(["", "norm", "warn", "danger"]),
+                    })
+                    .strict(),
+                )
+                .min(1),
+            })
+            .strict(),
+        ),
+      })
+      .strict(),
+  })
+  .strict();
+
 export const ClinicalCatalogSchema = z
   .object({
     sections: z.array(ClinicalSectionSchema),
@@ -141,6 +223,7 @@ export const ClinicalCatalogSchema = z
         admissionHabits: z.array(z.string()).min(1),
       })
       .strict(),
+    bundles: BundleDefinitionsSchema,
   })
   .strict();
 
@@ -150,3 +233,5 @@ export type ClinicalSpecialty = z.infer<typeof ClinicalSpecialtySchema>;
 export type ClinicalCatalog = z.infer<typeof ClinicalCatalogSchema>;
 export type FollowUp = z.infer<typeof FollowUpSchema>;
 export type CranialNerveDefinition = z.infer<typeof CranialNerveDefinitionSchema>;
+export type BundleField = z.infer<typeof BundleFieldSchema>;
+export type BundleTemplate = z.infer<typeof BundleTemplateSchema>;

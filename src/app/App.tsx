@@ -3,12 +3,14 @@ import { useMemo, useRef, useState } from "react";
 import type { PatientRepository } from "../application/patient-repository";
 import {
   createPatientInDatabase,
+  updateBundlesInDatabase,
   updateFindingInDatabase,
   updatePatientInDatabase,
   updateWorkspaceInDatabase,
 } from "../application/patient-workflows";
 import type {
   FindingValue,
+  PatientBundleFields,
   PatientDraft,
   PatientEditableFields,
   PatientFactoryDependencies,
@@ -17,6 +19,7 @@ import type {
 import { emptyPatientDatabase, type PatientDatabase } from "../domain/patient-database";
 import { AdditionalNotes } from "../features/additional-notes/AdditionalNotes";
 import { AdmissionHistory } from "../features/admission-history/AdmissionHistory";
+import { BundleWorkspace } from "../features/bundles/BundleWorkspace";
 import { ClinicalNote } from "../features/clinical-note/ClinicalNote";
 import { PastMedicalHistory } from "../features/past-medical-history/PastMedicalHistory";
 import { PatientList } from "../features/patient-list/PatientList";
@@ -145,6 +148,22 @@ export function App({ repository: suppliedRepository, patientFactory }: AppProps
     persist(result.database);
   }
 
+  function updateActiveBundles(patch: Partial<PatientBundleFields>) {
+    if (activePatientId === null) return;
+    const patient = databaseRef.current.patients.find(
+      (candidate) => candidate.id === activePatientId,
+    );
+    if (!patient) return;
+
+    const result = updateBundlesInDatabase(
+      databaseRef.current,
+      patient,
+      patch,
+      factory.now(),
+    );
+    persist(result.database);
+  }
+
   function updateActiveBlockNote(sectionKey: string, note: string) {
     if (activePatientId === null) return;
     const patient = databaseRef.current.patients.find(
@@ -204,6 +223,13 @@ export function App({ repository: suppliedRepository, patientFactory }: AppProps
           <AdditionalNotes
             value={activePatient.globalNote}
             onChange={(globalNote) => updateActiveWorkspace({ globalNote })}
+          />
+          <BundleWorkspace
+            createId={factory.createId}
+            customSets={activePatient.customSets}
+            lqq={activePatient.lqq}
+            onChange={updateActiveBundles}
+            postop={activePatient.postop}
           />
           <AdmissionHistory
             admission={activePatient.admission}

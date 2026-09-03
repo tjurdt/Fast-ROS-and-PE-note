@@ -16,5 +16,5 @@ const itemCount = catalog.sections.reduce(
   0,
 );
 console.log(
-  `Synchronized ${catalog.sections.length} sections, ${itemCount} items, ${catalog.specialties.length} specialties, neurological widgets, and note-workspace options.`,
+  `Synchronized ${catalog.sections.length} sections, ${itemCount} items, ${catalog.specialties.length} specialties, neurological widgets, note-workspace options, and bundle definitions.`,
 );

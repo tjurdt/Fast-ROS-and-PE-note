@@ -3391,5 +3391,544 @@
       "酒 Alcohol",
       "檳榔 Betel"
     ]
+  },
+  "bundles": {
+    "lqq": {
+      "qualities": [
+        "刺痛 sharp",
+        "悶/鈍痛 dull",
+        "壓迫 pressure",
+        "灼熱 burning",
+        "抽痛 throbbing",
+        "絞痛 cramping",
+        "撕裂 tearing"
+      ],
+      "onsets": [
+        "突發 sudden",
+        "漸進 gradual",
+        "波動 fluctuating"
+      ]
+    },
+    "dnrOptions": [
+      "不施行心肺復甦術",
+      "不氣管內插管／人工呼吸",
+      "不胸外按壓",
+      "不電擊去顫／人工節律",
+      "不急救藥物注射",
+      "不施行維生醫療",
+      "接受安寧緩和醫療",
+      "預立意願書／預立醫療決定已註記"
+    ],
+    "dialysisDays": [
+      {
+        "key": "W1",
+        "label": "一"
+      },
+      {
+        "key": "W2",
+        "label": "二"
+      },
+      {
+        "key": "W3",
+        "label": "三"
+      },
+      {
+        "key": "W4",
+        "label": "四"
+      },
+      {
+        "key": "W5",
+        "label": "五"
+      },
+      {
+        "key": "W6",
+        "label": "六"
+      },
+      {
+        "key": "W7",
+        "label": "日"
+      }
+    ],
+    "builtinSets": [
+      {
+        "id": "sys_dialysis",
+        "name": "洗腎 Dialysis",
+        "builtin": true,
+        "auto": {
+          "pmh": [
+            "ESRD",
+            "末期腎",
+            "洗腎",
+            "透析",
+            "dialysis",
+            "end-stage renal",
+            "end stage renal"
+          ]
+        },
+        "fields": [
+          {
+            "type": "select",
+            "label": "透析方式",
+            "options": [
+              "血液透析 HD",
+              "腹膜透析 PD"
+            ],
+            "id": "f_sys_dialysis_0"
+          },
+          {
+            "type": "days",
+            "label": "每週透析日",
+            "options": [],
+            "id": "f_sys_dialysis_1"
+          },
+          {
+            "type": "select",
+            "label": "血管通路",
+            "options": [
+              "AVF",
+              "AVG",
+              "暫時導管 Temp cath",
+              "長期導管 Permcath",
+              "腹透導管 PD cath"
+            ],
+            "id": "f_sys_dialysis_2"
+          },
+          {
+            "type": "text",
+            "label": "乾體重 kg",
+            "options": [],
+            "id": "f_sys_dialysis_3"
+          },
+          {
+            "type": "date",
+            "label": "最後透析日",
+            "options": [],
+            "id": "f_sys_dialysis_4"
+          },
+          {
+            "type": "select",
+            "label": "尿量",
+            "options": [
+              "有餘尿 Residual",
+              "無尿 Anuric"
+            ],
+            "id": "f_sys_dialysis_5"
+          }
+        ]
+      },
+      {
+        "id": "sys_orders",
+        "name": "DNR",
+        "builtin": true,
+        "fields": [
+          {
+            "type": "toggle",
+            "label": "DNR",
+            "options": [],
+            "id": "f_sys_orders_0"
+          },
+          {
+            "type": "dnrstates",
+            "label": "DNR 項目",
+            "options": [
+              "不施行心肺復甦術",
+              "不氣管內插管／人工呼吸",
+              "不胸外按壓",
+              "不電擊去顫／人工節律",
+              "不急救藥物注射",
+              "不施行維生醫療",
+              "接受安寧緩和醫療",
+              "預立意願書／預立醫療決定已註記"
+            ],
+            "id": "f_sys_orders_1"
+          }
+        ]
+      }
+    ],
+    "postop": {
+      "cycles": {
+        "vitals": [
+          {
+            "value": "穩定 Stable",
+            "tone": "norm"
+          },
+          {
+            "value": "需留意 Concern",
+            "tone": "warn"
+          },
+          {
+            "value": "不穩定 Unstable",
+            "tone": "danger"
+          }
+        ],
+        "fever": [
+          {
+            "value": "無 Afebrile",
+            "tone": "norm"
+          },
+          {
+            "value": "有 Febrile",
+            "tone": "danger"
+          }
+        ],
+        "oralDiet": [
+          {
+            "value": "NPO 禁食",
+            "tone": "warn"
+          },
+          {
+            "value": "清流 Clear liquid",
+            "tone": ""
+          },
+          {
+            "value": "全流 Full liquid",
+            "tone": ""
+          },
+          {
+            "value": "軟質 Soft diet",
+            "tone": "norm"
+          },
+          {
+            "value": "普通 Regular diet",
+            "tone": "norm"
+          }
+        ],
+        "activity": [
+          {
+            "value": "臥床 Bed rest",
+            "tone": "warn"
+          },
+          {
+            "value": "坐起 Sit",
+            "tone": ""
+          },
+          {
+            "value": "站立 Stand",
+            "tone": ""
+          },
+          {
+            "value": "步行 Ambulate",
+            "tone": "norm"
+          },
+          {
+            "value": "獨立 Independent",
+            "tone": "norm"
+          }
+        ],
+        "flatus": [
+          {
+            "value": "未排 No",
+            "tone": "warn"
+          },
+          {
+            "value": "已排 Yes",
+            "tone": "norm"
+          }
+        ],
+        "voidingMethod": [
+          {
+            "value": "自解 Voiding",
+            "tone": "norm"
+          },
+          {
+            "value": "Foley 留置",
+            "tone": ""
+          },
+          {
+            "value": "拔管待解 Awaiting",
+            "tone": "warn"
+          }
+        ],
+        "respiratorySupport": [
+          {
+            "value": "RA 室內空氣",
+            "tone": "norm"
+          },
+          {
+            "value": "鼻導管/面罩 O₂",
+            "tone": "warn"
+          },
+          {
+            "value": "HFNC/NIV",
+            "tone": "warn"
+          },
+          {
+            "value": "呼吸器 Ventilator",
+            "tone": "danger"
+          }
+        ],
+        "drainPeriod": [
+          {
+            "value": "單次",
+            "tone": ""
+          },
+          {
+            "value": "8 h",
+            "tone": ""
+          },
+          {
+            "value": "24 h",
+            "tone": ""
+          }
+        ],
+        "drainPatency": [
+          {
+            "value": "通暢 Patent",
+            "tone": "norm"
+          },
+          {
+            "value": "疑阻塞 Blocked?",
+            "tone": "danger"
+          },
+          {
+            "value": "夾管 Clamped",
+            "tone": "warn"
+          }
+        ]
+      },
+      "multi": {
+        "nauseaSymptoms": {
+          "normal": "無 None",
+          "options": [
+            {
+              "value": "無 None",
+              "tone": "norm"
+            },
+            {
+              "value": "噁心 Nausea",
+              "tone": "warn"
+            },
+            {
+              "value": "嘔吐 Vomiting",
+              "tone": "danger"
+            }
+          ]
+        },
+        "nutritionSupport": {
+          "normal": "無額外支持 None",
+          "options": [
+            {
+              "value": "無額外支持 None",
+              "tone": "norm"
+            },
+            {
+              "value": "管灌 Enteral",
+              "tone": ""
+            },
+            {
+              "value": "TPN",
+              "tone": ""
+            }
+          ]
+        },
+        "urinaryConcerns": {
+          "normal": "無異常 None",
+          "options": [
+            {
+              "value": "無異常 None",
+              "tone": "norm"
+            },
+            {
+              "value": "解尿困難 Difficulty",
+              "tone": "warn"
+            },
+            {
+              "value": "尿滯留 Retention",
+              "tone": "danger"
+            },
+            {
+              "value": "少尿 Oliguria",
+              "tone": "danger"
+            },
+            {
+              "value": "血尿 Hematuria",
+              "tone": "danger"
+            }
+          ]
+        },
+        "respiratoryConcerns": {
+          "normal": "無異常 None",
+          "options": [
+            {
+              "value": "無異常 None",
+              "tone": "norm"
+            },
+            {
+              "value": "呼吸困難 Dyspnea",
+              "tone": "danger"
+            },
+            {
+              "value": "低血氧 Desaturation",
+              "tone": "danger"
+            },
+            {
+              "value": "咳嗽/痰 Cough/sputum",
+              "tone": "warn"
+            },
+            {
+              "value": "胸痛 Chest pain",
+              "tone": "danger"
+            }
+          ]
+        },
+        "woundFindings": {
+          "normal": "乾淨乾燥完整 CDI",
+          "options": [
+            {
+              "value": "乾淨乾燥完整 CDI",
+              "tone": "norm"
+            },
+            {
+              "value": "紅 Erythema",
+              "tone": "warn"
+            },
+            {
+              "value": "腫 Swelling",
+              "tone": "warn"
+            },
+            {
+              "value": "熱/壓痛 Warm/tender",
+              "tone": "warn"
+            },
+            {
+              "value": "滲液 Discharge",
+              "tone": "danger"
+            },
+            {
+              "value": "出血 Bleeding",
+              "tone": "danger"
+            },
+            {
+              "value": "裂開 Dehiscence",
+              "tone": "danger"
+            }
+          ]
+        },
+        "vteMeasures": {
+          "normal": "未執行 None",
+          "options": [
+            {
+              "value": "未執行 None",
+              "tone": "warn"
+            },
+            {
+              "value": "早期活動 Ambulation",
+              "tone": "norm"
+            },
+            {
+              "value": "SCD/彈性襪",
+              "tone": "norm"
+            },
+            {
+              "value": "藥物預防 Pharmacologic",
+              "tone": "norm"
+            },
+            {
+              "value": "藥物禁忌/暫緩",
+              "tone": ""
+            }
+          ]
+        },
+        "redFlags": {
+          "normal": "無明顯警訊 None",
+          "options": [
+            {
+              "value": "無明顯警訊 None",
+              "tone": "norm"
+            },
+            {
+              "value": "低血壓/心搏過速",
+              "tone": "danger"
+            },
+            {
+              "value": "呼吸困難/低氧",
+              "tone": "danger"
+            },
+            {
+              "value": "胸痛",
+              "tone": "danger"
+            },
+            {
+              "value": "意識改變",
+              "tone": "danger"
+            },
+            {
+              "value": "持續嘔吐",
+              "tone": "danger"
+            },
+            {
+              "value": "少尿/尿滯留",
+              "tone": "danger"
+            },
+            {
+              "value": "活動性出血",
+              "tone": "danger"
+            },
+            {
+              "value": "劇烈或惡化疼痛",
+              "tone": "danger"
+            }
+          ]
+        },
+        "drainCharacter": {
+          "normal": null,
+          "options": [
+            {
+              "value": "漿液 Serous",
+              "tone": "norm"
+            },
+            {
+              "value": "淡血 Serosanguineous",
+              "tone": ""
+            },
+            {
+              "value": "血性 Sanguineous",
+              "tone": "warn"
+            },
+            {
+              "value": "膽汁樣 Bilious",
+              "tone": "warn"
+            },
+            {
+              "value": "膿性 Purulent",
+              "tone": "danger"
+            },
+            {
+              "value": "乳糜 Chylous",
+              "tone": "warn"
+            },
+            {
+              "value": "其他 Other",
+              "tone": ""
+            }
+          ]
+        },
+        "drainSurround": {
+          "normal": "周圍乾淨",
+          "options": [
+            {
+              "value": "周圍乾淨",
+              "tone": "norm"
+            },
+            {
+              "value": "紅腫",
+              "tone": "danger"
+            },
+            {
+              "value": "滲漏",
+              "tone": "danger"
+            },
+            {
+              "value": "壓痛",
+              "tone": "warn"
+            },
+            {
+              "value": "腫脹",
+              "tone": "warn"
+            }
+          ]
+        }
+      }
+    }
   }
 }

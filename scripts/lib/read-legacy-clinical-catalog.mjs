@@ -15,6 +15,16 @@ const PMH_START_MARKER = "const PMH_COMMON=[";
 const PMH_END_MARKER = "function addPmh(text){";
 const ADMISSION_START_MARKER = "const ADM_HABITS=[";
 const ADMISSION_END_MARKER = "function admissionPosCount(ad){";
+const LQQ_START_MARKER = "const LQQ_QUALITY=[";
+const LQQ_END_MARKER = "function addLqq(){";
+const DNR_START_MARKER = "const DNR_OPTIONS=[";
+const DNR_END_MARKER = "const DNR_CLINICAL_PATTERNS=[";
+const BUILTIN_SET_START_MARKER = "function csField(type,label,options){";
+const BUILTIN_SET_END_MARKER = "function allTemplates(){";
+const DIALYSIS_DAYS_START_MARKER = "const DIALYSIS_MODALITIES=[";
+const DIALYSIS_DAYS_END_MARKER = "function buildDTR(it,v){";
+const POSTOP_START_MARKER = "const PO_CYCLES={";
+const POSTOP_END_MARKER = "function appendLegacyNote(po,key,text){";
 
 export const clinicalCatalogPath = path.join(
   rootDir,
@@ -105,6 +115,67 @@ JSON.stringify({
       "legacy-admission-habits.vm.js",
     ),
   };
+  const lqq = evaluateLegacySlice(
+    source,
+    LQQ_START_MARKER,
+    LQQ_END_MARKER,
+    "{ qualities: LQQ_QUALITY, onsets: LQQ_ONSET }",
+    "legacy-lqq-options.vm.js",
+  );
+  const dnrOptions = evaluateLegacySlice(
+    source,
+    DNR_START_MARKER,
+    DNR_END_MARKER,
+    "DNR_OPTIONS",
+    "legacy-dnr-options.vm.js",
+  );
+  const dialysisDays = evaluateLegacySlice(
+    source,
+    DIALYSIS_DAYS_START_MARKER,
+    DIALYSIS_DAYS_END_MARKER,
+    "DIALYSIS_DAYS.map(({ k, d }) => ({ key: k, label: d }))",
+    "legacy-dialysis-days.vm.js",
+  );
+  const builtinStart = source.indexOf(BUILTIN_SET_START_MARKER);
+  const builtinEnd = source.indexOf(BUILTIN_SET_END_MARKER, builtinStart);
+  if (builtinStart < 0 || builtinEnd < 0) {
+    throw new Error("Cannot locate the legacy built-in bundle boundaries.");
+  }
+  const builtinSource = `const DNR_OPTIONS=${JSON.stringify(dnrOptions)};
+${source.slice(builtinStart, builtinEnd)}
+JSON.stringify(BUILTIN_SETS.map((template) => ({
+  ...template,
+  fields: template.fields.map((field, index) => ({
+    ...field,
+    id: "f_" + template.id + "_" + index,
+  })),
+})));`;
+  const builtinSets = JSON.parse(
+    vm.runInNewContext(builtinSource, Object.create(null), {
+      filename: "legacy-builtin-bundles.vm.js",
+      timeout: 1_000,
+    }),
+  );
+  const postop = evaluateLegacySlice(
+    source,
+    POSTOP_START_MARKER,
+    POSTOP_END_MARKER,
+    `{
+      cycles: Object.fromEntries(Object.entries(PO_CYCLES).map(([key, options]) => [
+        key,
+        options.map(({ v, c }) => ({ value: v, tone: c })),
+      ])),
+      multi: Object.fromEntries(Object.entries(PO_MULTI).map(([key, definition]) => [
+        key,
+        {
+          normal: definition.normal,
+          options: definition.options.map(({ v, c }) => ({ value: v, tone: c })),
+        },
+      ])),
+    }`,
+    "legacy-postop-options.vm.js",
+  );
+  const bundles = { lqq, dnrOptions, dialysisDays, builtinSets, postop };
 
   const itemIds = catalog.sections.flatMap((section) =>
     section.items.map((item) => item.id),
@@ -113,7 +184,7 @@ JSON.stringify({
     throw new Error("Legacy clinical catalog contains duplicate item IDs.");
   }
 
-  return { ...catalog, widgets, workspace };
+  return { ...catalog, widgets, workspace, bundles };
 }
 
 export function serializeClinicalCatalog(catalog) {

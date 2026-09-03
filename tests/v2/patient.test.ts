@@ -55,6 +55,10 @@ describe("patient domain", () => {
         famName: "",
         note: "",
       },
+      lqq: [],
+      customSets: {},
+      autoTriggered: {},
+      postop: null,
     });
   });
 
@@ -105,6 +109,10 @@ describe("patient domain", () => {
     expect(patient.pmh).toEqual([]);
     expect(patient.admission.habits).toEqual([]);
     expect(patient.adl.level).toBe(DEFAULT_ADL_LEVEL);
+    expect(patient.lqq).toEqual([]);
+    expect(patient.customSets).toEqual({});
+    expect(patient.autoTriggered).toEqual({});
+    expect(patient.postop).toBeNull();
     expect(patient.todos[0]?.status).toBe("todo");
   });
 });
