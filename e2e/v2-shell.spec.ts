@@ -671,3 +671,133 @@ test("v2 chemotherapy follow-up preserves safety states and the limb matrix", as
   );
   expect(hasHorizontalOverflow).toBe(false);
 });
+
+test("v2 custom bundle templates retain stable patient values through edits and archive", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("http://127.0.0.1:4174/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload();
+
+  await page.getByTestId("choose-local-v2").click();
+  await page.getByRole("button", { name: "＋ 新增病人" }).click();
+  await page.getByLabel("病人代號 Patient code").fill("CUSTOM-BUNDLE-V2");
+  await page.getByRole("button", { name: "建立並開始" }).click();
+
+  await page.getByTestId("manage-bundle-templates").click();
+  await page.getByTestId("create-bundle-template").click();
+  await page.getByLabel("自訂組套名稱").fill("傷口換藥");
+
+  await page.getByTestId("add-template-field").click();
+  await page.getByLabel("欄位 1 名稱").fill("感染徵象");
+
+  await page.getByTestId("add-template-field").click();
+  await page.getByLabel("欄位 2 名稱").fill("滲液量");
+  await page.getByLabel("欄位 2 類型").selectOption("select");
+  await page.getByLabel("欄位 2 選項").fill("少量\n中量\n大量");
+
+  await page.getByTestId("add-template-field").click();
+  await page.getByLabel("欄位 3 名稱").fill("傷口狀況");
+  await page.getByLabel("欄位 3 類型").selectOption("multi");
+  await page.getByLabel("欄位 3 選項").fill("乾燥\n紅腫\n滲血");
+  await page.getByRole("button", { name: "欄位 3 上移" }).click();
+  await page.getByTestId("save-bundle-template").click();
+
+  await expect(page.getByTestId("bundle-template-editor")).toContainText("傷口換藥");
+  await expect(page.getByTestId("bundle-template-editor")).toContainText("3 個欄位");
+  await page.getByRole("button", { name: "關閉組套編輯器" }).click();
+
+  const templateId = await page.evaluate(() => {
+    const database = JSON.parse(window.localStorage.getItem("pe_note_v2") ?? "null");
+    return database.customBundleTemplates[0].id as string;
+  });
+  await page.getByTestId(`add-bundle-${templateId}`).click();
+  const bundle = page.getByTestId(`bundle-${templateId}`);
+  await bundle.getByRole("button", { name: "(−) 否" }).click();
+  await bundle.getByRole("button", { name: "紅腫" }).click();
+  await bundle.getByLabel("傷口換藥 滲液量", { exact: true }).selectOption("大量");
+  await bundle.getByLabel("傷口換藥 組套註記").fill("每日評估");
+
+  await expect
+    .poll(async () => {
+      const database = await page.evaluate(() =>
+        JSON.parse(window.localStorage.getItem("pe_note_v2") ?? "null"),
+      );
+      return database?.patients?.[0]?.customSets?.[templateId]?.__setNote;
+    })
+    .toBe("每日評估");
+
+  await page.getByRole("button", { name: /病人清單/ }).click();
+  await page.reload();
+  await page.getByTestId("choose-local-v2").click();
+  await page.getByRole("button", { name: /CUSTOM-BUNDLE-V2/ }).click();
+
+  const reloaded = page.getByTestId(`bundle-${templateId}`);
+  await expect(reloaded.getByRole("button", { name: "(+) 是" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(reloaded.getByRole("button", { name: "紅腫" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(reloaded.getByLabel("傷口換藥 滲液量", { exact: true })).toHaveValue(
+    "大量",
+  );
+
+  await page.getByTestId("manage-bundle-templates").click();
+  await page.getByRole("button", { name: "編輯", exact: true }).click();
+  await page.getByLabel("自訂組套名稱").fill("傷口換藥追蹤");
+  await page.getByTestId("save-bundle-template").click();
+  await page.getByRole("button", { name: "關閉組套編輯器" }).click();
+  await expect(page.getByTestId(`bundle-${templateId}`)).toContainText("傷口換藥追蹤");
+  await expect(
+    page
+      .getByTestId(`bundle-${templateId}`)
+      .getByLabel("傷口換藥追蹤 滲液量", { exact: true }),
+  ).toHaveValue("大量");
+
+  await page.getByTestId("manage-bundle-templates").click();
+  await page.getByRole("button", { name: "封存", exact: true }).click();
+  await page.getByRole("button", { name: "確認封存" }).click();
+  await page.getByRole("button", { name: "關閉組套編輯器" }).click();
+  await expect(page.getByTestId(`add-bundle-${templateId}`)).toHaveCount(0);
+  await expect(page.getByTestId(`bundle-${templateId}`)).toContainText("已封存範本");
+
+  await page.getByTestId("manage-bundle-templates").click();
+  await page.getByText("已封存組套（1）").click();
+  await page.getByRole("button", { name: "還原", exact: true }).click();
+  await page.getByRole("button", { name: "關閉組套編輯器" }).click();
+  await expect(page.getByTestId(`add-bundle-${templateId}`)).toBeDisabled();
+
+  const stored = await page.evaluate(() =>
+    JSON.parse(window.localStorage.getItem("pe_note_v2") ?? "null"),
+  );
+  expect(stored.customBundleTemplates[0]).toMatchObject({
+    id: templateId,
+    name: "傷口換藥追蹤",
+    archived: false,
+  });
+  expect(
+    stored.customBundleTemplates[0].fields.map(
+      (field: { label: string }) => field.label,
+    ),
+  ).toEqual(["感染徵象", "傷口狀況", "滲液量"]);
+  const fieldsByLabel = Object.fromEntries(
+    stored.customBundleTemplates[0].fields.map(
+      (field: { id: string; label: string }) => [field.label, field.id],
+    ),
+  );
+  expect(stored.patients[0].customSets[templateId]).toMatchObject({
+    [fieldsByLabel["感染徵象"]]: true,
+    [fieldsByLabel["傷口狀況"]]: ["紅腫"],
+    [fieldsByLabel["滲液量"]]: "大量",
+    __setNote: "每日評估",
+  });
+
+  const hasHorizontalOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > window.innerWidth + 1,
+  );
+  expect(hasHorizontalOverflow).toBe(false);
+});

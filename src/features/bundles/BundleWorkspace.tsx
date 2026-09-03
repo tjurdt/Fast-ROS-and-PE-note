@@ -3,10 +3,12 @@ import {
   DIALYSIS_BUNDLE_ID,
   DNR_BUNDLE_ID,
   activateBundle,
+  activateTemplateBundle,
   createLqqEntry,
   removeBundle,
   updateBundleInstance,
 } from "../../domain/bundles";
+import type { UserBundleTemplate } from "../../domain/bundle-templates";
 import { createChemotherapyFollowup } from "../../domain/chemotherapy-followup";
 import {
   allAntibioticOptions,
@@ -26,12 +28,14 @@ interface BundleWorkspaceProps extends Pick<
   "lqq" | "customSets" | "postop" | "infections" | "chemo"
 > {
   antibioticOptions: string[];
+  customBundleTemplates: UserBundleTemplate[];
   createId: () => string;
   patientAge: string;
   onChange: (
     patch: Partial<PatientBundleFields>,
     customAntibioticOption?: string,
   ) => void;
+  onManageTemplates: () => void;
 }
 
 const ENABLED_TEMPLATE_IDS = [DIALYSIS_BUNDLE_ID, DNR_BUNDLE_ID] as const;
@@ -39,6 +43,7 @@ const ENABLED_TEMPLATE_IDS = [DIALYSIS_BUNDLE_ID, DNR_BUNDLE_ID] as const;
 export function BundleWorkspace({
   antibioticOptions,
   chemo,
+  customBundleTemplates,
   lqq,
   customSets,
   infections,
@@ -46,9 +51,17 @@ export function BundleWorkspace({
   postop,
   createId,
   onChange,
+  onManageTemplates,
 }: BundleWorkspaceProps) {
   const enabledTemplates = BUILTIN_BUNDLE_TEMPLATES.filter((template) =>
     ENABLED_TEMPLATE_IDS.includes(template.id as (typeof ENABLED_TEMPLATE_IDS)[number]),
+  );
+  const builtinIds = new Set(BUILTIN_BUNDLE_TEMPLATES.map((template) => template.id));
+  const safeCustomTemplates = customBundleTemplates.filter(
+    (template) => !builtinIds.has(template.id),
+  );
+  const availableCustomTemplates = safeCustomTemplates.filter(
+    (template) => !template.archived,
   );
 
   return (
@@ -127,6 +140,42 @@ export function BundleWorkspace({
             化療／標靶{chemo ? " ✓" : ""}
           </Button>
         </div>
+        <div className="v2-bundle-launcher__custom">
+          <div>
+            <strong>自訂組套</strong>
+            <span>建立可重複使用的欄位範本</span>
+          </div>
+          <Button data-testid="manage-bundle-templates" onClick={onManageTemplates}>
+            ⚙ 組套編輯器
+          </Button>
+        </div>
+        {availableCustomTemplates.length > 0 ? (
+          <div className="v2-bundle-launcher__actions is-custom">
+            {availableCustomTemplates.map((template) => {
+              const active = customSets[template.id] !== undefined;
+              return (
+                <Button
+                  className={active ? "is-active" : ""}
+                  data-testid={`add-bundle-${template.id}`}
+                  disabled={active}
+                  key={template.id}
+                  onClick={() =>
+                    onChange({
+                      customSets: activateTemplateBundle(
+                        customSets,
+                        availableCustomTemplates,
+                        template.id,
+                      ),
+                    })
+                  }
+                >
+                  {template.name}
+                  {active ? " ✓" : ""}
+                </Button>
+              );
+            })}
+          </div>
+        ) : null}
       </div>
 
       {lqq.map((entry, index) => (
@@ -182,6 +231,26 @@ export function BundleWorkspace({
       ))}
 
       {enabledTemplates.map((template) => {
+        const instance = customSets[template.id];
+        if (!instance) return null;
+        return (
+          <TemplateBundle
+            instance={instance}
+            key={template.id}
+            template={template}
+            onChange={(next) =>
+              onChange({
+                customSets: updateBundleInstance(customSets, template.id, () => next),
+              })
+            }
+            onRemove={() =>
+              onChange({ customSets: removeBundle(customSets, template.id) })
+            }
+          />
+        );
+      })}
+
+      {safeCustomTemplates.map((template) => {
         const instance = customSets[template.id];
         if (!instance) return null;
         return (

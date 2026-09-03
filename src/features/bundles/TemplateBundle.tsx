@@ -1,6 +1,7 @@
-import type { BundleField, BundleTemplate } from "../../domain/clinical/catalog-schema";
+import type { BundleField } from "../../domain/clinical/catalog-schema";
 import { calculateElapsedDay } from "../../domain/calendar-day";
 import {
+  DIALYSIS_BUNDLE_ID,
   DIALYSIS_DAYS,
   DNR_BUNDLE_ID,
   DNR_MASTER_FIELD_ID,
@@ -13,11 +14,12 @@ import {
   setDnrMaster,
   toggleBundleArrayValue,
   type BundleInstance,
+  type RenderableBundleTemplate,
 } from "../../domain/bundles";
 import { Button } from "../../ui/Button";
 
 interface TemplateBundleProps {
-  template: BundleTemplate;
+  template: RenderableBundleTemplate;
   instance: BundleInstance;
   onChange: (instance: BundleInstance) => void;
   onRemove: () => void;
@@ -36,7 +38,7 @@ function stringArray(value: unknown): string[] {
 interface FieldControlProps {
   field: BundleField;
   instance: BundleInstance;
-  template: BundleTemplate;
+  template: RenderableBundleTemplate;
   onChange: (instance: BundleInstance) => void;
 }
 
@@ -84,6 +86,18 @@ function FieldControl({ field, instance, template, onChange }: FieldControlProps
 
   if (field.type === "date") {
     const date = stringValue(value);
+    if (template.id !== DIALYSIS_BUNDLE_ID) {
+      return (
+        <input
+          aria-label={`${template.name} ${field.label}`}
+          type="date"
+          value={date}
+          onChange={(event) =>
+            onChange(setBundleField(instance, field.id, event.target.value))
+          }
+        />
+      );
+    }
     return (
       <div className="v2-bundle-date">
         <input
@@ -204,7 +218,10 @@ export function TemplateBundle({
       data-testid={`bundle-${template.id}`}
       open
     >
-      <summary>組套 · {template.name}</summary>
+      <summary>
+        組套 · {template.name}
+        {template.archived ? "（已封存範本）" : ""}
+      </summary>
       <div className="v2-bundle-card__body">
         <div className="v2-bundle-card__remove">
           <Button onClick={onRemove} tone="ghost">
@@ -216,41 +233,43 @@ export function TemplateBundle({
             請依病人正式意願書、同意書、健保卡註記與醫囑核對；此處為查房提示。
           </p>
         ) : null}
-        {template.fields.map((field) => {
-          const isDnrDetail =
-            template.id === DNR_BUNDLE_ID && field.id === DNR_STATES_FIELD_ID;
-          if (isDnrDetail && instance[DNR_MASTER_FIELD_ID] !== true) return null;
-          const allowNote =
-            field.type !== "text" &&
-            field.type !== "dnrstates" &&
-            !(template.id === DNR_BUNDLE_ID && field.id === DNR_MASTER_FIELD_ID);
-          return (
-            <div className="v2-bundle-field" key={field.id}>
-              {isDnrDetail ? null : <strong>{field.label}</strong>}
-              <FieldControl
-                field={field}
-                instance={instance}
-                template={template}
-                onChange={onChange}
-              />
-              {allowNote ? (
-                <details className="v2-bundle-field__note">
-                  <summary>欄位備註</summary>
-                  <textarea
-                    aria-label={`${template.name} ${field.label} 備註`}
-                    rows={1}
-                    value={instance.__notes[field.id] ?? ""}
-                    onChange={(event) =>
-                      onChange(
-                        setBundleFieldNote(instance, field.id, event.target.value),
-                      )
-                    }
-                  />
-                </details>
-              ) : null}
-            </div>
-          );
-        })}
+        {template.fields
+          .filter((field) => !field.archived)
+          .map((field) => {
+            const isDnrDetail =
+              template.id === DNR_BUNDLE_ID && field.id === DNR_STATES_FIELD_ID;
+            if (isDnrDetail && instance[DNR_MASTER_FIELD_ID] !== true) return null;
+            const allowNote =
+              field.type !== "text" &&
+              field.type !== "dnrstates" &&
+              !(template.id === DNR_BUNDLE_ID && field.id === DNR_MASTER_FIELD_ID);
+            return (
+              <div className="v2-bundle-field" key={field.id}>
+                {isDnrDetail ? null : <strong>{field.label}</strong>}
+                <FieldControl
+                  field={field}
+                  instance={instance}
+                  template={template}
+                  onChange={onChange}
+                />
+                {allowNote ? (
+                  <details className="v2-bundle-field__note">
+                    <summary>欄位備註</summary>
+                    <textarea
+                      aria-label={`${template.name} ${field.label} 備註`}
+                      rows={1}
+                      value={instance.__notes[field.id] ?? ""}
+                      onChange={(event) =>
+                        onChange(
+                          setBundleFieldNote(instance, field.id, event.target.value),
+                        )
+                      }
+                    />
+                  </details>
+                ) : null}
+              </div>
+            );
+          })}
         <label className="v2-bundle-field">
           <strong>組套註記</strong>
           <textarea

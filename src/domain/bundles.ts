@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { clinicalCatalog } from "./clinical/catalog";
-import type { BundleTemplate } from "./clinical/catalog-schema";
+import type { BundleField, BundleTemplate } from "./clinical/catalog-schema";
 
 export const LQQ_QUALITIES = clinicalCatalog.bundles.lqq.qualities;
 export const LQQ_ONSETS = clinicalCatalog.bundles.lqq.onsets;
@@ -60,6 +60,16 @@ export type CustomBundleInstances = z.infer<typeof CustomBundleInstancesFieldSch
 export type AutoTriggeredBundles = z.infer<typeof AutoTriggeredBundlesFieldSchema>;
 export type DnrState = "" | "agree" | "disagree";
 
+export type RenderableBundleField = BundleField & { archived?: boolean };
+
+export interface RenderableBundleTemplate {
+  id: string;
+  name: string;
+  fields: readonly RenderableBundleField[];
+  builtin?: true;
+  archived?: boolean;
+}
+
 export interface LqqFactoryDependencies {
   createId: () => string;
 }
@@ -78,8 +88,17 @@ export function activateBundle(
   instances: CustomBundleInstances,
   templateId: string,
 ): CustomBundleInstances {
-  if (!findBuiltinBundleTemplate(templateId)) {
-    throw new Error(`Cannot activate unknown built-in bundle ${templateId}.`);
+  return activateTemplateBundle(instances, BUILTIN_BUNDLE_TEMPLATES, templateId);
+}
+
+export function activateTemplateBundle(
+  instances: CustomBundleInstances,
+  templates: readonly RenderableBundleTemplate[],
+  templateId: string,
+): CustomBundleInstances {
+  const template = templates.find((candidate) => candidate.id === templateId);
+  if (!template || template.archived) {
+    throw new Error(`Cannot activate unavailable bundle ${templateId}.`);
   }
   if (instances[templateId]) return instances;
   return CustomBundleInstancesFieldSchema.parse({

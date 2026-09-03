@@ -10,8 +10,7 @@ effect follow-up with a limb-specific neuropathy matrix.
 
 ## Non-goals
 
-- User-defined template authoring remains a separate migration slice.
-- User-defined template authoring is not part of this slice.
+- Template authoring UI is owned by the adjacent `bundle-template-editor` feature.
 - Export formatting and Google synchronization are not owned here.
 
 ## Data changes
@@ -23,14 +22,18 @@ effect follow-up with a limb-specific neuropathy matrix.
 - `Patient.infections` stores repeatable infection assessments and antibiotics.
 - Database-level `antibioticOptions` stores user-added choices without coupling them
   to one patient.
+- Database-level `customBundleTemplates` stores reusable user-authored definitions.
 - `Patient.chemo` stores the singleton chemotherapy/targeted-therapy follow-up.
 
-All three fields default safely when an earlier v2 record is loaded. Unknown fields
-inside a bundle instance are preserved for forward compatibility.
+New patient and database fields default safely when an earlier v2 record is loaded.
+Unknown fields inside a bundle instance or user-authored definition are preserved for
+forward compatibility.
 
 ## Integration points
 
 - Options and built-in template definitions come from the generated legacy oracle.
+- User-authored definitions enter through props and are rendered by the same field
+  engine without direct storage access.
 - Pure creation, DNR state, array selection, and PMH auto-trigger rules live in
   `src/domain/bundles.ts`.
 - Persistence flows through `updateBundlesInDatabase`; this feature never accesses

@@ -18,12 +18,16 @@ import type {
 } from "../domain/patient";
 import {
   addAntibioticOption,
+  archiveCustomBundleTemplate,
   emptyPatientDatabase,
+  upsertCustomBundleTemplate,
   type PatientDatabase,
 } from "../domain/patient-database";
+import type { UserBundleTemplate } from "../domain/bundle-templates";
 import { AdditionalNotes } from "../features/additional-notes/AdditionalNotes";
 import { AdmissionHistory } from "../features/admission-history/AdmissionHistory";
 import { BundleWorkspace } from "../features/bundles/BundleWorkspace";
+import { BundleTemplateEditor } from "../features/bundle-template-editor/BundleTemplateEditor";
 import { ClinicalNote } from "../features/clinical-note/ClinicalNote";
 import { PastMedicalHistory } from "../features/past-medical-history/PastMedicalHistory";
 import { PatientList } from "../features/patient-list/PatientList";
@@ -61,6 +65,7 @@ export function App({ repository: suppliedRepository, patientFactory }: AppProps
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [templateEditorOpen, setTemplateEditorOpen] = useState(false);
   const saveQueue = useRef<Promise<void>>(Promise.resolve());
   const saveRevision = useRef(0);
 
@@ -185,6 +190,14 @@ export function App({ repository: suppliedRepository, patientFactory }: AppProps
     });
   }
 
+  function saveCustomBundleTemplate(template: UserBundleTemplate) {
+    persist(upsertCustomBundleTemplate(databaseRef.current, template));
+  }
+
+  function setCustomBundleTemplateArchived(templateId: string, archived: boolean) {
+    persist(archiveCustomBundleTemplate(databaseRef.current, templateId, archived));
+  }
+
   const activePatient =
     activePatientId === null
       ? undefined
@@ -196,6 +209,16 @@ export function App({ repository: suppliedRepository, patientFactory }: AppProps
         <div className="v2-error" role="alert">
           {error}
         </div>
+      ) : null}
+
+      {templateEditorOpen ? (
+        <BundleTemplateEditor
+          createId={factory.createId}
+          templates={database.customBundleTemplates}
+          onArchive={setCustomBundleTemplateArchived}
+          onClose={() => setTemplateEditorOpen(false)}
+          onSave={saveCustomBundleTemplate}
+        />
       ) : null}
 
       {view === "landing" ? (
@@ -238,10 +261,12 @@ export function App({ repository: suppliedRepository, patientFactory }: AppProps
             antibioticOptions={database.antibioticOptions}
             chemo={activePatient.chemo}
             createId={factory.createId}
+            customBundleTemplates={database.customBundleTemplates}
             customSets={activePatient.customSets}
             infections={activePatient.infections}
             lqq={activePatient.lqq}
             onChange={updateActiveBundles}
+            onManageTemplates={() => setTemplateEditorOpen(true)}
             patientAge={activePatient.age}
             postop={activePatient.postop}
           />

@@ -89,6 +89,7 @@ describe("LocalPatientRepository", () => {
     expect(loaded.patients[0]?.infections).toEqual([]);
     expect(loaded.patients[0]?.chemo).toBeNull();
     expect(loaded.antibioticOptions).toEqual([]);
+    expect(loaded.customBundleTemplates).toEqual([]);
     expect(storage.getItem(V2_LOCAL_STORAGE_KEY)).toBe(serialized);
   });
 
