@@ -2,11 +2,13 @@ import {
   createPatient,
   updatePatientFinding,
   updatePatientDetails,
+  updatePatientWorkspace,
   type FindingValue,
   type Patient,
   type PatientDraft,
   type PatientEditableFields,
   type PatientFactoryDependencies,
+  type PatientWorkspaceFields,
 } from "../domain/patient";
 import {
   addPatient,
@@ -46,5 +48,15 @@ export function updateFindingInDatabase(
   now: number,
 ): CreatePatientResult {
   const updated = updatePatientFinding(patient, itemId, finding, now);
+  return { database: replacePatient(database, updated), patient: updated };
+}
+
+export function updateWorkspaceInDatabase(
+  database: PatientDatabase,
+  patient: Patient,
+  patch: Partial<PatientWorkspaceFields>,
+  now: number,
+): CreatePatientResult {
+  const updated = updatePatientWorkspace(patient, patch, now);
   return { database: replacePatient(database, updated), patient: updated };
 }

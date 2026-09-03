@@ -46,7 +46,7 @@ infrastructure adapters ──implements──▶ application ports
 - `app`：畫面協調、依賴組裝、儲存佇列與全域錯誤呈現。
 - `ui`：真正跨 feature、且不含 domain 流程的展示元件。
 
-v2 已打通「選擇單機 → 載入 repository → 建立病人 → 編輯 → ROS/PE finding → 序列化儲存 → 重載」。Clinical catalog 由 frozen legacy 機械同步，目前包含 25 個區塊、194 個題目、16 個科別，以及神經學 widget 選項；Focus、婦產科 gate、全部題型與陽性計數已有 typed 實作。Admission、PMH、組套、匯出與 Google 同步仍由 legacy 提供。
+v2 已打通「選擇單機 → 載入 repository → 建立病人 → 編輯 → workspace/ROS/PE → 序列化儲存 → 重載」。Legacy oracle 機械同步 25 個區塊、194 個題目、16 個科別、神經學 widget、PMH、生活習慣與 ADL 選項；全部 ROS/PE 題型、Admission/ADL、PMH、待辦及全域/區塊備註已有 typed 實作。組套、匯出/列印與 Google 同步仍由 legacy 提供。
 
 ## 資料策略
 
@@ -58,12 +58,12 @@ v2 已打通「選擇單機 → 載入 repository → 建立病人 → 編輯 �
 
 - `check:generated` / `check:legacy`：確保正式 legacy 成品與行為基線沒有漂移。
 - `typecheck` / `lint` / `format:check`：TypeScript strict、ESLint 與格式檢查。
-- `check:clinical-catalog`：確保生成的 25/194/16 catalog、CN panel 與特殊 widget 選項和 frozen legacy oracle 完全一致。
+- `check:clinical-catalog`：確保生成的 25/194/16 catalog、CN panel、特殊 widget 與 workspace 選項和 frozen legacy oracle 完全一致。
 - `check:v2-boundaries`：機械驗證 domain/application/infrastructure/feature/ui 的依賴方向及 feature isolation。
 - `test:legacy`：既有 jsdom 單機冒煙流程。
 - `test:unit`：v2 domain、repository 與 React slice 測試。
 - `build:v2` / `check:v2-artifact`：確認候選成品只有單一 HTML，沒有外部本機 CSS/JS。
-- `test:e2e`：Chromium 驗證 legacy parity、手機寬度、v2 建立/重載及神經學特殊 widget 持久化。
+- `test:e2e`：Chromium 驗證 legacy parity、手機寬度、v2 建立/重載、特殊 widget 與完整 workspace 持久化。
 - GitHub Actions：安裝 Chromium 後執行完整 `npm run verify`。
 
 ## 切換正式入口的 gate
@@ -72,7 +72,7 @@ v2 已打通「選擇單機 → 載入 repository → 建立病人 → 編輯 �
 
 1. 病人 CRUD、排序與重載。
 2. 全部 ROS/PE 題型、Focus、gate 與陽性計數。
-3. Admission、PMH、待辦與所有組套。
+3. 所有內建與自訂組套。
 4. 完整版、限縮版、TXT 與列印輸出。
 5. Google 授權、cache、離線、401、衝突與同步中再次編輯。
 6. 手機與桌面主要操作流程。

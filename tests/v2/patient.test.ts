@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { createPatient, updatePatientDetails } from "../../src/domain/patient";
+import {
+  createPatient,
+  PatientSchema,
+  updatePatientDetails,
+} from "../../src/domain/patient";
+import { DEFAULT_ADL_LEVEL } from "../../src/domain/note-workspace";
 
 describe("patient domain", () => {
   it("creates a normalized patient with deterministic dependencies", () => {
@@ -25,8 +30,31 @@ describe("patient domain", () => {
       createdAt: 1234,
       updatedAt: 1234,
       findings: {},
+      globalNote: "",
       blockNotes: {},
       todos: [],
+      pmh: [],
+      admission: {
+        habits: [],
+        foodAllergy: false,
+        foodAllergyNote: "",
+        drugAllergy: false,
+        drugAllergyNote: "",
+        tocc: { t: "", o: "", c: "", cl: "" },
+        recentAdm: false,
+        recentAdmNote: "",
+        familyHx: "",
+      },
+      adl: {
+        level: DEFAULT_ADL_LEVEL,
+        foreign: false,
+        domestic: false,
+        institution: false,
+        family: false,
+        instName: "",
+        famName: "",
+        note: "",
+      },
     });
   });
 
@@ -48,5 +76,35 @@ describe("patient domain", () => {
     expect(updated.createdAt).toBe(100);
     expect(updated.updatedAt).toBe(200);
     expect(original.problem).toBe("");
+  });
+
+  it("loads earlier v2 patients with safe workspace defaults", () => {
+    const patient = PatientSchema.parse({
+      id: "patient-legacy-v2",
+      code: "OLD-V2",
+      specialty: "general",
+      sex: "",
+      age: "",
+      problem: "",
+      createdAt: 1,
+      updatedAt: 1,
+      findings: {},
+      blockNotes: {},
+      todos: [
+        {
+          id: "todo-1",
+          text: "舊狀態",
+          status: "pending",
+          important: false,
+          createdAt: 1,
+        },
+      ],
+    });
+
+    expect(patient.globalNote).toBe("");
+    expect(patient.pmh).toEqual([]);
+    expect(patient.admission.habits).toEqual([]);
+    expect(patient.adl.level).toBe(DEFAULT_ADL_LEVEL);
+    expect(patient.todos[0]?.status).toBe("todo");
   });
 });

@@ -89,3 +89,69 @@ test("legacy landing and patient list remain usable at a mobile viewport", async
   );
   expect(hasHorizontalOverflow).toBe(false);
 });
+
+test("legacy note workspace persists todo, history, ADL, and block notes", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByRole("button", { name: /單機使用/ }).click();
+  await page.locator("#fabNew").click();
+  await page.locator("#nf_code").fill("WORKSPACE-LEGACY");
+  await page.locator("#nf_create").click();
+
+  await page.locator("#addTodoBtn").click();
+  await page.locator(".todo-text").fill("追蹤血液培養");
+  await page.locator(".todo-star").click();
+  await page.locator('.todo-row [data-st="done"]').click();
+  await page.locator("#globalNote").fill("家屬已知情");
+
+  const admission = page.locator(".section.admission");
+  await admission.locator(".sec-head").click();
+  await admission.locator('[data-adm-chip="菸 Smoking"]').click();
+  await admission.locator('[data-adm-tgl="drugAllergy"]').click();
+  await admission.locator('[data-adm-note="drugAllergy"]').fill("Penicillin rash");
+  await admission.locator('[data-adm-tocc="t"]').fill("日本");
+  await admission.locator("[data-adm-fam]").fill("父親 HTN");
+  await admission.locator("#adlBtn").click();
+  await admission.locator('[data-cg="family"]').click();
+  await expect(admission.locator(".cnt")).toHaveText("4");
+
+  const pmh = page.locator(".section.pmh");
+  await pmh.locator(".sec-head").click();
+  await pmh.locator("#pmhPick").selectOption("高血壓 Hypertension");
+
+  const constitutional = page
+    .locator('[data-item="fever"]')
+    .first()
+    .locator(
+      "xpath=ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' section ')][1]",
+    );
+  await constitutional.locator("[data-secnote]").click();
+  await constitutional.locator(".blocknote-input").fill("感染症狀區塊備註");
+
+  await expect
+    .poll(async () => {
+      const stored = await page.evaluate(() =>
+        JSON.parse(window.localStorage.getItem("rounding_notes_v1") ?? "null"),
+      );
+      return stored?.patients?.[0]?.blockNotes?.ros_const;
+    })
+    .toBe("感染症狀區塊備註");
+
+  const stored = await page.evaluate(() =>
+    JSON.parse(window.localStorage.getItem("rounding_notes_v1") ?? "null"),
+  );
+  const patient = stored.patients[0];
+  expect(patient.todos[0]).toMatchObject({
+    text: "追蹤血液培養",
+    important: true,
+    status: "done",
+  });
+  expect(patient.globalNote).toBe("家屬已知情");
+  expect(patient.admission.drugAllergyNote).toBe("Penicillin rash");
+  expect(patient.admission.tocc.t).toBe("日本");
+  expect(patient.adl.level).toBe("Partially dependent 部分依賴");
+  expect(patient.adl.family).toBe(true);
+  expect(patient.pmh[0].text).toBe("高血壓 Hypertension");
+});

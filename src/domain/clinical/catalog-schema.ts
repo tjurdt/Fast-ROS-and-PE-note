@@ -134,6 +134,13 @@ export const ClinicalCatalogSchema = z
     sections: z.array(ClinicalSectionSchema),
     specialties: z.array(ClinicalSpecialtySchema),
     widgets: ClinicalWidgetDefinitionsSchema,
+    workspace: z
+      .object({
+        adlLevels: z.array(z.string()).min(1),
+        pmhCommon: z.array(z.string()).min(1),
+        admissionHabits: z.array(z.string()).min(1),
+      })
+      .strict(),
   })
   .strict();
 

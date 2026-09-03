@@ -5,18 +5,24 @@ import {
   createPatientInDatabase,
   updateFindingInDatabase,
   updatePatientInDatabase,
+  updateWorkspaceInDatabase,
 } from "../application/patient-workflows";
 import type {
   FindingValue,
   PatientDraft,
   PatientEditableFields,
   PatientFactoryDependencies,
+  PatientWorkspaceFields,
 } from "../domain/patient";
 import { emptyPatientDatabase, type PatientDatabase } from "../domain/patient-database";
+import { AdditionalNotes } from "../features/additional-notes/AdditionalNotes";
+import { AdmissionHistory } from "../features/admission-history/AdmissionHistory";
 import { ClinicalNote } from "../features/clinical-note/ClinicalNote";
+import { PastMedicalHistory } from "../features/past-medical-history/PastMedicalHistory";
 import { PatientList } from "../features/patient-list/PatientList";
 import { PatientNote } from "../features/patient-note/PatientNote";
 import { StorageChoice } from "../features/storage-choice/StorageChoice";
+import { TodoList } from "../features/todo-list/TodoList";
 import { LocalPatientRepository } from "../infrastructure/storage/local-patient-repository";
 
 type View = "landing" | "list" | "note";
@@ -123,6 +129,33 @@ export function App({ repository: suppliedRepository, patientFactory }: AppProps
     persist(result.database);
   }
 
+  function updateActiveWorkspace(patch: Partial<PatientWorkspaceFields>) {
+    if (activePatientId === null) return;
+    const patient = databaseRef.current.patients.find(
+      (candidate) => candidate.id === activePatientId,
+    );
+    if (!patient) return;
+
+    const result = updateWorkspaceInDatabase(
+      databaseRef.current,
+      patient,
+      patch,
+      factory.now(),
+    );
+    persist(result.database);
+  }
+
+  function updateActiveBlockNote(sectionKey: string, note: string) {
+    if (activePatientId === null) return;
+    const patient = databaseRef.current.patients.find(
+      (candidate) => candidate.id === activePatientId,
+    );
+    if (!patient) return;
+    updateActiveWorkspace({
+      blockNotes: { ...patient.blockNotes, [sectionKey]: note },
+    });
+  }
+
   const activePatient =
     activePatientId === null
       ? undefined
@@ -162,7 +195,32 @@ export function App({ repository: suppliedRepository, patientFactory }: AppProps
           }}
           onChange={updateActivePatient}
         >
-          <ClinicalNote patient={activePatient} onFindingChange={updateActiveFinding} />
+          <TodoList
+            createId={factory.createId}
+            now={factory.now}
+            todos={activePatient.todos}
+            onChange={(todos) => updateActiveWorkspace({ todos })}
+          />
+          <AdditionalNotes
+            value={activePatient.globalNote}
+            onChange={(globalNote) => updateActiveWorkspace({ globalNote })}
+          />
+          <AdmissionHistory
+            admission={activePatient.admission}
+            adl={activePatient.adl}
+            onAdmissionChange={(admission) => updateActiveWorkspace({ admission })}
+            onAdlChange={(adl) => updateActiveWorkspace({ adl })}
+          />
+          <PastMedicalHistory
+            createId={factory.createId}
+            entries={activePatient.pmh}
+            onChange={(pmh) => updateActiveWorkspace({ pmh })}
+          />
+          <ClinicalNote
+            patient={activePatient}
+            onBlockNoteChange={updateActiveBlockNote}
+            onFindingChange={updateActiveFinding}
+          />
         </PatientNote>
       ) : null}
     </>

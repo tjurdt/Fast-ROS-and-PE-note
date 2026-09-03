@@ -3352,5 +3352,44 @@
         "本體覺 Proprioception"
       ]
     }
+  },
+  "workspace": {
+    "adlLevels": [
+      "Totally independent 完全獨立",
+      "Partially dependent 部分依賴",
+      "Totally dependent 完全依賴"
+    ],
+    "pmhCommon": [
+      "高血壓 Hypertension",
+      "糖尿病 Diabetes mellitus",
+      "高血脂 Dyslipidemia",
+      "冠狀動脈疾病 CAD",
+      "心房顫動 Atrial fibrillation",
+      "心臟衰竭 CHF",
+      "慢性腎臟病 CKD",
+      "末期腎病／洗腎 ESRD",
+      "腦中風 Stroke/CVA",
+      "慢性阻塞性肺病 COPD",
+      "氣喘 Asthma",
+      "肝硬化 Liver cirrhosis",
+      "B 型肝炎 HBV",
+      "C 型肝炎 HCV",
+      "消化性潰瘍 PUD",
+      "痛風 Gout",
+      "甲狀腺疾病 Thyroid disease",
+      "惡性腫瘤 Malignancy",
+      "失智症 Dementia",
+      "巴金森氏症 Parkinson's",
+      "癲癇 Epilepsy",
+      "憂鬱症 Depression",
+      "骨質疏鬆 Osteoporosis",
+      "良性攝護腺肥大 BPH",
+      "貧血 Anemia"
+    ],
+    "admissionHabits": [
+      "菸 Smoking",
+      "酒 Alcohol",
+      "檳榔 Betel"
+    ]
   }
 }

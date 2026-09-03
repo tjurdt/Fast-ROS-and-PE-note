@@ -50,4 +50,35 @@ describe("LocalPatientRepository", () => {
     await expect(repository.load()).rejects.toBeInstanceOf(StorageDataError);
     expect(storage.getItem(V2_LOCAL_STORAGE_KEY)).toBe("{not-json");
   });
+
+  it("loads earlier v2 patients with workspace defaults without rewriting source", async () => {
+    const storage = new MemoryStorage();
+    const serialized = JSON.stringify({
+      schemaVersion: 2,
+      patients: [
+        {
+          id: "patient-old-v2",
+          code: "OLD-V2",
+          specialty: "general",
+          sex: "",
+          age: "",
+          problem: "",
+          createdAt: 1,
+          updatedAt: 1,
+          findings: {},
+          blockNotes: {},
+          todos: [],
+        },
+      ],
+    });
+    storage.setItem(V2_LOCAL_STORAGE_KEY, serialized);
+    const repository = new LocalPatientRepository(storage);
+
+    const loaded = await repository.load();
+
+    expect(loaded.patients[0]?.globalNote).toBe("");
+    expect(loaded.patients[0]?.pmh).toEqual([]);
+    expect(loaded.patients[0]?.admission.habits).toEqual([]);
+    expect(storage.getItem(V2_LOCAL_STORAGE_KEY)).toBe(serialized);
+  });
 });

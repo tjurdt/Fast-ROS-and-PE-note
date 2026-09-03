@@ -6,7 +6,7 @@
 
 ## Non-goals
 
-- 此階段不處理 block notes、Admission、PMH、組套、匯出與列印。
+- 此 feature 不處理 Admission、PMH、組套、匯出與列印；區塊備註屬於 clinical section，因此由此 feature 呈現。
 
 ## Data and integration
 

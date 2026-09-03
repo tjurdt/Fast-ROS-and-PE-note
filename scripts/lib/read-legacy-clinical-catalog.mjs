@@ -9,6 +9,12 @@ const END_MARKER =
   "const SPEC_INDEX = {}; SPECIALTIES.forEach(s=>SPEC_INDEX[s.key]=s);";
 const WIDGET_START_MARKER = "const DTR_SITES=[";
 const WIDGET_END_MARKER = "function sensoryState(v){";
+const ADL_START_MARKER = "const ADL_LEVELS =";
+const ADL_END_MARKER = "function adlDependent(a)";
+const PMH_START_MARKER = "const PMH_COMMON=[";
+const PMH_END_MARKER = "function addPmh(text){";
+const ADMISSION_START_MARKER = "const ADM_HABITS=[";
+const ADMISSION_END_MARKER = "function admissionPosCount(ad){";
 
 export const clinicalCatalogPath = path.join(
   rootDir,
@@ -17,6 +23,24 @@ export const clinicalCatalogPath = path.join(
   "clinical",
   "catalog.generated.json",
 );
+
+function evaluateLegacySlice(source, startMarker, endMarker, expression, filename) {
+  const start = source.indexOf(startMarker);
+  const end = source.indexOf(endMarker, start);
+  if (start < 0 || end < 0) {
+    throw new Error(`Cannot locate legacy oracle slice ${startMarker}.`);
+  }
+  return JSON.parse(
+    vm.runInNewContext(
+      `${source.slice(start, end)}\nJSON.stringify(${expression});`,
+      Object.create(null),
+      {
+        filename,
+        timeout: 1_000,
+      },
+    ),
+  );
+}
 
 export async function readLegacyClinicalCatalog() {
   const legacyPath = path.join(rootDir, "src", "legacy", "app.js");
@@ -58,6 +82,29 @@ JSON.stringify({
       timeout: 1_000,
     }),
   );
+  const workspace = {
+    adlLevels: evaluateLegacySlice(
+      source,
+      ADL_START_MARKER,
+      ADL_END_MARKER,
+      "ADL_LEVELS",
+      "legacy-adl-levels.vm.js",
+    ),
+    pmhCommon: evaluateLegacySlice(
+      source,
+      PMH_START_MARKER,
+      PMH_END_MARKER,
+      "PMH_COMMON",
+      "legacy-pmh-common.vm.js",
+    ),
+    admissionHabits: evaluateLegacySlice(
+      source,
+      ADMISSION_START_MARKER,
+      ADMISSION_END_MARKER,
+      "ADM_HABITS",
+      "legacy-admission-habits.vm.js",
+    ),
+  };
 
   const itemIds = catalog.sections.flatMap((section) =>
     section.items.map((item) => item.id),
@@ -66,7 +113,7 @@ JSON.stringify({
     throw new Error("Legacy clinical catalog contains duplicate item IDs.");
   }
 
-  return { ...catalog, widgets };
+  return { ...catalog, widgets, workspace };
 }
 
 export function serializeClinicalCatalog(catalog) {

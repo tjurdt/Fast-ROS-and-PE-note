@@ -117,3 +117,101 @@ test("v2 neurological widgets match legacy state and survive reload", async ({
   );
   expect(hasHorizontalOverflow).toBe(false);
 });
+
+test("v2 note workspace persists todo, history, ADL, and block notes", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("http://127.0.0.1:4174/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload();
+
+  await page.getByTestId("choose-local-v2").click();
+  await page.getByRole("button", { name: "＋ 新增病人" }).click();
+  await page.getByLabel("病人代號 Patient code").fill("WORKSPACE-V2");
+  await page.getByRole("button", { name: "建立並開始" }).click();
+
+  const todoRegion = page.getByRole("region", { name: "待辦事項" });
+  await todoRegion.getByRole("button", { name: "＋ 新增" }).click();
+  await page.getByLabel("待辦內容").fill("追蹤血液培養");
+  await page.getByRole("button", { name: "追蹤血液培養：設為重要" }).click();
+  await page.getByRole("button", { name: "追蹤血液培養：完成" }).click();
+  await page.getByLabel("其他備註 Additional notes").fill("家屬已知情");
+
+  const admission = page.getByTestId("admission-section");
+  await admission.locator(".v2-clinical-section__header").click();
+  await admission.getByRole("button", { name: "菸 Smoking" }).click();
+  await page.getByTestId("admission-drugAllergy").click();
+  await page.getByLabel("藥物過敏內容").fill("Penicillin rash");
+  await page.getByLabel("旅遊 Travel").fill("日本");
+  await page.getByLabel("家族史 Family history").fill("父親 HTN");
+  await page.getByTestId("adl-level").click();
+  await admission.getByRole("button", { name: "家人 Family" }).click();
+  await page.getByLabel("家人姓名或關係 Family member").fill("女兒");
+  await expect(admission.locator(".v2-clinical-section__header")).toContainText("4 項");
+
+  const pmh = page.getByTestId("pmh-section");
+  await pmh.locator(".v2-clinical-section__header").click();
+  await page.getByLabel("選擇常見過去病史").selectOption("高血壓 Hypertension");
+
+  await page.getByRole("button", { name: "區塊備註：一般全身 Constitutional" }).click();
+  await page
+    .getByLabel("區塊備註內容：一般全身 Constitutional")
+    .fill("感染症狀區塊備註");
+
+  await expect
+    .poll(async () => {
+      const stored = await page.evaluate(() =>
+        JSON.parse(window.localStorage.getItem("pe_note_v2") ?? "null"),
+      );
+      return stored?.patients?.[0]?.blockNotes?.ros_const;
+    })
+    .toBe("感染症狀區塊備註");
+
+  await page.getByRole("button", { name: /病人清單/ }).click();
+  await page.reload();
+  await page.getByTestId("choose-local-v2").click();
+  await page.getByRole("button", { name: /WORKSPACE-V2/ }).click();
+
+  await expect(page.getByLabel("待辦內容")).toHaveValue("追蹤血液培養");
+  await expect(
+    page.getByRole("button", { name: "追蹤血液培養：完成" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByLabel("其他備註 Additional notes")).toHaveValue("家屬已知情");
+
+  await page
+    .getByTestId("admission-section")
+    .locator(".v2-clinical-section__header")
+    .click();
+  await expect(page.getByLabel("藥物過敏內容")).toHaveValue("Penicillin rash");
+  await expect(page.getByTestId("adl-level")).toContainText("部分依賴");
+  await expect(page.getByLabel("家人姓名或關係 Family member")).toHaveValue("女兒");
+
+  await page.getByTestId("pmh-section").locator(".v2-clinical-section__header").click();
+  await expect(
+    page.getByRole("textbox", { name: "過去病史 1", exact: true }),
+  ).toHaveValue("高血壓 Hypertension");
+  await page.getByRole("button", { name: /^一般全身 Constitutional/ }).click();
+  await expect(page.getByLabel("區塊備註內容：一般全身 Constitutional")).toHaveValue(
+    "感染症狀區塊備註",
+  );
+
+  const stored = await page.evaluate(() =>
+    JSON.parse(window.localStorage.getItem("pe_note_v2") ?? "null"),
+  );
+  const patient = stored.patients[0];
+  expect(patient.todos[0]).toMatchObject({
+    text: "追蹤血液培養",
+    important: true,
+    status: "done",
+  });
+  expect(patient.admission.habits).toContain("菸 Smoking");
+  expect(patient.admission.tocc.t).toBe("日本");
+  expect(patient.adl.level).toBe("Partially dependent 部分依賴");
+  expect(patient.pmh[0].text).toBe("高血壓 Hypertension");
+
+  const hasHorizontalOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > window.innerWidth + 1,
+  );
+  expect(hasHorizontalOverflow).toBe(false);
+});

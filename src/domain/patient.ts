@@ -2,21 +2,24 @@ import { z } from "zod";
 
 import { FindingValueSchema } from "./clinical/finding";
 import type { FindingValue } from "./clinical/finding";
+import {
+  AdlFieldSchema,
+  AdmissionFieldSchema,
+  PastMedicalHistoryEntrySchema,
+  TodoSchema,
+  type Adl,
+  type Admission,
+  type PastMedicalHistoryEntry,
+  type Todo,
+} from "./note-workspace";
 
 export { FindingValueSchema } from "./clinical/finding";
 export type { FindingValue } from "./clinical/finding";
 
 export const GenderSchema = z.enum(["", "男 M", "女 F", "其他 Other"]);
 
-export const TodoSchema = z
-  .object({
-    id: z.string().min(1),
-    text: z.string(),
-    status: z.enum(["pending", "done"]),
-    important: z.boolean(),
-    createdAt: z.number().int().nonnegative(),
-  })
-  .strict();
+export { TodoSchema } from "./note-workspace";
+export type { Adl, Admission, PastMedicalHistoryEntry, Todo } from "./note-workspace";
 
 export const PatientSchema = z
   .object({
@@ -29,8 +32,12 @@ export const PatientSchema = z
     createdAt: z.number().int().nonnegative(),
     updatedAt: z.number().int().nonnegative(),
     findings: z.record(z.string(), FindingValueSchema),
-    blockNotes: z.record(z.string(), z.string()),
-    todos: z.array(TodoSchema),
+    globalNote: z.string().default(""),
+    blockNotes: z.record(z.string(), z.string()).default({}),
+    todos: z.array(TodoSchema).default([]),
+    pmh: z.array(PastMedicalHistoryEntrySchema).default([]),
+    admission: AdmissionFieldSchema,
+    adl: AdlFieldSchema,
   })
   .strict();
 
@@ -65,8 +72,12 @@ export function createPatient(
     createdAt: timestamp,
     updatedAt: timestamp,
     findings: {},
+    globalNote: "",
     blockNotes: {},
     todos: [],
+    pmh: [],
+    admission: {},
+    adl: {},
   });
 }
 
@@ -74,6 +85,15 @@ export type PatientEditableFields = Pick<
   Patient,
   "code" | "specialty" | "sex" | "age" | "problem"
 >;
+
+export interface PatientWorkspaceFields {
+  globalNote: string;
+  blockNotes: Record<string, string>;
+  todos: Todo[];
+  pmh: PastMedicalHistoryEntry[];
+  admission: Admission;
+  adl: Adl;
+}
 
 export function updatePatientDetails(
   patient: Patient,
@@ -99,6 +119,18 @@ export function updatePatientFinding(
       ...patient.findings,
       [itemId]: FindingValueSchema.parse(finding),
     },
+    updatedAt: now,
+  });
+}
+
+export function updatePatientWorkspace(
+  patient: Patient,
+  patch: Partial<PatientWorkspaceFields>,
+  now: number,
+): Patient {
+  return PatientSchema.parse({
+    ...patient,
+    ...patch,
     updatedAt: now,
   });
 }
