@@ -9,6 +9,7 @@ interface PatientNoteProps {
   saving: boolean;
   onBack: () => void;
   onChange: (patch: Partial<PatientEditableFields>) => void;
+  onExport: () => void;
 }
 
 export function PatientNote({
@@ -16,6 +17,7 @@ export function PatientNote({
   saving,
   onBack,
   onChange,
+  onExport,
   children,
 }: PropsWithChildren<PatientNoteProps>) {
   return (
@@ -24,9 +26,14 @@ export function PatientNote({
         <Button onClick={onBack} tone="ghost">
           ‹ 病人清單
         </Button>
-        <span className="v2-save-state" role="status">
-          {saving ? "儲存中…" : "已儲存在本機"}
-        </span>
+        <div className="v2-topbar__actions">
+          <span className="v2-save-state" role="status">
+            {saving ? "儲存中…" : "已儲存在本機"}
+          </span>
+          <Button data-testid="open-clinical-export" onClick={onExport}>
+            匯出／列印
+          </Button>
+        </div>
       </header>
 
       <section className="v2-card v2-note" aria-labelledby="v2-note-title">
@@ -93,7 +100,7 @@ export function PatientNote({
 
       <section className="v2-card v2-parity-notice">
         <strong>尚未切換正式入口</strong>
-        <p>其餘專用組套、匯出／列印與 Google 同步會在 parity 測試保護下逐步遷入。</p>
+        <p>Google 同步與正式病歷輸入仍會在 parity 測試保護下逐步遷入。</p>
       </section>
     </main>
   );

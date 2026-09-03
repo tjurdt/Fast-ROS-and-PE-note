@@ -172,6 +172,18 @@ textarea:focus-visible {
   white-space: nowrap;
 }
 
+.v2-topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.v2-topbar__actions .v2-button {
+  min-height: 36px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
 .v2-form,
 .v2-note,
 .v2-parity-notice {
@@ -1743,6 +1755,205 @@ textarea:focus-visible {
   box-shadow: 0 8px 24px rgb(127 29 45 / 15%);
 }
 
+.v2-export-overlay {
+  position: fixed;
+  z-index: 45;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgb(18 48 61 / 58%);
+  backdrop-filter: blur(3px);
+}
+
+.v2-export-dialog {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  width: min(100%, 920px);
+  max-height: min(94vh, 980px);
+  max-height: min(94dvh, 980px);
+  overflow: hidden;
+  border: 1px solid #cddde2;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 22px 70px rgb(18 48 61 / 30%);
+}
+
+.v2-export-dialog__header,
+.v2-export-controls,
+.v2-export-dialog__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 15px;
+  border-bottom: 1px solid #e1e9ec;
+}
+
+.v2-export-dialog__header h2 {
+  margin: 2px 0 0;
+  font-size: 19px;
+}
+
+.v2-export-dialog__header .v2-button,
+.v2-export-dialog__footer .v2-button,
+.v2-export-mode .v2-button {
+  min-height: 35px;
+  padding: 5px 9px;
+  font-size: 11px;
+}
+
+.v2-export-controls {
+  background: #f7fafb;
+}
+
+.v2-export-controls p {
+  margin: 0;
+  color: #6f8794;
+  font-size: 11px;
+  text-align: right;
+}
+
+.v2-export-mode {
+  display: flex;
+  flex: none;
+  gap: 6px;
+}
+
+.v2-export-mode .is-selected {
+  border-color: #0e6b7a;
+  color: #fff;
+  background: #0e6b7a;
+}
+
+.v2-export-body {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
+  background: #e9eff1;
+}
+
+.v2-export-document {
+  width: min(100%, 760px);
+  margin: 0 auto;
+  padding: clamp(18px, 4vw, 34px);
+  border: 1px solid #d6e0e4;
+  color: #172b35;
+  background: #fff;
+  box-shadow: 0 7px 22px rgb(18 48 61 / 10%);
+}
+
+.v2-export-document__header {
+  padding-bottom: 14px;
+  border-bottom: 2px solid #315b67;
+}
+
+.v2-export-document__header h1 {
+  margin-bottom: 12px;
+  font-size: 23px;
+}
+
+.v2-export-document__header dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px 18px;
+  margin: 0;
+}
+
+.v2-export-document__header dl > div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px;
+  min-width: 0;
+}
+
+.v2-export-document__header dt {
+  color: #5d7681;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.v2-export-document__header dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+
+.v2-export-document__mode {
+  width: fit-content;
+  margin: 11px 0 0;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: #0e6b7a;
+  background: #edf8f9;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.v2-export-section {
+  break-inside: avoid;
+  padding: 14px 0 4px;
+  border-bottom: 1px solid #e1e9ec;
+}
+
+.v2-export-section h2 {
+  margin: 0 0 7px;
+  color: #173f4b;
+  font-size: 15px;
+}
+
+.v2-export-section__note,
+.v2-export-line {
+  margin: 4px 0;
+  font-size: 11px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.v2-export-section__note {
+  padding: 5px 7px;
+  color: #0a5460;
+  background: #edf8f9;
+}
+
+.v2-export-line > span:first-child {
+  color: #78909a;
+}
+
+.v2-export-line.is-positive,
+.v2-export-line.is-positive > span:first-child {
+  color: #9b4a12;
+}
+
+.v2-export-line em {
+  margin-left: 8px;
+  color: #73508a;
+  font-style: normal;
+}
+
+.v2-export-document__disclaimer {
+  margin-top: 16px;
+  color: #667982;
+  font-size: 10px;
+}
+
+.v2-export-dialog__footer {
+  border-top: 1px solid #e1e9ec;
+  border-bottom: 0;
+}
+
+.v2-export-dialog__footer > span {
+  color: #0e6b7a;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.v2-export-dialog__footer > div {
+  display: flex;
+  gap: 7px;
+}
+
 @media (max-width: 560px) {
   .v2-gate__card {
     padding: 20px 16px;
@@ -2260,6 +2471,44 @@ textarea:focus-visible {
     padding: 7px;
   }
 
+  .v2-export-overlay {
+    padding: 7px;
+  }
+
+  .v2-export-dialog {
+    max-height: calc(100vh - 14px);
+    max-height: calc(100dvh - 14px);
+  }
+
+  .v2-export-dialog__header,
+  .v2-export-controls,
+  .v2-export-dialog__footer {
+    align-items: stretch;
+  }
+
+  .v2-export-controls,
+  .v2-export-dialog__footer {
+    flex-direction: column;
+  }
+
+  .v2-export-controls p {
+    text-align: left;
+  }
+
+  .v2-export-dialog__footer > div,
+  .v2-export-mode {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .v2-export-dialog__footer > div .v2-button:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .v2-export-document__header dl {
+    grid-template-columns: 1fr;
+  }
+
   .v2-template-editor {
     max-height: calc(100vh - 14px);
     max-height: calc(100dvh - 14px);
@@ -2301,5 +2550,59 @@ textarea:focus-visible {
 
   .v2-chemo-field.is-full {
     grid-column: auto;
+  }
+}
+
+@media print {
+  @page {
+    margin: 14mm;
+  }
+
+  body {
+    min-width: 0;
+    background: #fff;
+  }
+
+  .v2-shell,
+  .v2-template-editor-overlay,
+  .v2-error,
+  .v2-export-dialog__header,
+  .v2-export-controls,
+  .v2-export-dialog__footer {
+    display: none !important;
+  }
+
+  .v2-export-overlay {
+    position: static;
+    display: block;
+    padding: 0;
+    background: none;
+    backdrop-filter: none;
+  }
+
+  .v2-export-dialog {
+    display: block;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .v2-export-body {
+    overflow: visible;
+    padding: 0;
+    background: #fff;
+  }
+
+  .v2-export-document {
+    width: 100%;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .v2-export-section {
+    break-inside: avoid-page;
   }
 }

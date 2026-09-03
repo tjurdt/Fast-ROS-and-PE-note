@@ -801,3 +801,82 @@ test("v2 custom bundle templates retain stable patient values through edits and 
   );
   expect(hasHorizontalOverflow).toBe(false);
 });
+
+test("v2 clinical summary previews, copies, downloads, and prints without changing patient data", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("http://127.0.0.1:4174/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload();
+
+  await page.getByTestId("choose-local-v2").click();
+  await page.getByRole("button", { name: "＋ 新增病人" }).click();
+  await page.getByLabel("病人代號 Patient code").fill("EXPORT-V2");
+  await page.getByLabel("年齡 Age").fill("72");
+  await page.getByLabel("主要問題").fill("Pneumonia follow-up");
+  await page.getByRole("button", { name: "建立並開始" }).click();
+
+  await page.getByRole("button", { name: /^一般全身 Constitutional/ }).click();
+  await page.getByTestId("finding-control-fever").click();
+  await page.getByLabel("體溫/描述").fill("38.5°C");
+  await page.getByLabel("其他備註 Additional notes").fill("家屬已知情");
+
+  const storedBefore = await page.evaluate(() =>
+    window.localStorage.getItem("pe_note_v2"),
+  );
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async (text: string) => {
+          window.localStorage.setItem("v2-export-copied", text);
+        },
+      },
+    });
+    window.print = () => window.localStorage.setItem("v2-export-printed", "yes");
+  });
+
+  await page.getByTestId("open-clinical-export").click();
+  const preview = page.getByTestId("clinical-export-preview");
+  await expect(preview).toBeVisible();
+  await expect(preview).toContainText("EXPORT-V2");
+  await expect(preview).toContainText("Pneumonia follow-up");
+  await expect(preview).toContainText("38.5°C");
+  await expect(preview).toContainText("家屬已知情");
+  await expect(preview).toContainText("限縮版：重點＋陽性/異常＋備註");
+  await expect(preview).not.toContainText("Pruritus（搔癢）");
+
+  await preview.getByRole("button", { name: "完整版" }).click();
+  await expect(preview).toContainText("完整版：全部項目");
+  await expect(preview).toContainText("Pruritus（搔癢）");
+
+  await preview.getByRole("button", { name: "複製全文" }).click();
+  await expect(preview.getByRole("status")).toHaveText("已複製全文");
+  const copied = await page.evaluate(() =>
+    window.localStorage.getItem("v2-export-copied"),
+  );
+  expect(copied).toContain("病人代號：EXPORT-V2");
+  expect(copied).toContain("（完整版：全部項目）");
+
+  const downloadPromise = page.waitForEvent("download");
+  await preview.getByRole("button", { name: "下載 TXT" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^ROS_PE_EXPORT-V2_\d{12}_full\.txt$/);
+
+  await preview.getByRole("button", { name: "列印／存成 PDF" }).click();
+  await expect
+    .poll(() => page.evaluate(() => window.localStorage.getItem("v2-export-printed")))
+    .toBe("yes");
+
+  const hasHorizontalOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > window.innerWidth + 1,
+  );
+  expect(hasHorizontalOverflow).toBe(false);
+  expect(await page.evaluate(() => window.localStorage.getItem("pe_note_v2"))).toBe(
+    storedBefore,
+  );
+
+  await preview.getByRole("button", { name: "關閉匯出預覽" }).click();
+  await expect(preview).toHaveCount(0);
+});

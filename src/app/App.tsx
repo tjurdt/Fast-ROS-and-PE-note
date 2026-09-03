@@ -29,6 +29,7 @@ import { AdmissionHistory } from "../features/admission-history/AdmissionHistory
 import { BundleWorkspace } from "../features/bundles/BundleWorkspace";
 import { BundleTemplateEditor } from "../features/bundle-template-editor/BundleTemplateEditor";
 import { ClinicalNote } from "../features/clinical-note/ClinicalNote";
+import { ClinicalExportPreview } from "../features/export-preview/ClinicalExportPreview";
 import { PastMedicalHistory } from "../features/past-medical-history/PastMedicalHistory";
 import { PatientList } from "../features/patient-list/PatientList";
 import { PatientNote } from "../features/patient-note/PatientNote";
@@ -66,6 +67,7 @@ export function App({ repository: suppliedRepository, patientFactory }: AppProps
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [templateEditorOpen, setTemplateEditorOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const saveQueue = useRef<Promise<void>>(Promise.resolve());
   const saveRevision = useRef(0);
 
@@ -221,6 +223,14 @@ export function App({ repository: suppliedRepository, patientFactory }: AppProps
         />
       ) : null}
 
+      {exportOpen && activePatient ? (
+        <ClinicalExportPreview
+          patient={activePatient}
+          templates={database.customBundleTemplates}
+          onClose={() => setExportOpen(false)}
+        />
+      ) : null}
+
       {view === "landing" ? (
         <StorageChoice disabled={loading} onChooseLocal={() => void chooseLocal()} />
       ) : null}
@@ -242,10 +252,12 @@ export function App({ repository: suppliedRepository, patientFactory }: AppProps
           patient={activePatient}
           saving={saving}
           onBack={() => {
+            setExportOpen(false);
             setActivePatientId(null);
             setView("list");
           }}
           onChange={updateActivePatient}
+          onExport={() => setExportOpen(true)}
         >
           <TodoList
             createId={factory.createId}
