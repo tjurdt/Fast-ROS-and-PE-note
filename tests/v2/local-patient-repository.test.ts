@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { createPatient } from "../../src/domain/patient";
-import { addPatient, emptyPatientDatabase } from "../../src/domain/patient-database";
+import {
+  addAntibioticOption,
+  addPatient,
+  emptyPatientDatabase,
+} from "../../src/domain/patient-database";
 import {
   LocalPatientRepository,
   StorageDataError,
@@ -82,6 +86,17 @@ describe("LocalPatientRepository", () => {
     expect(loaded.patients[0]?.lqq).toEqual([]);
     expect(loaded.patients[0]?.customSets).toEqual({});
     expect(loaded.patients[0]?.postop).toBeNull();
+    expect(loaded.patients[0]?.infections).toEqual([]);
+    expect(loaded.antibioticOptions).toEqual([]);
     expect(storage.getItem(V2_LOCAL_STORAGE_KEY)).toBe(serialized);
+  });
+
+  it("stores trimmed custom antibiotic options once", () => {
+    const database = emptyPatientDatabase();
+    const added = addAntibioticOption(database, "  Custom-X  ");
+    const duplicate = addAntibioticOption(added, "Custom-X");
+
+    expect(added.antibioticOptions).toEqual(["Custom-X"]);
+    expect(duplicate).toBe(added);
   });
 });

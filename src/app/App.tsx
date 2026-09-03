@@ -16,7 +16,11 @@ import type {
   PatientFactoryDependencies,
   PatientWorkspaceFields,
 } from "../domain/patient";
-import { emptyPatientDatabase, type PatientDatabase } from "../domain/patient-database";
+import {
+  addAntibioticOption,
+  emptyPatientDatabase,
+  type PatientDatabase,
+} from "../domain/patient-database";
 import { AdditionalNotes } from "../features/additional-notes/AdditionalNotes";
 import { AdmissionHistory } from "../features/admission-history/AdmissionHistory";
 import { BundleWorkspace } from "../features/bundles/BundleWorkspace";
@@ -148,15 +152,21 @@ export function App({ repository: suppliedRepository, patientFactory }: AppProps
     persist(result.database);
   }
 
-  function updateActiveBundles(patch: Partial<PatientBundleFields>) {
+  function updateActiveBundles(
+    patch: Partial<PatientBundleFields>,
+    customAntibioticOption?: string,
+  ) {
     if (activePatientId === null) return;
-    const patient = databaseRef.current.patients.find(
+    const sourceDatabase = customAntibioticOption
+      ? addAntibioticOption(databaseRef.current, customAntibioticOption)
+      : databaseRef.current;
+    const patient = sourceDatabase.patients.find(
       (candidate) => candidate.id === activePatientId,
     );
     if (!patient) return;
 
     const result = updateBundlesInDatabase(
-      databaseRef.current,
+      sourceDatabase,
       patient,
       patch,
       factory.now(),
@@ -225,10 +235,13 @@ export function App({ repository: suppliedRepository, patientFactory }: AppProps
             onChange={(globalNote) => updateActiveWorkspace({ globalNote })}
           />
           <BundleWorkspace
+            antibioticOptions={database.antibioticOptions}
             createId={factory.createId}
             customSets={activePatient.customSets}
+            infections={activePatient.infections}
             lqq={activePatient.lqq}
             onChange={updateActiveBundles}
+            patientAge={activePatient.age}
             postop={activePatient.postop}
           />
           <AdmissionHistory

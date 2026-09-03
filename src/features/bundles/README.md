@@ -3,12 +3,13 @@
 ## Intent
 
 Provide the v2 bundle launcher and render typed, patient-scoped bundle instances. The
-first parity slices cover repeatable LQQOPERA symptom analysis, the built-in Dialysis
-and DNR templates, and postoperative care with repeatable drains.
+parity slices cover repeatable LQQOPERA symptom analysis, the built-in Dialysis and
+DNR templates, postoperative care with repeatable drains, and infection/sepsis
+workups with repeatable antibiotic courses.
 
 ## Non-goals
 
-- Infection and chemotherapy bundle screens are migrated separately.
+- Chemotherapy bundle screens are migrated separately.
 - User-defined template authoring is not part of this slice.
 - Export formatting and Google synchronization are not owned here.
 
@@ -18,6 +19,9 @@ and DNR templates, and postoperative care with repeatable drains.
 - `Patient.customSets` stores template instances under their stable legacy IDs.
 - `Patient.autoTriggered` prevents a removed PMH-triggered bundle from reappearing.
 - `Patient.postop` stores the singleton postoperative assessment and its drains.
+- `Patient.infections` stores repeatable infection assessments and antibiotics.
+- Database-level `antibioticOptions` stores user-added choices without coupling them
+  to one patient.
 
 All three fields default safely when an earlier v2 record is loaded. Unknown fields
 inside a bundle instance are preserved for forward compatibility.

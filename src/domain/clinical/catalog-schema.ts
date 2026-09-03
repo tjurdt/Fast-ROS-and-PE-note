@@ -208,6 +208,28 @@ const BundleDefinitionsSchema = z
         ),
       })
       .strict(),
+    infection: z
+      .object({
+        multi: z.record(
+          z.string(),
+          z
+            .object({
+              normal: z.string().nullable(),
+              options: z.array(z.string()).min(1),
+            })
+            .strict(),
+        ),
+        qsofaCriteria: z
+          .array(z.object({ key: z.string(), label: z.string() }).strict())
+          .min(1),
+        curb65Criteria: z
+          .array(z.object({ key: z.string(), label: z.string() }).strict())
+          .min(1),
+        scoreStates: z.array(z.enum(["", "no", "yes"])).length(3),
+        defaultAntibiotics: z.array(z.string()).min(1),
+        antibioticRoutes: z.array(z.string()).min(1),
+      })
+      .strict(),
   })
   .strict();
 

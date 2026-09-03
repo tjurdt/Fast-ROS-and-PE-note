@@ -990,6 +990,261 @@ textarea:focus-visible {
   white-space: normal;
 }
 
+.v2-infection {
+  border-color: #e0b48c;
+}
+
+.v2-infection-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.v2-infection-field {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  min-width: 0;
+  margin: 0;
+  padding: 9px;
+  border: 1px solid #dce6e9;
+  border-radius: 9px;
+  color: #3d5a67;
+  background: #fff;
+  font-size: 12px;
+}
+
+.v2-infection-field.is-full {
+  grid-column: 1 / -1;
+}
+
+.v2-infection-field > strong,
+.v2-infection-field > legend {
+  padding: 0;
+  color: #3d5a67;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.v2-infection-score {
+  overflow: hidden;
+  border: 1px solid #d6e0e4;
+  border-radius: 8px;
+}
+
+.v2-infection-score > summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+  padding: 8px;
+  list-style: none;
+  background: #f4f8fa;
+}
+
+.v2-infection-score > summary::-webkit-details-marker {
+  display: none;
+}
+
+.v2-infection-score > summary span {
+  padding: 3px 6px;
+  border-radius: 999px;
+  color: #3d5a67;
+  background: #e7eef1;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.v2-infection-score__body {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border-top: 1px solid #e7eef1;
+}
+
+.v2-infection-score__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 76px;
+  align-items: center;
+  gap: 6px;
+}
+
+.v2-infection-score__row > span,
+.v2-infection-score__body small {
+  color: #3d5a67;
+  font-size: 10px;
+}
+
+.v2-infection-score__row .v2-button {
+  min-width: 0;
+  min-height: 31px;
+  padding: 3px 5px;
+  font-size: 10px;
+}
+
+.v2-infection-score__row .is-yes {
+  border-color: #dc9ca4;
+  color: #9f1239;
+  background: #fff1f2;
+}
+
+.v2-infection-score__row .is-no {
+  border-color: #91c9ae;
+  color: #166534;
+  background: #effaf4;
+}
+
+.v2-infection-score__body p {
+  margin: 2px 0 0;
+  padding: 7px;
+  border-radius: 7px;
+  color: #3d5a67;
+  background: #f4f8fa;
+  font-size: 10px;
+}
+
+.v2-infection-score__body p.is-warn {
+  color: #92400e;
+  background: #fdf3e3;
+}
+
+.v2-infection-score__body p.is-danger {
+  color: #9f1239;
+  background: #fff1f2;
+}
+
+.v2-infection-temperature {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+}
+
+.v2-infection-temperature input {
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 7px 8px;
+  border: 1px solid #d6e0e4;
+  border-radius: 8px;
+}
+
+.v2-infection-temperature span {
+  padding: 4px 7px;
+  border-radius: 999px;
+  color: #6f8794;
+  background: #e7eef1;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.v2-infection-temperature .is-norm {
+  color: #166534;
+  background: #effaf4;
+}
+
+.v2-infection-temperature .is-danger {
+  color: #9f1239;
+  background: #fff1f2;
+}
+
+.v2-infection-antibiotics__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+}
+
+.v2-infection-antibiotics__header .v2-button {
+  min-height: 34px;
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.v2-infection-antibiotics {
+  display: grid;
+  gap: 9px;
+}
+
+.v2-antibiotic {
+  overflow: hidden;
+  border: 1px solid #cddde2;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.v2-antibiotic > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid #e7eef1;
+  background: #f4f8fa;
+}
+
+.v2-antibiotic > header .v2-button {
+  min-height: 30px;
+  padding: 3px 7px;
+  color: #9f1239;
+  font-size: 11px;
+}
+
+.v2-antibiotic__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  padding: 10px;
+}
+
+.v2-antibiotic__grid > label,
+.v2-antibiotic__field {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+  color: #3d5a67;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.v2-antibiotic__grid input,
+.v2-antibiotic__grid select,
+.v2-antibiotic__grid textarea,
+.v2-infection-custom-antibiotic input,
+.v2-infection-note {
+  width: 100%;
+  min-width: 0;
+  min-height: 36px;
+  padding: 6px 7px;
+  border: 1px solid #d6e0e4;
+  border-radius: 8px;
+  color: #12303d;
+  background: #fff;
+  resize: vertical;
+}
+
+.v2-antibiotic__field .v2-button {
+  min-width: 0;
+  min-height: 36px;
+  padding: 5px;
+  font-size: 11px;
+  white-space: normal;
+}
+
+.v2-infection-custom-antibiotic {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px;
+}
+
+.v2-infection-custom-antibiotic .v2-button {
+  min-height: 36px;
+  padding: 5px 8px;
+  font-size: 11px;
+}
+
 .v2-error {
   position: fixed;
   z-index: 50;
@@ -1514,12 +1769,18 @@ textarea:focus-visible {
   }
 
   .v2-postop-grid,
-  .v2-postop-drain__grid {
+  .v2-postop-drain__grid,
+  .v2-infection-grid,
+  .v2-antibiotic__grid {
     grid-template-columns: 1fr;
   }
 
   .v2-postop-field.is-full,
   .v2-postop-drain__grid .is-full {
+    grid-column: auto;
+  }
+
+  .v2-infection-field.is-full {
     grid-column: auto;
   }
 }

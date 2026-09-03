@@ -7,26 +7,39 @@ import {
   removeBundle,
   updateBundleInstance,
 } from "../../domain/bundles";
+import {
+  allAntibioticOptions,
+  createInfectionRecord,
+} from "../../domain/infection-workup";
 import type { PatientBundleFields } from "../../domain/patient";
 import { createPostoperativeCare } from "../../domain/postoperative-care";
 import { Button } from "../../ui/Button";
+import { InfectionWorkup } from "./InfectionWorkup";
 import { LqqBundle } from "./LqqBundle";
 import { PostoperativeCare } from "./PostoperativeCare";
 import { TemplateBundle } from "./TemplateBundle";
 
 interface BundleWorkspaceProps extends Pick<
   PatientBundleFields,
-  "lqq" | "customSets" | "postop"
+  "lqq" | "customSets" | "postop" | "infections"
 > {
+  antibioticOptions: string[];
   createId: () => string;
-  onChange: (patch: Partial<PatientBundleFields>) => void;
+  patientAge: string;
+  onChange: (
+    patch: Partial<PatientBundleFields>,
+    customAntibioticOption?: string,
+  ) => void;
 }
 
 const ENABLED_TEMPLATE_IDS = [DIALYSIS_BUNDLE_ID, DNR_BUNDLE_ID] as const;
 
 export function BundleWorkspace({
+  antibioticOptions,
   lqq,
   customSets,
+  infections,
+  patientAge,
   postop,
   createId,
   onChange,
@@ -59,6 +72,23 @@ export function BundleWorkspace({
           >
             症狀分析
             {lqq.length > 0 ? <span>{lqq.length}</span> : null}
+          </Button>
+          <Button
+            data-testid="add-infection"
+            onClick={() =>
+              onChange({
+                infections: [
+                  ...infections.map((infection) => ({
+                    ...infection,
+                    collapsed: true,
+                  })),
+                  createInfectionRecord(patientAge, { createId }),
+                ],
+              })
+            }
+          >
+            感染／敗血症
+            {infections.length > 0 ? <span>{infections.length}</span> : null}
           </Button>
           {enabledTemplates.map((template) => {
             const active = customSets[template.id] !== undefined;
@@ -102,6 +132,40 @@ export function BundleWorkspace({
           }
           onRemove={() =>
             onChange({ lqq: lqq.filter((candidate) => candidate.id !== entry.id) })
+          }
+        />
+      ))}
+
+      {infections.map((infection, index) => (
+        <InfectionWorkup
+          antibioticOptions={allAntibioticOptions(antibioticOptions)}
+          createId={createId}
+          index={index}
+          infection={infection}
+          key={infection.id}
+          onAddCustomAntibiotic={(next, option) =>
+            onChange(
+              {
+                infections: infections.map((candidate) =>
+                  candidate.id === infection.id ? next : candidate,
+                ),
+              },
+              option,
+            )
+          }
+          onChange={(next) =>
+            onChange({
+              infections: infections.map((candidate) =>
+                candidate.id === infection.id ? next : candidate,
+              ),
+            })
+          }
+          onRemove={() =>
+            onChange({
+              infections: infections.filter(
+                (candidate) => candidate.id !== infection.id,
+              ),
+            })
           }
         />
       ))}

@@ -8,13 +8,26 @@ export const PatientDatabaseSchema = z
   .object({
     schemaVersion: z.literal(V2_SCHEMA_VERSION),
     patients: z.array(PatientSchema),
+    antibioticOptions: z.array(z.string()).default([]),
   })
   .strict();
 
 export type PatientDatabase = z.infer<typeof PatientDatabaseSchema>;
 
 export function emptyPatientDatabase(): PatientDatabase {
-  return { schemaVersion: V2_SCHEMA_VERSION, patients: [] };
+  return { schemaVersion: V2_SCHEMA_VERSION, patients: [], antibioticOptions: [] };
+}
+
+export function addAntibioticOption(
+  database: PatientDatabase,
+  option: string,
+): PatientDatabase {
+  const normalized = option.trim();
+  if (!normalized || database.antibioticOptions.includes(normalized)) return database;
+  return PatientDatabaseSchema.parse({
+    ...database,
+    antibioticOptions: [...database.antibioticOptions, normalized],
+  });
 }
 
 export function addPatient(

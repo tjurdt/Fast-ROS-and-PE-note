@@ -3929,6 +3929,100 @@
           ]
         }
       }
+    },
+    "infection": {
+      "multi": {
+        "sources": {
+          "normal": null,
+          "options": [
+            "肺部 Pulmonary",
+            "泌尿道 Urinary",
+            "腹腔 Intra-abdominal",
+            "皮膚軟組織 SSTI",
+            "導管／血流 Catheter/BSI",
+            "中樞神經 CNS",
+            "骨關節 Bone/joint",
+            "其他 Other",
+            "感染源未明 Unknown"
+          ]
+        },
+        "cultures": {
+          "normal": null,
+          "options": [
+            "血液培養 Blood ×2",
+            "尿液培養 Urine",
+            "痰培養 Sputum",
+            "傷口／膿液 Wound/pus",
+            "CSF",
+            "糞便 Stool",
+            "導管尖端 Catheter tip",
+            "其他 Other"
+          ]
+        }
+      },
+      "qsofaCriteria": [
+        {
+          "key": "sbp",
+          "label": "收縮壓 ≤100 mmHg"
+        },
+        {
+          "key": "rr",
+          "label": "呼吸速率 ≥22 /min"
+        },
+        {
+          "key": "mentation",
+          "label": "意識狀態改變 Altered mentation"
+        }
+      ],
+      "curb65Criteria": [
+        {
+          "key": "confusion",
+          "label": "C｜新發意識混亂 Confusion"
+        },
+        {
+          "key": "urea",
+          "label": "U｜Urea >7 mmol/L"
+        },
+        {
+          "key": "rr",
+          "label": "R｜呼吸速率 ≥30 /min"
+        },
+        {
+          "key": "bp",
+          "label": "B｜SBP <90 或 DBP ≤60 mmHg"
+        },
+        {
+          "key": "age",
+          "label": "65｜年齡 ≥65 歲"
+        }
+      ],
+      "scoreStates": [
+        "",
+        "no",
+        "yes"
+      ],
+      "defaultAntibiotics": [
+        "Brosym（cefoperazone/sulbactam）",
+        "Tazocin（piperacillin/tazobactam）",
+        "Sintrix（ceftriaxone）",
+        "Unasyn（ampicillin/sulbactam）",
+        "Cefazolin",
+        "Cefepime",
+        "Meropenem",
+        "Ertapenem",
+        "Vancomycin",
+        "Teicoplanin",
+        "Levofloxacin",
+        "Metronidazole"
+      ],
+      "antibioticRoutes": [
+        "IV 靜脈",
+        "PO 口服",
+        "IM 肌肉注射",
+        "Neb/Inhaled 吸入",
+        "Topical 局部",
+        "其他 Other"
+      ]
     }
   }
 }

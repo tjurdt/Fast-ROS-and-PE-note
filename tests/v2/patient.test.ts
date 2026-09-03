@@ -59,6 +59,7 @@ describe("patient domain", () => {
       customSets: {},
       autoTriggered: {},
       postop: null,
+      infections: [],
     });
   });
 
@@ -113,6 +114,7 @@ describe("patient domain", () => {
     expect(patient.customSets).toEqual({});
     expect(patient.autoTriggered).toEqual({});
     expect(patient.postop).toBeNull();
+    expect(patient.infections).toEqual([]);
     expect(patient.todos[0]?.status).toBe("todo");
   });
 });

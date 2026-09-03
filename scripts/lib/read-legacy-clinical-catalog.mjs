@@ -25,6 +25,8 @@ const DIALYSIS_DAYS_START_MARKER = "const DIALYSIS_MODALITIES=[";
 const DIALYSIS_DAYS_END_MARKER = "function buildDTR(it,v){";
 const POSTOP_START_MARKER = "const PO_CYCLES={";
 const POSTOP_END_MARKER = "function appendLegacyNote(po,key,text){";
+const INFECTION_START_MARKER = "const INF_MULTI={";
+const INFECTION_END_MARKER = "function antibioticOptions(){";
 
 export const clinicalCatalogPath = path.join(
   rootDir,
@@ -175,7 +177,34 @@ JSON.stringify(BUILTIN_SETS.map((template) => ({
     }`,
     "legacy-postop-options.vm.js",
   );
-  const bundles = { lqq, dnrOptions, dialysisDays, builtinSets, postop };
+  const infection = evaluateLegacySlice(
+    source,
+    INFECTION_START_MARKER,
+    INFECTION_END_MARKER,
+    `{
+      multi: Object.fromEntries(Object.entries(INF_MULTI).map(([key, definition]) => [
+        key,
+        {
+          normal: definition.normal,
+          options: definition.options.map(({ v }) => v),
+        },
+      ])),
+      qsofaCriteria: QSOFA_CRITERIA.map(({ k, l }) => ({ key: k, label: l })),
+      curb65Criteria: CURB65_CRITERIA.map(({ k, l }) => ({ key: k, label: l })),
+      scoreStates: SCORE_STATES,
+      defaultAntibiotics: DEFAULT_ANTIBIOTICS,
+      antibioticRoutes: ABX_ROUTES,
+    }`,
+    "legacy-infection-options.vm.js",
+  );
+  const bundles = {
+    lqq,
+    dnrOptions,
+    dialysisDays,
+    builtinSets,
+    postop,
+    infection,
+  };
 
   const itemIds = catalog.sections.flatMap((section) =>
     section.items.map((item) => item.id),

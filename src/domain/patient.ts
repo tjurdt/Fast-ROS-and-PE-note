@@ -10,6 +10,7 @@ import {
 } from "./bundles";
 import { FindingValueSchema } from "./clinical/finding";
 import type { FindingValue } from "./clinical/finding";
+import { InfectionRecordsFieldSchema, type InfectionRecords } from "./infection-workup";
 import {
   AdlFieldSchema,
   AdmissionFieldSchema,
@@ -54,6 +55,7 @@ export const PatientSchema = z
     customSets: CustomBundleInstancesFieldSchema,
     autoTriggered: AutoTriggeredBundlesFieldSchema,
     postop: PostoperativeCareFieldSchema,
+    infections: InfectionRecordsFieldSchema,
   })
   .strict();
 
@@ -98,6 +100,7 @@ export function createPatient(
     customSets: {},
     autoTriggered: {},
     postop: null,
+    infections: [],
   });
 }
 
@@ -120,6 +123,7 @@ export interface PatientBundleFields {
   customSets: CustomBundleInstances;
   autoTriggered: AutoTriggeredBundles;
   postop: PostoperativeCare | null;
+  infections: InfectionRecords;
 }
 
 export function updatePatientDetails(

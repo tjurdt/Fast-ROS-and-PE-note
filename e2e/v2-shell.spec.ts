@@ -404,3 +404,133 @@ test("v2 postoperative care preserves POD, multi-findings, and repeatable drains
   );
   expect(hasHorizontalOverflow).toBe(false);
 });
+
+test("v2 infection workups score risk and persist repeatable antibiotics", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("http://127.0.0.1:4174/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload();
+
+  await page.getByTestId("choose-local-v2").click();
+  await page.getByRole("button", { name: "＋ 新增病人" }).click();
+  await page.getByLabel("病人代號 Patient code").fill("INFECTION-V2");
+  await page.getByLabel("年齡 Age").fill("70");
+  await page.getByRole("button", { name: "建立並開始" }).click();
+  await page.getByTestId("add-infection").click();
+
+  const infection = page.getByTestId("infection-1");
+  await infection.getByLabel("感染組套 1 名稱").fill("肺炎 Pneumonia");
+  await infection.getByLabel("感染組套 1 體溫").fill("38.2");
+  await expect(infection).toContainText("發燒 ≥38°C");
+  await infection
+    .getByRole("group", { name: "感染組套 感染源評估" })
+    .getByRole("button", { name: "肺部 Pulmonary" })
+    .click();
+  await infection
+    .getByRole("group", { name: "感染組套 已送培養" })
+    .getByRole("button", { name: "血液培養 Blood ×2" })
+    .click();
+
+  const qsofa = infection.locator(".v2-infection-score").filter({ hasText: "qSOFA" });
+  await qsofa.locator("summary").click();
+  const qsofaSbp = qsofa.getByRole("button", { name: /^qSOFA 收縮壓/ });
+  const qsofaRr = qsofa.getByRole("button", { name: /^qSOFA 呼吸速率/ });
+  const qsofaMentation = qsofa.getByRole("button", {
+    name: /^qSOFA 意識狀態改變/,
+  });
+  await qsofaSbp.click();
+  await qsofaSbp.click();
+  await qsofaRr.click();
+  await qsofaRr.click();
+  await qsofaMentation.click();
+  await expect(qsofa).toContainText("qSOFA 2/3：高風險提示");
+
+  const curb65 = infection
+    .locator(".v2-infection-score")
+    .filter({ hasText: "CURB-65" });
+  await curb65.locator("summary").click();
+  const confusion = curb65.getByRole("button", { name: /^CURB-65 C｜/ });
+  await confusion.click();
+  await confusion.click();
+  await curb65.getByRole("button", { name: /^CURB-65 U｜/ }).click();
+  await curb65.getByRole("button", { name: /^CURB-65 R｜/ }).click();
+  await curb65.getByRole("button", { name: /^CURB-65 B｜/ }).click();
+  await expect(curb65).toContainText("CURB-65 2/5：中度風險");
+
+  const today = await page.evaluate(() => {
+    const now = new Date();
+    const year = String(now.getFullYear()).padStart(4, "0");
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  });
+  await page.getByTestId("infection-1-add-antibiotic").click();
+  await page.getByLabel("抗生素 1 藥物").selectOption("Cefepime");
+  await page.getByLabel("抗生素 1 開始使用日").fill(today);
+  await expect(page.getByTestId("antibiotic-1-day")).toHaveText("Day 1");
+  await page.getByTestId("antibiotic-1-route").click();
+  await page.getByLabel("抗生素 1 劑量頻次註記").fill("2 g q8h");
+
+  await infection.getByLabel("感染組套 1 自訂抗生素").fill("Custom-X");
+  await infection.getByRole("button", { name: "加入選單" }).click();
+  await expect(page.getByLabel("抗生素 2 藥物")).toHaveValue("Custom-X");
+  await infection.getByLabel("感染組套 1 整體註記").fill("追蹤乳酸");
+
+  await page.getByTestId("add-infection").click();
+  await page.getByTestId("infection-2").getByLabel("感染組套 2 名稱").fill("UTI");
+
+  await expect
+    .poll(async () => {
+      const stored = await page.evaluate(() =>
+        JSON.parse(window.localStorage.getItem("pe_note_v2") ?? "null"),
+      );
+      return stored?.patients?.[0]?.infections?.length;
+    })
+    .toBe(2);
+
+  await page.getByRole("button", { name: /病人清單/ }).click();
+  await page.reload();
+  await page.getByTestId("choose-local-v2").click();
+  await page.getByRole("button", { name: /INFECTION-V2/ }).click();
+
+  await expect(page.getByTestId("add-infection")).toContainText("2");
+  const reloaded = page.getByTestId("infection-1");
+  await reloaded.locator(":scope > summary").click();
+  await expect(reloaded.getByLabel("感染組套 1 名稱")).toHaveValue("肺炎 Pneumonia");
+  await expect(reloaded.getByLabel("感染組套 1 體溫")).toHaveValue("38.2");
+  await expect(reloaded).toContainText("qSOFA 2/3：高風險提示");
+  await expect(page.getByLabel("抗生素 1 藥物")).toHaveValue("Cefepime");
+  await expect(page.getByTestId("antibiotic-1-route")).toHaveText("IV 靜脈");
+  await expect(page.getByLabel("抗生素 2 藥物")).toHaveValue("Custom-X");
+  await expect(
+    page.getByTestId("infection-2").getByLabel("感染組套 2 名稱"),
+  ).toHaveValue("UTI");
+
+  const stored = await page.evaluate(() =>
+    JSON.parse(window.localStorage.getItem("pe_note_v2") ?? "null"),
+  );
+  expect(stored.antibioticOptions).toEqual(["Custom-X"]);
+  expect(stored.patients[0].infections[0]).toMatchObject({
+    name: "肺炎 Pneumonia",
+    temperature: "38.2",
+    sources: ["肺部 Pulmonary"],
+    cultures: ["血液培養 Blood ×2"],
+    note: "追蹤乳酸",
+    qsofa: { sbp: "yes", rr: "yes", mentation: "no" },
+    curb65: {
+      confusion: "yes",
+      urea: "no",
+      rr: "no",
+      bp: "no",
+      age: "yes",
+    },
+  });
+  expect(stored.patients[0].infections[0].antibiotics).toHaveLength(2);
+
+  const hasHorizontalOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > window.innerWidth + 1,
+  );
+  expect(hasHorizontalOverflow).toBe(false);
+});
