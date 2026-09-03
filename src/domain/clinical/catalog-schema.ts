@@ -230,6 +230,56 @@ const BundleDefinitionsSchema = z
         antibioticRoutes: z.array(z.string()).min(1),
       })
       .strict(),
+    chemo: z
+      .object({
+        cycles: z.record(
+          z.string(),
+          z
+            .array(
+              z
+                .object({
+                  value: z.string(),
+                  tone: z.enum(["", "norm", "warn", "danger"]),
+                })
+                .strict(),
+            )
+            .min(1),
+        ),
+        multi: z.record(
+          z.string(),
+          z
+            .object({
+              normal: z.string().nullable(),
+              options: z
+                .array(
+                  z
+                    .object({
+                      value: z.string(),
+                      tone: z.enum(["", "norm", "warn", "danger"]),
+                    })
+                    .strict(),
+                )
+                .min(1),
+            })
+            .strict(),
+        ),
+        flags: z.array(z.string()).min(1),
+        neuropathySites: z
+          .array(z.object({ key: z.string(), label: z.string() }).strict())
+          .min(1),
+        neuropathyRows: z
+          .array(
+            z
+              .object({
+                key: z.string(),
+                label: z.string(),
+                sites: z.array(z.string()).optional(),
+              })
+              .strict(),
+          )
+          .min(1),
+      })
+      .strict(),
   })
   .strict();
 

@@ -8,6 +8,10 @@ import {
   type CustomBundleInstances,
   type LqqEntry,
 } from "./bundles";
+import {
+  ChemotherapyFollowupFieldSchema,
+  type ChemotherapyFollowup,
+} from "./chemotherapy-followup";
 import { FindingValueSchema } from "./clinical/finding";
 import type { FindingValue } from "./clinical/finding";
 import { InfectionRecordsFieldSchema, type InfectionRecords } from "./infection-workup";
@@ -56,6 +60,7 @@ export const PatientSchema = z
     autoTriggered: AutoTriggeredBundlesFieldSchema,
     postop: PostoperativeCareFieldSchema,
     infections: InfectionRecordsFieldSchema,
+    chemo: ChemotherapyFollowupFieldSchema,
   })
   .strict();
 
@@ -101,6 +106,7 @@ export function createPatient(
     autoTriggered: {},
     postop: null,
     infections: [],
+    chemo: null,
   });
 }
 
@@ -124,6 +130,7 @@ export interface PatientBundleFields {
   autoTriggered: AutoTriggeredBundles;
   postop: PostoperativeCare | null;
   infections: InfectionRecords;
+  chemo: ChemotherapyFollowup | null;
 }
 
 export function updatePatientDetails(

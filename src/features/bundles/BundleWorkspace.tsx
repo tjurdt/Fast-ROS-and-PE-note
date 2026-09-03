@@ -7,6 +7,7 @@ import {
   removeBundle,
   updateBundleInstance,
 } from "../../domain/bundles";
+import { createChemotherapyFollowup } from "../../domain/chemotherapy-followup";
 import {
   allAntibioticOptions,
   createInfectionRecord,
@@ -14,6 +15,7 @@ import {
 import type { PatientBundleFields } from "../../domain/patient";
 import { createPostoperativeCare } from "../../domain/postoperative-care";
 import { Button } from "../../ui/Button";
+import { ChemotherapyFollowup } from "./ChemotherapyFollowup";
 import { InfectionWorkup } from "./InfectionWorkup";
 import { LqqBundle } from "./LqqBundle";
 import { PostoperativeCare } from "./PostoperativeCare";
@@ -21,7 +23,7 @@ import { TemplateBundle } from "./TemplateBundle";
 
 interface BundleWorkspaceProps extends Pick<
   PatientBundleFields,
-  "lqq" | "customSets" | "postop" | "infections"
+  "lqq" | "customSets" | "postop" | "infections" | "chemo"
 > {
   antibioticOptions: string[];
   createId: () => string;
@@ -36,6 +38,7 @@ const ENABLED_TEMPLATE_IDS = [DIALYSIS_BUNDLE_ID, DNR_BUNDLE_ID] as const;
 
 export function BundleWorkspace({
   antibioticOptions,
+  chemo,
   lqq,
   customSets,
   infections,
@@ -114,6 +117,14 @@ export function BundleWorkspace({
             onClick={() => onChange({ postop: createPostoperativeCare() })}
           >
             術後照護{postop ? " ✓" : ""}
+          </Button>
+          <Button
+            className={chemo ? "is-active" : ""}
+            data-testid="add-bundle-chemo"
+            disabled={chemo !== null}
+            onClick={() => onChange({ chemo: createChemotherapyFollowup() })}
+          >
+            化療／標靶{chemo ? " ✓" : ""}
           </Button>
         </div>
       </div>
@@ -196,6 +207,14 @@ export function BundleWorkspace({
           createId={createId}
           onChange={(next) => onChange({ postop: next })}
           onRemove={() => onChange({ postop: null })}
+        />
+      ) : null}
+
+      {chemo ? (
+        <ChemotherapyFollowup
+          followup={chemo}
+          onChange={(next) => onChange({ chemo: next })}
+          onRemove={() => onChange({ chemo: null })}
         />
       ) : null}
     </section>

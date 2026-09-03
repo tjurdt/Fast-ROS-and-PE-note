@@ -534,3 +534,140 @@ test("v2 infection workups score risk and persist repeatable antibiotics", async
   );
   expect(hasHorizontalOverflow).toBe(false);
 });
+
+test("v2 chemotherapy follow-up preserves safety states and the limb matrix", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("http://127.0.0.1:4174/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload();
+
+  await page.getByTestId("choose-local-v2").click();
+  await page.getByRole("button", { name: "＋ 新增病人" }).click();
+  await page.getByLabel("病人代號 Patient code").fill("CHEMO-V2");
+  await page.getByRole("button", { name: "建立並開始" }).click();
+  await page.getByTestId("add-bundle-chemo").click();
+
+  const chemo = page.getByTestId("bundle-chemo");
+  await chemo.getByLabel("化療副作用 療程", { exact: true }).fill("FOLFOX C3");
+  const today = await page.evaluate(() => {
+    const now = new Date();
+    const year = String(now.getFullYear()).padStart(4, "0");
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  });
+  await chemo.getByLabel("化療副作用 治療日期").fill(today);
+  await expect(chemo.getByTestId("chemo-day")).toHaveText("D+0");
+  await chemo.getByLabel("化療副作用 體溫", { exact: true }).fill("38");
+  await expect(chemo).toContainText("≥38°C 警訊");
+
+  const nausea = chemo.getByRole("group", { name: "化療副作用 噁心嘔吐" });
+  await nausea.getByRole("button", { name: "無 None" }).click();
+  await nausea.getByRole("button", { name: "嘔吐 Vomiting" }).click();
+  await expect(nausea.getByRole("button", { name: "無 None" })).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  );
+  await expect(nausea.getByRole("button", { name: "嘔吐 Vomiting" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+
+  await chemo.getByTestId("chemo-cycle-giImpact").click();
+  await chemo.getByTestId("chemo-cycle-giImpact").click();
+  await expect(chemo.getByTestId("chemo-cycle-giImpact")).toHaveText(
+    "影響進食 Reduced",
+  );
+  await chemo.getByTestId("chemo-cycle-fatigue").click();
+  await chemo.getByTestId("chemo-cycle-fatigue").click();
+  await chemo.getByTestId("chemo-cycle-fatigue").click();
+  await expect(chemo.getByTestId("chemo-cycle-fatigue")).toHaveText("活動受限 Limited");
+
+  await chemo.getByTestId("chemo-neuro-numbness-LH").click();
+  await chemo.getByTestId("chemo-neuro-numbness-RH").click();
+  await chemo.getByTestId("chemo-neuro-fine-LH").click();
+  await expect(chemo.getByTestId("chemo-neuropathy-status")).toHaveText(
+    "有異常 Present",
+  );
+  await expect(chemo.getByTestId("chemo-neuro-fine-LF")).toBeDisabled();
+
+  const skin = chemo.getByRole("group", { name: "化療副作用 皮膚／管路" });
+  await skin.getByRole("button", { name: "無明顯異常 None" }).click();
+  await skin.getByRole("button", { name: "腫脹/疑外滲" }).click();
+  await chemo
+    .getByRole("group", { name: "化療副作用 感染徵象" })
+    .getByRole("button", { name: "寒顫 Chills" })
+    .click();
+  await chemo
+    .getByRole("group", { name: "化療副作用 出血徵象" })
+    .getByRole("button", { name: "活動性出血", exact: true })
+    .click();
+  await chemo
+    .getByRole("group", { name: "化療副作用 需立即注意" })
+    .getByRole("button", { name: "呼吸困難/胸痛" })
+    .click();
+  await chemo.getByLabel("化療副作用 CBC／ANC", { exact: true }).fill("ANC 400");
+  await chemo.getByLabel("化療副作用 處置／Plan", { exact: true }).fill("送急診評估");
+
+  await expect
+    .poll(async () => {
+      const stored = await page.evaluate(() =>
+        JSON.parse(window.localStorage.getItem("pe_note_v2") ?? "null"),
+      );
+      return stored?.patients?.[0]?.chemo?.plan;
+    })
+    .toBe("送急診評估");
+
+  await page.getByRole("button", { name: /病人清單/ }).click();
+  await page.reload();
+  await page.getByTestId("choose-local-v2").click();
+  await page.getByRole("button", { name: /CHEMO-V2/ }).click();
+
+  const reloaded = page.getByTestId("bundle-chemo");
+  await expect(reloaded.getByLabel("化療副作用 療程", { exact: true })).toHaveValue(
+    "FOLFOX C3",
+  );
+  await expect(reloaded.getByTestId("chemo-cycle-giImpact")).toHaveText(
+    "影響進食 Reduced",
+  );
+  await expect(reloaded.getByTestId("chemo-neuro-numbness-LH")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(reloaded.getByTestId("chemo-neuro-fine-LH")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+
+  const stored = await page.evaluate(() =>
+    JSON.parse(window.localStorage.getItem("pe_note_v2") ?? "null"),
+  );
+  expect(stored.patients[0].chemo).toMatchObject({
+    regimen: "FOLFOX C3",
+    chemoDate: today,
+    temperature: "38",
+    nauseaSymptoms: ["嘔吐 Vomiting"],
+    giImpact: "影響進食 Reduced",
+    fatigue: "活動受限 Limited",
+    neuropathyStatus: "有異常 Present",
+    skinFindings: ["腫脹/疑外滲"],
+    infectionSigns: ["寒顫 Chills"],
+    bleedingSigns: ["活動性出血"],
+    flags: ["呼吸困難/胸痛"],
+    labs: "ANC 400",
+    plan: "送急診評估",
+    _multiV37: true,
+    _neuroMatrixV38: true,
+  });
+  expect(stored.patients[0].chemo.neuropathyMatrix).toMatchObject({
+    numbness: ["LH", "RH"],
+    fine: ["LH"],
+  });
+
+  const hasHorizontalOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > window.innerWidth + 1,
+  );
+  expect(hasHorizontalOverflow).toBe(false);
+});

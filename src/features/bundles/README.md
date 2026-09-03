@@ -5,11 +5,12 @@
 Provide the v2 bundle launcher and render typed, patient-scoped bundle instances. The
 parity slices cover repeatable LQQOPERA symptom analysis, the built-in Dialysis and
 DNR templates, postoperative care with repeatable drains, and infection/sepsis
-workups with repeatable antibiotic courses.
+workups with repeatable antibiotic courses, and chemotherapy/targeted-therapy adverse
+effect follow-up with a limb-specific neuropathy matrix.
 
 ## Non-goals
 
-- Chemotherapy bundle screens are migrated separately.
+- User-defined template authoring remains a separate migration slice.
 - User-defined template authoring is not part of this slice.
 - Export formatting and Google synchronization are not owned here.
 
@@ -22,6 +23,7 @@ workups with repeatable antibiotic courses.
 - `Patient.infections` stores repeatable infection assessments and antibiotics.
 - Database-level `antibioticOptions` stores user-added choices without coupling them
   to one patient.
+- `Patient.chemo` stores the singleton chemotherapy/targeted-therapy follow-up.
 
 All three fields default safely when an earlier v2 record is loaded. Unknown fields
 inside a bundle instance are preserved for forward compatibility.

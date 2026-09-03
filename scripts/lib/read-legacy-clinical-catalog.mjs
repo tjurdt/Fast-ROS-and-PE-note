@@ -27,6 +27,8 @@ const POSTOP_START_MARKER = "const PO_CYCLES={";
 const POSTOP_END_MARKER = "function appendLegacyNote(po,key,text){";
 const INFECTION_START_MARKER = "const INF_MULTI={";
 const INFECTION_END_MARKER = "function antibioticOptions(){";
+const CHEMO_START_MARKER = "const CHEMO_CYCLES={";
+const CHEMO_END_MARKER = "function ensureNeuropathyMatrix(ch){";
 
 export const clinicalCatalogPath = path.join(
   rootDir,
@@ -197,6 +199,32 @@ JSON.stringify(BUILTIN_SETS.map((template) => ({
     }`,
     "legacy-infection-options.vm.js",
   );
+  const chemo = evaluateLegacySlice(
+    source,
+    CHEMO_START_MARKER,
+    CHEMO_END_MARKER,
+    `{
+      cycles: Object.fromEntries(Object.entries(CHEMO_CYCLES).map(([key, options]) => [
+        key,
+        options.map(({ v, c }) => ({ value: v, tone: c })),
+      ])),
+      multi: Object.fromEntries(Object.entries(CHEMO_MULTI).map(([key, definition]) => [
+        key,
+        {
+          normal: definition.normal,
+          options: definition.options.map(({ v, c }) => ({ value: v, tone: c })),
+        },
+      ])),
+      flags: CHEMO_FLAGS,
+      neuropathySites: NEUROPATHY_SITES.map(({ k, l }) => ({ key: k, label: l })),
+      neuropathyRows: NEUROPATHY_ROWS.map(({ k, l, sites }) => ({
+        key: k,
+        label: l,
+        ...(sites ? { sites } : {}),
+      })),
+    }`,
+    "legacy-chemo-options.vm.js",
+  );
   const bundles = {
     lqq,
     dnrOptions,
@@ -204,6 +232,7 @@ JSON.stringify(BUILTIN_SETS.map((template) => ({
     builtinSets,
     postop,
     infection,
+    chemo,
   };
 
   const itemIds = catalog.sections.flatMap((section) =>

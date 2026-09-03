@@ -4023,6 +4023,347 @@
         "Topical 局部",
         "其他 Other"
       ]
+    },
+    "chemo": {
+      "cycles": {
+        "giImpact": [
+          {
+            "value": "不影響進食 Mild",
+            "tone": "norm"
+          },
+          {
+            "value": "影響進食 Reduced",
+            "tone": "warn"
+          },
+          {
+            "value": "無法飲水/進食 Unable",
+            "tone": "danger"
+          }
+        ],
+        "intakeImpact": [
+          {
+            "value": "正常攝取 Normal",
+            "tone": "norm"
+          },
+          {
+            "value": "攝取減少 Reduced",
+            "tone": "warn"
+          },
+          {
+            "value": "無法正常進食 Unable",
+            "tone": "danger"
+          }
+        ],
+        "fatigue": [
+          {
+            "value": "基準狀態 Baseline",
+            "tone": "norm"
+          },
+          {
+            "value": "較疲倦 Tired",
+            "tone": ""
+          },
+          {
+            "value": "活動受限 Limited",
+            "tone": "warn"
+          },
+          {
+            "value": "多臥床 Bedbound",
+            "tone": "danger"
+          }
+        ],
+        "neuropathyImpact": [
+          {
+            "value": "無功能影響 None",
+            "tone": "norm"
+          },
+          {
+            "value": "影響精細動作/ADL",
+            "tone": "warn"
+          },
+          {
+            "value": "影響步行/安全",
+            "tone": "danger"
+          }
+        ]
+      },
+      "multi": {
+        "nauseaSymptoms": {
+          "normal": "無 None",
+          "options": [
+            {
+              "value": "無 None",
+              "tone": "norm"
+            },
+            {
+              "value": "噁心 Nausea",
+              "tone": "warn"
+            },
+            {
+              "value": "嘔吐 Vomiting",
+              "tone": "danger"
+            }
+          ]
+        },
+        "oralSymptoms": {
+          "normal": "無明顯症狀 None",
+          "options": [
+            {
+              "value": "無明顯症狀 None",
+              "tone": "norm"
+            },
+            {
+              "value": "食慾下降",
+              "tone": "warn"
+            },
+            {
+              "value": "口乾 Dry mouth",
+              "tone": ""
+            },
+            {
+              "value": "味覺改變",
+              "tone": ""
+            },
+            {
+              "value": "口腔潰瘍 Mucositis",
+              "tone": "warn"
+            },
+            {
+              "value": "吞嚥困難 Dysphagia",
+              "tone": "danger"
+            }
+          ]
+        },
+        "bowelSymptoms": {
+          "normal": "正常 None",
+          "options": [
+            {
+              "value": "正常 None",
+              "tone": "norm"
+            },
+            {
+              "value": "便秘 Constipation",
+              "tone": "warn"
+            },
+            {
+              "value": "腹瀉 Diarrhea",
+              "tone": "warn"
+            },
+            {
+              "value": "腹痛/腹脹",
+              "tone": "warn"
+            },
+            {
+              "value": "嚴重/疑脫水",
+              "tone": "danger"
+            }
+          ]
+        },
+        "neuropathySymptoms": {
+          "normal": "無 None",
+          "options": [
+            {
+              "value": "無 None",
+              "tone": "norm"
+            },
+            {
+              "value": "麻木 Numbness",
+              "tone": "warn"
+            },
+            {
+              "value": "刺痛 Tingling",
+              "tone": "warn"
+            },
+            {
+              "value": "灼熱/疼痛",
+              "tone": "warn"
+            },
+            {
+              "value": "無力 Weakness",
+              "tone": "warn"
+            },
+            {
+              "value": "精細動作困難",
+              "tone": "warn"
+            },
+            {
+              "value": "步態/平衡問題",
+              "tone": "danger"
+            }
+          ]
+        },
+        "neuropathySites": {
+          "normal": null,
+          "options": [
+            {
+              "value": "手 Hands",
+              "tone": ""
+            },
+            {
+              "value": "足 Feet",
+              "tone": ""
+            },
+            {
+              "value": "其他 Other",
+              "tone": ""
+            }
+          ]
+        },
+        "skinFindings": {
+          "normal": "無明顯異常 None",
+          "options": [
+            {
+              "value": "無明顯異常 None",
+              "tone": "norm"
+            },
+            {
+              "value": "皮疹/痤瘡樣疹",
+              "tone": "warn"
+            },
+            {
+              "value": "搔癢/乾燥",
+              "tone": ""
+            },
+            {
+              "value": "手足症候群",
+              "tone": "warn"
+            },
+            {
+              "value": "指甲改變",
+              "tone": ""
+            },
+            {
+              "value": "管路紅痛",
+              "tone": "warn"
+            },
+            {
+              "value": "腫脹/疑外滲",
+              "tone": "danger"
+            }
+          ]
+        },
+        "infectionSigns": {
+          "normal": "無感染徵象 None",
+          "options": [
+            {
+              "value": "無感染徵象 None",
+              "tone": "norm"
+            },
+            {
+              "value": "寒顫 Chills",
+              "tone": "danger"
+            },
+            {
+              "value": "咳嗽/喉嚨痛",
+              "tone": "warn"
+            },
+            {
+              "value": "排尿疼痛",
+              "tone": "warn"
+            },
+            {
+              "value": "口腔白斑/潰瘍",
+              "tone": "warn"
+            },
+            {
+              "value": "管路紅腫",
+              "tone": "danger"
+            }
+          ]
+        },
+        "bleedingSigns": {
+          "normal": "無 None",
+          "options": [
+            {
+              "value": "無 None",
+              "tone": "norm"
+            },
+            {
+              "value": "瘀青/出血點",
+              "tone": "warn"
+            },
+            {
+              "value": "鼻血/牙齦出血",
+              "tone": "warn"
+            },
+            {
+              "value": "血尿",
+              "tone": "danger"
+            },
+            {
+              "value": "黑便/血便",
+              "tone": "danger"
+            },
+            {
+              "value": "活動性出血",
+              "tone": "danger"
+            }
+          ]
+        }
+      },
+      "flags": [
+        "呼吸困難/胸痛",
+        "持續嘔吐/無法飲水",
+        "活動性出血",
+        "意識改變/極度虛弱",
+        "嚴重腹瀉/疑脫水"
+      ],
+      "neuropathySites": [
+        {
+          "key": "LH",
+          "label": "左手"
+        },
+        {
+          "key": "LF",
+          "label": "左腳"
+        },
+        {
+          "key": "RH",
+          "label": "右手"
+        },
+        {
+          "key": "RF",
+          "label": "右腳"
+        }
+      ],
+      "neuropathyRows": [
+        {
+          "key": "numbness",
+          "label": "麻木 Numbness"
+        },
+        {
+          "key": "tingling",
+          "label": "刺痛 Tingling"
+        },
+        {
+          "key": "burning",
+          "label": "灼熱／疼痛"
+        },
+        {
+          "key": "reduced",
+          "label": "感覺減退"
+        },
+        {
+          "key": "weakness",
+          "label": "無力 Weakness"
+        },
+        {
+          "key": "fine",
+          "label": "精細動作困難",
+          "sites": [
+            "LH",
+            "RH"
+          ]
+        },
+        {
+          "key": "gait",
+          "label": "步態／平衡問題",
+          "sites": [
+            "LF",
+            "RF"
+          ]
+        }
+      ]
     }
   }
 }

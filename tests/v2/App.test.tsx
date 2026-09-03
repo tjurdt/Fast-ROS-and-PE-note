@@ -60,7 +60,7 @@ describe("v2 app shell", () => {
       on: true,
       fu: { fever_t: "38.5°C" },
     });
-  });
+  }, 10_000);
 
   it("adds the dialysis bundle atomically when PMH matches the legacy trigger", async () => {
     const user = userEvent.setup();

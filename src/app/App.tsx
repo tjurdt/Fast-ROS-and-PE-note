@@ -236,6 +236,7 @@ export function App({ repository: suppliedRepository, patientFactory }: AppProps
           />
           <BundleWorkspace
             antibioticOptions={database.antibioticOptions}
+            chemo={activePatient.chemo}
             createId={factory.createId}
             customSets={activePatient.customSets}
             infections={activePatient.infections}
