@@ -14,12 +14,16 @@ import {
 
 class MemoryStorage implements Pick<Storage, "getItem" | "setItem"> {
   readonly values = new Map<string, string>();
+  readError: Error | null = null;
+  writeError: Error | null = null;
 
   getItem(key: string): string | null {
+    if (this.readError) throw this.readError;
     return this.values.get(key) ?? null;
   }
 
   setItem(key: string, value: string): void {
+    if (this.writeError) throw this.writeError;
     this.values.set(key, value);
   }
 }
@@ -53,6 +57,25 @@ describe("LocalPatientRepository", () => {
 
     await expect(repository.load()).rejects.toBeInstanceOf(StorageDataError);
     expect(storage.getItem(V2_LOCAL_STORAGE_KEY)).toBe("{not-json");
+  });
+
+  it("maps blocked browser reads and writes without losing prior data", async () => {
+    const storage = new MemoryStorage();
+    storage.setItem(V2_LOCAL_STORAGE_KEY, JSON.stringify(emptyPatientDatabase()));
+    const repository = new LocalPatientRepository(storage);
+
+    storage.readError = new DOMException("blocked", "SecurityError");
+    await expect(repository.load()).rejects.toBeInstanceOf(StorageDataError);
+
+    storage.readError = null;
+    storage.writeError = new DOMException("quota", "QuotaExceededError");
+    await expect(repository.save(emptyPatientDatabase())).rejects.toBeInstanceOf(
+      StorageDataError,
+    );
+    storage.writeError = null;
+    expect(storage.getItem(V2_LOCAL_STORAGE_KEY)).toBe(
+      JSON.stringify(emptyPatientDatabase()),
+    );
   });
 
   it("loads earlier v2 patients with workspace defaults without rewriting source", async () => {

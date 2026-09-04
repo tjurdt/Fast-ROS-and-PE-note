@@ -7,6 +7,13 @@ import {
 
 export const V2_LOCAL_STORAGE_KEY = "pe_note_v2";
 
+function browserLocalStorage(): Pick<Storage, "getItem" | "setItem"> {
+  return {
+    getItem: (key) => window.localStorage.getItem(key),
+    setItem: (key, value) => window.localStorage.setItem(key, value),
+  };
+}
+
 export class StorageDataError extends Error {
   constructor(message: string, options?: ErrorOptions) {
     super(message, options);
@@ -17,15 +24,14 @@ export class StorageDataError extends Error {
 export class LocalPatientRepository implements PatientRepository {
   readonly #storage: Pick<Storage, "getItem" | "setItem">;
 
-  constructor(storage: Pick<Storage, "getItem" | "setItem"> = window.localStorage) {
+  constructor(storage: Pick<Storage, "getItem" | "setItem"> = browserLocalStorage()) {
     this.#storage = storage;
   }
 
   async load(): Promise<PatientDatabase> {
-    const serialized = this.#storage.getItem(V2_LOCAL_STORAGE_KEY);
-    if (serialized === null) return emptyPatientDatabase();
-
     try {
+      const serialized = this.#storage.getItem(V2_LOCAL_STORAGE_KEY);
+      if (serialized === null) return emptyPatientDatabase();
       return PatientDatabaseSchema.parse(JSON.parse(serialized));
     } catch (error) {
       throw new StorageDataError("無法讀取 v2 本機資料；原始內容尚未被覆寫。", {
