@@ -1,0 +1,5 @@
+npm run check:architecture
+npm run check:v2-boundaries
+npm run check:clinical-catalog
+npm run check:legacy
+npm run test:unit
