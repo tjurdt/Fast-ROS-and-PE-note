@@ -1062,3 +1062,60 @@ test("v2 Google mode keeps session credentials separate and reopens its cache of
   await page.reload();
   await expect(page.getByTestId("open-google-cache-v2")).toHaveCount(0);
 });
+
+test("v2 offers and imports legacy local data once, leaving the legacy record untouched", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("http://127.0.0.1:4174/");
+  await page.evaluate(() => {
+    window.localStorage.clear();
+    window.localStorage.setItem(
+      "rounding_notes_v1",
+      JSON.stringify({
+        patients: [
+          {
+            id: "legacy-1",
+            code: "LEGACY-E2E",
+            specialty: "general",
+            sex: "男 M",
+            age: "68",
+            problem: "legacy import e2e",
+            createdAt: 10,
+            updatedAt: 20,
+            values: {},
+            globalNote: "",
+            blockNotes: {},
+            todos: [],
+          },
+        ],
+        antibioticOptions: [],
+        customSets: [],
+      }),
+    );
+  });
+  await page.reload();
+
+  await page.getByTestId("choose-local-v2").click();
+  await expect(page.getByTestId("legacy-import-offer")).toContainText("1");
+  await page.getByRole("button", { name: "匯入" }).click();
+
+  await expect(page.getByTestId("legacy-import-done")).toContainText("已匯入 1 位病人");
+  await expect(page.getByRole("button", { name: /LEGACY-E2E/ })).toBeVisible();
+
+  const storedV2 = await page.evaluate(() =>
+    JSON.parse(window.localStorage.getItem("pe_note_v2") ?? "null"),
+  );
+  expect(storedV2.patients).toHaveLength(1);
+  expect(storedV2.patients[0].problem).toBe("legacy import e2e");
+
+  const legacyStillIntact = await page.evaluate(() =>
+    JSON.parse(window.localStorage.getItem("rounding_notes_v1") ?? "null"),
+  );
+  expect(legacyStillIntact.patients).toHaveLength(1);
+
+  await page.reload();
+  await page.getByTestId("choose-local-v2").click();
+  await expect(page.getByTestId("legacy-import-offer")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /LEGACY-E2E/ })).toBeVisible();
+});

@@ -287,6 +287,28 @@ textarea:focus-visible {
   font-size: 38px;
 }
 
+.v2-legacy-import {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-color: #a8d3c4;
+  background: #f2fbf7;
+}
+
+.v2-legacy-import p {
+  margin: 0;
+  color: #1f5c46;
+}
+
+.v2-legacy-import__actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
 .v2-patient-row {
   display: flex;
   align-items: stretch;

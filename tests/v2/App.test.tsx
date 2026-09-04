@@ -18,6 +18,7 @@ import {
   emptyPatientDatabase,
   type PatientDatabase,
 } from "../../src/domain/patient-database";
+import { LEGACY_LOCAL_STORAGE_KEY } from "../../src/infrastructure/legacy-import/legacy-patient-import";
 
 class MemoryPatientRepository implements PatientRepository {
   database = emptyPatientDatabase();
@@ -133,7 +134,10 @@ class MemoryCloudConnector implements CloudRepositoryConnector {
   }
 }
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  window.localStorage.clear();
+});
 
 describe("v2 app shell", () => {
   it("creates, edits, and persists a local patient", async () => {
@@ -412,5 +416,114 @@ describe("v2 app shell", () => {
       expect(screen.queryByRole("button", { name: /CLOUD-OLD/ })).toBeNull(),
     );
     expect(screen.getByRole("button", { name: /LOCAL-SAFE/ })).toBeTruthy();
+  });
+
+  function seedLegacyDatabase(patients: unknown[]) {
+    window.localStorage.setItem(
+      LEGACY_LOCAL_STORAGE_KEY,
+      JSON.stringify({ patients, antibioticOptions: [], customSets: [] }),
+    );
+  }
+
+  it("offers, imports, and reports legacy data on first local open", async () => {
+    const user = userEvent.setup();
+    seedLegacyDatabase([
+      {
+        id: "legacy-1",
+        code: "LEGACY-01",
+        specialty: "general",
+        sex: "男 M",
+        age: "70",
+        problem: "legacy import",
+        createdAt: 10,
+        updatedAt: 20,
+        values: {},
+        globalNote: "",
+        blockNotes: {},
+        todos: [],
+      },
+      { code: "missing required fields" },
+    ]);
+    const repository = new MemoryPatientRepository();
+    render(<App repository={repository} />);
+
+    await user.click(screen.getByTestId("choose-local-v2"));
+    const offer = await screen.findByTestId("legacy-import-offer");
+    expect(offer.textContent).toContain("1");
+    expect(screen.queryByRole("button", { name: /LEGACY-01/ })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "匯入" }));
+
+    const done = await screen.findByTestId("legacy-import-done");
+    expect(done.textContent).toContain("已匯入 1 位病人");
+    expect(done.textContent).toContain("1 筆因格式問題略過");
+    expect(await screen.findByRole("button", { name: /LEGACY-01/ })).toBeTruthy();
+    await waitFor(() => expect(repository.database.patients).toHaveLength(1));
+    expect(repository.database.patients[0]?.problem).toBe("legacy import");
+  });
+
+  it("imports nothing when the legacy import offer is dismissed", async () => {
+    const user = userEvent.setup();
+    seedLegacyDatabase([
+      {
+        id: "legacy-1",
+        code: "LEGACY-01",
+        specialty: "general",
+        sex: "",
+        age: "",
+        problem: "",
+        createdAt: 10,
+        updatedAt: 20,
+        values: {},
+        globalNote: "",
+        blockNotes: {},
+        todos: [],
+      },
+    ]);
+    const repository = new MemoryPatientRepository();
+    render(<App repository={repository} />);
+
+    await user.click(screen.getByTestId("choose-local-v2"));
+    await screen.findByTestId("legacy-import-offer");
+    await user.click(screen.getByRole("button", { name: "不用了" }));
+
+    expect(screen.queryByTestId("legacy-import-offer")).toBeNull();
+    expect(screen.queryByRole("button", { name: /LEGACY-01/ })).toBeNull();
+    expect(repository.database.patients).toHaveLength(0);
+    expect(repository.saveCount).toBe(0);
+  });
+
+  it("does not offer a legacy import once the local database already has a patient", async () => {
+    const user = userEvent.setup();
+    seedLegacyDatabase([
+      {
+        id: "legacy-1",
+        code: "LEGACY-01",
+        specialty: "general",
+        sex: "",
+        age: "",
+        problem: "",
+        createdAt: 10,
+        updatedAt: 20,
+        values: {},
+        globalNote: "",
+        blockNotes: {},
+        todos: [],
+      },
+    ]);
+    const repository = new MemoryPatientRepository();
+    repository.database = addPatient(
+      emptyPatientDatabase(),
+      createPatient(
+        { code: "EXISTING", specialty: "general", sex: "", age: "", problem: "" },
+        { createId: () => "existing-patient", now: () => 100 },
+      ),
+    );
+    render(<App repository={repository} />);
+
+    await user.click(screen.getByTestId("choose-local-v2"));
+    await screen.findByRole("button", { name: /EXISTING/ });
+
+    expect(screen.queryByTestId("legacy-import-offer")).toBeNull();
   });
 });
