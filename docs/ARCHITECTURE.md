@@ -54,9 +54,9 @@ Google Identity Services 只在使用者明確登入時動態載入，access tok
 
 ## 資料策略
 
-目前沒有正式使用者資料，因此 v2 使用獨立的 `pe_note_v2` key 與 `schemaVersion: 2`，不直接承接 legacy 物件。即使如此，所有 storage/network 邊界仍必須 runtime validation，以避免部分寫入或壞資料被靜默覆蓋。
+v2 使用獨立的 `pe_note_v2` key 與 `schemaVersion: 2`，不直接承接 legacy 物件。所有 storage/network 邊界仍必須 runtime validation，以避免部分寫入或壞資料被靜默覆蓋。
 
-正式切換前再決定是否需要一次性 legacy import。若建立 import，它必須是顯式、可測試且不覆寫來源的轉換，不應讓 v2 domain 永久背負 legacy shape。
+一次性 legacy（`rounding_notes_v1`）→ v2 import 與 legacy 退場時機已拍板，見 `docs/adr/0004-legacy-retirement-and-v2-import.md`：import 做，但是顯式觸發、唯讀、不進 domain 的 infrastructure adapter；退場採 Phase 0–3 分階段、有觀察期的計畫，不在切換正式入口當下就刪 legacy。
 
 ## 自動護欄
 
@@ -84,3 +84,4 @@ Google Identity Services 只在使用者明確登入時動態載入，access tok
 
 詳細決策見 `docs/adr/0002-controlled-v2-rewrite.md`。
 同步安全決策見 `docs/adr/0003-local-first-google-sync.md`。
+一次性 import 與退場計畫見 `docs/adr/0004-legacy-retirement-and-v2-import.md`。
