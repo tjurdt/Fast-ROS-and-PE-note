@@ -42,6 +42,10 @@ import { BundleWorkspace } from "../features/bundles/BundleWorkspace";
 import { BundleTemplateEditor } from "../features/bundle-template-editor/BundleTemplateEditor";
 import { ClinicalNote } from "../features/clinical-note/ClinicalNote";
 import { ClinicalExportPreview } from "../features/export-preview/ClinicalExportPreview";
+import {
+  LegacyImportBanner,
+  type LegacyImportBannerState,
+} from "../features/legacy-import/LegacyImportBanner";
 import { PastMedicalHistory } from "../features/past-medical-history/PastMedicalHistory";
 import { PatientList } from "../features/patient-list/PatientList";
 import { PatientNote } from "../features/patient-note/PatientNote";
@@ -49,6 +53,10 @@ import { StorageChoice } from "../features/storage-choice/StorageChoice";
 import { SyncStatusPanel } from "../features/sync-status/SyncStatusPanel";
 import { TodoList } from "../features/todo-list/TodoList";
 import { GoogleDriveConnector } from "../infrastructure/google/google-drive-connector";
+import {
+  convertLegacyDatabase,
+  readLegacyDatabase,
+} from "../infrastructure/legacy-import/legacy-patient-import";
 import { LocalPatientRepository } from "../infrastructure/storage/local-patient-repository";
 
 type View = "landing" | "list" | "note";
@@ -103,6 +111,14 @@ export function App({
   const [cloudAccount, setCloudAccount] = useState<CloudAccount | null>(null);
   const [cachedCloudAccount, setCachedCloudAccount] =
     useState<CachedCloudAccount | null>(() => cloudConnector.getCachedAccount());
+  const [legacyImportOffer, setLegacyImportOffer] = useState<{
+    database: PatientDatabase;
+    skipped: number;
+  } | null>(null);
+  const [legacyImportResult, setLegacyImportResult] = useState<{
+    imported: number;
+    skipped: number;
+  } | null>(null);
   const saveQueue = useRef<Promise<void>>(Promise.resolve());
   const saveRevision = useRef(0);
 
@@ -158,7 +174,30 @@ export function App({
   }
 
   async function chooseLocal() {
-    await openRepository(localRepository);
+    if (await openRepository(localRepository)) detectLegacyImport();
+  }
+
+  function detectLegacyImport() {
+    if (databaseRef.current.patients.length > 0) return;
+    const detection = readLegacyDatabase(window.localStorage);
+    if (detection.status !== "present") return;
+    const conversion = convertLegacyDatabase(detection.raw);
+    if (!conversion.ok || conversion.database.patients.length === 0) return;
+    if (conversion.skipped.length > 0) {
+      console.warn("Legacy import：略過的病人紀錄", conversion.skipped);
+    }
+    setLegacyImportOffer({
+      database: conversion.database,
+      skipped: conversion.skipped.length,
+    });
+  }
+
+  function confirmLegacyImport() {
+    if (!legacyImportOffer) return;
+    const { database: importedDatabase, skipped } = legacyImportOffer;
+    persist(importedDatabase);
+    setLegacyImportOffer(null);
+    setLegacyImportResult({ imported: importedDatabase.patients.length, skipped });
   }
 
   async function chooseGoogle() {
@@ -367,6 +406,21 @@ export function App({
     activePatientId === null
       ? undefined
       : database.patients.find((patient) => patient.id === activePatientId);
+  const legacyImportState: LegacyImportBannerState | null = legacyImportOffer
+    ? { phase: "offer", patientCount: legacyImportOffer.database.patients.length }
+    : legacyImportResult
+      ? { phase: "done", ...legacyImportResult }
+      : null;
+  const legacyImportBanner = legacyImportState ? (
+    <LegacyImportBanner
+      disabled={saving || loading}
+      onDismiss={() =>
+        legacyImportOffer ? setLegacyImportOffer(null) : setLegacyImportResult(null)
+      }
+      onImport={confirmLegacyImport}
+      state={legacyImportState}
+    />
+  ) : null;
   const syncPanel = syncState ? (
     <SyncStatusPanel
       accountLabel={cloudAccount?.label ?? null}
@@ -429,6 +483,7 @@ export function App({
           }}
         >
           {syncPanel}
+          {legacyImportBanner}
         </PatientList>
       ) : null}
 
