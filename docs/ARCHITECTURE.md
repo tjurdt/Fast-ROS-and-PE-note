@@ -46,7 +46,7 @@ infrastructure adapters ──implements──▶ application ports
 - `app`：畫面協調、依賴組裝、儲存佇列與全域錯誤呈現。
 - `ui`：真正跨 feature、且不含 domain 流程的展示元件。
 
-v2 已打通「選擇 repository → 載入 → 建立病人 → 編輯完整 workspace／ROS／PE／組套 → 序列化儲存 → 重載 → 摘要匯出」。Legacy oracle 機械同步 25 個區塊、194 個題目、16 個科別及臨床選項；全部題型、專用／自訂組套、匯出與列印皆已有 typed 實作。
+v2 已打通「選擇 repository → 載入 → 建立／搜尋／排序／安全刪除病人 → 編輯完整 workspace／ROS／PE／組套 → 序列化儲存 → 重載 → 摘要匯出」。清單查詢是無副作用的 domain 規則，搜尋與排序偏好不進入病人 schema；永久刪除經 UI 二次確認後才由 application workflow 產生新 database。Legacy oracle 機械同步 25 個區塊、194 個題目、16 個科別及臨床選項；全部題型、專用／自訂組套、匯出與列印皆已有 typed 實作。
 
 Google 同步採 cache-first repository：病人每筆獨立做三方合併，全域設定以共同 base snapshot 判斷；無共同 base 時只做加法合併，避免空白新裝置誤刪遠端紀錄。真正雙邊衝突採目前裝置版本，但必須先成功建立遠端備份才允許覆寫。同步期間的新輸入會再 rebase 並維持 dirty，下一輪才上傳。
 
@@ -67,7 +67,7 @@ Google Identity Services 只在使用者明確登入時動態載入，access tok
 - `test:legacy`：既有 jsdom 單機冒煙流程。
 - `test:unit`：v2 domain、repository、同步衝突／離線／401／版本競爭與 React slice 測試。
 - `build:v2` / `check:v2-artifact`：確認候選成品只有單一 HTML，沒有外部本機 CSS/JS。
-- `test:e2e`：Chromium 驗證 legacy parity、手機寬度、v2 建立/重載、特殊 widget、完整 workspace，以及 mock Google 登入／離線快取生命週期。
+- `test:e2e`：Chromium 驗證 legacy parity、手機寬度、v2 病人 CRUD／搜尋／排序／重載、特殊 widget、完整 workspace，以及 mock Google 登入／離線快取生命週期。
 - GitHub Actions：安裝 Chromium 後執行完整 `npm run verify`。
 
 ## 切換正式入口的 gate

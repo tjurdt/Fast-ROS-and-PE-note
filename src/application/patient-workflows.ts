@@ -15,6 +15,7 @@ import {
 import { applyPmhAutoBundles } from "../domain/bundles";
 import {
   addPatient,
+  removePatient,
   replacePatient,
   type PatientDatabase,
 } from "../domain/patient-database";
@@ -22,6 +23,13 @@ import {
 export interface CreatePatientResult {
   database: PatientDatabase;
   patient: Patient;
+}
+
+export function deletePatientInDatabase(
+  database: PatientDatabase,
+  patientId: string,
+): PatientDatabase {
+  return removePatient(database, patientId);
 }
 
 export function createPatientInDatabase(

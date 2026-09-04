@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type PropsWithChildren } from "react";
 
 import type { Gender, Patient, PatientDraft } from "../../domain/patient";
+import { queryPatients, type PatientSortMode } from "../../domain/patient-list";
 import { SPECIALTIES, specialtyLabel } from "../../domain/specialty";
 import { Button } from "../../ui/Button";
 
@@ -8,6 +9,7 @@ interface PatientListProps {
   patients: Patient[];
   saving: boolean;
   onCreate: (draft: PatientDraft) => void;
+  onDelete: (patientId: string) => void;
   onOpen: (patientId: string) => void;
 }
 
@@ -23,11 +25,15 @@ export function PatientList({
   patients,
   saving,
   onCreate,
+  onDelete,
   onOpen,
   children,
 }: PropsWithChildren<PatientListProps>) {
   const [showForm, setShowForm] = useState(false);
   const [draft, setDraft] = useState<PatientDraft>(EMPTY_DRAFT);
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<PatientSortMode>("updated-desc");
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -36,9 +42,13 @@ export function PatientList({
     setShowForm(false);
   }
 
-  const orderedPatients = [...patients].sort(
-    (left, right) => right.updatedAt - left.updatedAt,
-  );
+  const visiblePatients = queryPatients(patients, { search, sort });
+
+  function formatUpdated(timestamp: number): string {
+    const date = new Date(timestamp);
+    const pad = (value: number) => String(value).padStart(2, "0");
+    return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
 
   return (
     <main className="v2-shell" aria-labelledby="patient-list-title">
@@ -121,25 +131,128 @@ export function PatientList({
         </form>
       ) : null}
 
+      {patients.length > 0 ? (
+        <section className="v2-list-tools" aria-label="病人清單篩選與排序">
+          <label>
+            <span>搜尋病人</span>
+            <input
+              aria-label="搜尋病人"
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPendingDeleteId(null);
+              }}
+              placeholder="代號、主要問題、科別…"
+              type="search"
+              value={search}
+            />
+          </label>
+          <label>
+            <span>排序</span>
+            <select
+              aria-label="病人排序"
+              onChange={(event) => {
+                setSort(event.target.value as PatientSortMode);
+                setPendingDeleteId(null);
+              }}
+              value={sort}
+            >
+              <option value="updated-desc">最近更新</option>
+              <option value="updated-asc">最早更新</option>
+              <option value="code-asc">病人代號</option>
+            </select>
+          </label>
+          <span className="v2-list-tools__count" role="status">
+            顯示 {visiblePatients.length}／{patients.length} 筆
+          </span>
+        </section>
+      ) : null}
+
       <section className="v2-list" aria-label="病人列表">
-        {orderedPatients.length === 0 ? (
+        {patients.length === 0 ? (
           <div className="v2-card v2-empty">
             <span aria-hidden="true">🗂️</span>
             <p>尚無病人紀錄</p>
           </div>
+        ) : visiblePatients.length === 0 ? (
+          <div className="v2-card v2-empty">
+            <span aria-hidden="true">🔎</span>
+            <p>找不到符合「{search.trim()}」的病人紀錄</p>
+            <Button onClick={() => setSearch("")}>清除搜尋</Button>
+          </div>
         ) : (
-          orderedPatients.map((patient) => (
-            <button
-              className="v2-card v2-patient"
-              key={patient.id}
-              onClick={() => onOpen(patient.id)}
-              type="button"
-            >
-              <strong>{patient.code || "（未命名）"}</strong>
-              <span>{specialtyLabel(patient.specialty)}</span>
-              {patient.problem ? <small>{patient.problem}</small> : null}
-            </button>
-          ))
+          visiblePatients.map((patient) => {
+            const displayCode = patient.code || "（未命名）";
+            return (
+              <article
+                aria-label={`病人 ${displayCode}`}
+                className="v2-card v2-patient-row"
+                data-testid="patient-row"
+                key={patient.id}
+              >
+                {pendingDeleteId === patient.id ? (
+                  <div
+                    aria-label={`確認刪除病人 ${displayCode}`}
+                    className="v2-patient-delete-confirm"
+                    role="group"
+                  >
+                    <div>
+                      <strong>確定刪除 {displayCode}？</strong>
+                      <small>整筆紀錄將永久刪除，且無法復原。</small>
+                    </div>
+                    <Button disabled={saving} onClick={() => setPendingDeleteId(null)}>
+                      取消
+                    </Button>
+                    <Button
+                      className="v2-patient-delete-confirm__action"
+                      disabled={saving}
+                      onClick={() => {
+                        setPendingDeleteId(null);
+                        onDelete(patient.id);
+                      }}
+                    >
+                      確認刪除
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      className="v2-patient"
+                      onClick={() => onOpen(patient.id)}
+                      type="button"
+                    >
+                      <strong>{displayCode}</strong>
+                      <span>{specialtyLabel(patient.specialty)}</span>
+                      {patient.sex || patient.age ? (
+                        <small>
+                          {[
+                            patient.sex,
+                            patient.age
+                              ? /^\d+$/u.test(patient.age)
+                                ? `${patient.age} 歲`
+                                : patient.age
+                              : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </small>
+                      ) : null}
+                      {patient.problem ? <small>{patient.problem}</small> : null}
+                      <small>更新 {formatUpdated(patient.updatedAt)}</small>
+                    </button>
+                    <Button
+                      aria-label="刪除此筆紀錄"
+                      className="v2-patient__delete"
+                      disabled={saving}
+                      onClick={() => setPendingDeleteId(patient.id)}
+                      tone="ghost"
+                    >
+                      ×
+                    </Button>
+                  </>
+                )}
+              </article>
+            );
+          })
         )}
       </section>
 

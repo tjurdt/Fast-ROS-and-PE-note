@@ -43,6 +43,66 @@ test("v2 single-file shell creates and reloads a typed local patient", async ({
   expect(hasHorizontalOverflow).toBe(false);
 });
 
+test("v2 patient list searches, sorts, and safely persists deletion", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("http://127.0.0.1:4174/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload();
+  await page.getByTestId("choose-local-v2").click();
+
+  await page.getByRole("button", { name: "＋ 新增病人" }).click();
+  await page.getByLabel("病人代號 Patient code").fill("BED-10");
+  await page.getByLabel("主要問題").fill("Pneumonia follow-up");
+  await page.getByRole("button", { name: "建立並開始" }).click();
+  await page.getByRole("button", { name: /病人清單/ }).click();
+
+  await page.getByRole("button", { name: "＋ 新增病人" }).click();
+  await page.getByLabel("病人代號 Patient code").fill("BED-2");
+  await page.getByLabel("主要問題").fill("Stroke follow-up");
+  await page.getByRole("button", { name: "建立並開始" }).click();
+  await page.getByRole("button", { name: /病人清單/ }).click();
+
+  const rows = page.getByTestId("patient-row");
+  await expect(rows).toHaveCount(2);
+  await expect(rows.nth(0)).toContainText("BED-2");
+  await page.getByLabel("病人排序").selectOption("updated-asc");
+  await expect(rows.nth(0)).toContainText("BED-10");
+
+  await page.getByLabel("搜尋病人").fill("pneumonia");
+  await expect(rows).toHaveCount(1);
+  await expect(page.getByText("顯示 1／2 筆")).toBeVisible();
+  const pneumoniaRow = rows.filter({ hasText: "BED-10" });
+  await pneumoniaRow.getByRole("button", { name: "刪除此筆紀錄" }).click();
+  await expect(
+    pneumoniaRow.getByRole("group", { name: "確認刪除病人 BED-10" }),
+  ).toBeVisible();
+  await pneumoniaRow.getByRole("button", { name: "取消" }).click();
+  await expect(pneumoniaRow.getByRole("button", { name: /BED-10/ })).toBeVisible();
+
+  await pneumoniaRow.getByRole("button", { name: "刪除此筆紀錄" }).click();
+  await pneumoniaRow.getByRole("button", { name: "確認刪除" }).click();
+  await expect(rows).toHaveCount(0);
+  await expect(page.getByText("找不到符合「pneumonia」的病人紀錄")).toBeVisible();
+
+  await page.reload();
+  await page.getByTestId("choose-local-v2").click();
+  await expect(page.getByTestId("patient-row")).toHaveCount(1);
+  await expect(page.getByTestId("patient-row")).toContainText("BED-2");
+  const stored = await page.evaluate(() =>
+    JSON.parse(window.localStorage.getItem("pe_note_v2") ?? "null"),
+  );
+  expect(stored.patients.map((patient: { code: string }) => patient.code)).toEqual([
+    "BED-2",
+  ]);
+
+  const hasHorizontalOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > window.innerWidth + 1,
+  );
+  expect(hasHorizontalOverflow).toBe(false);
+});
+
 test("v2 neurological widgets match legacy state and survive reload", async ({
   page,
 }) => {

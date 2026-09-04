@@ -14,6 +14,7 @@ import {
 } from "../application/synchronized-patient-repository";
 import {
   createPatientInDatabase,
+  deletePatientInDatabase,
   updateBundlesInDatabase,
   updateFindingInDatabase,
   updatePatientInDatabase,
@@ -266,6 +267,12 @@ export function App({
     setView("note");
   }
 
+  function deletePatient(patientId: string) {
+    const next = deletePatientInDatabase(databaseRef.current, patientId);
+    if (next === databaseRef.current) return;
+    persist(next);
+  }
+
   function updateActivePatient(patch: Partial<PatientEditableFields>) {
     if (activePatientId === null) return;
     const patient = databaseRef.current.patients.find(
@@ -415,6 +422,7 @@ export function App({
           patients={database.patients}
           saving={saving}
           onCreate={createNewPatient}
+          onDelete={deletePatient}
           onOpen={(patientId) => {
             setActivePatientId(patientId);
             setView("note");

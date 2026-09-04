@@ -172,6 +172,62 @@ describe("v2 app shell", () => {
     });
   }, 20_000);
 
+  it("searches, sorts, and requires explicit confirmation before deleting", async () => {
+    const user = userEvent.setup();
+    const repository = new MemoryPatientRepository();
+    const older = createPatient(
+      {
+        code: "BED-10",
+        specialty: "general",
+        sex: "",
+        age: "",
+        problem: "Pneumonia",
+      },
+      { createId: () => "patient-older", now: () => 100 },
+    );
+    const newer = createPatient(
+      {
+        code: "BED-2",
+        specialty: "neuro",
+        sex: "",
+        age: "",
+        problem: "Stroke",
+      },
+      { createId: () => "patient-newer", now: () => 200 },
+    );
+    repository.database = addPatient(addPatient(emptyPatientDatabase(), older), newer);
+    render(<App repository={repository} />);
+    await user.click(screen.getByTestId("choose-local-v2"));
+
+    expect(screen.getAllByTestId("patient-row").map((row) => row.textContent)).toEqual([
+      expect.stringContaining("BED-2"),
+      expect.stringContaining("BED-10"),
+    ]);
+
+    await user.selectOptions(screen.getByLabelText("病人排序"), "updated-asc");
+    expect(screen.getAllByTestId("patient-row")[0]?.textContent).toContain("BED-10");
+
+    await user.type(screen.getByLabelText("搜尋病人"), "pneumonia");
+    expect(screen.getAllByTestId("patient-row")).toHaveLength(1);
+    expect(screen.getByText("顯示 1／2 筆")).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "刪除此筆紀錄" }));
+    expect(repository.saveCount).toBe(0);
+    expect(screen.getByRole("group", { name: "確認刪除病人 BED-10" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "取消" }));
+    expect(screen.getByRole("button", { name: /BED-10/ })).toBeTruthy();
+    expect(repository.saveCount).toBe(0);
+
+    await user.click(screen.getByRole("button", { name: "刪除此筆紀錄" }));
+    await user.click(screen.getByRole("button", { name: "確認刪除" }));
+
+    await waitFor(() => expect(repository.saveCount).toBe(1));
+    expect(repository.database.patients.map((patient) => patient.id)).toEqual([
+      "patient-newer",
+    ]);
+    expect(screen.queryByText("BED-10")).toBeNull();
+  });
+
   it("adds the dialysis bundle atomically when PMH matches the legacy trigger", async () => {
     const user = userEvent.setup();
     const repository = new MemoryPatientRepository();

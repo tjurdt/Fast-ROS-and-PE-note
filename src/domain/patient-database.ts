@@ -91,3 +91,14 @@ export function replacePatient(
   patients[index] = patient;
   return PatientDatabaseSchema.parse({ ...database, patients });
 }
+
+export function removePatient(
+  database: PatientDatabase,
+  patientId: string,
+): PatientDatabase {
+  if (!database.patients.some((patient) => patient.id === patientId)) return database;
+  return PatientDatabaseSchema.parse({
+    ...database,
+    patients: database.patients.filter((patient) => patient.id !== patientId),
+  });
+}

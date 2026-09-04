@@ -243,6 +243,40 @@ textarea:focus-visible {
   padding: 4px 14px 96px;
 }
 
+.v2-list-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: end;
+  gap: 10px;
+  margin: 16px 14px 10px;
+}
+
+.v2-list-tools label {
+  display: grid;
+  gap: 4px;
+  color: #3d5a67;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.v2-list-tools input,
+.v2-list-tools select {
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #d6e0e4;
+  border-radius: 9px;
+  color: #12303d;
+  background: #fff;
+}
+
+.v2-list-tools__count {
+  min-height: 40px;
+  padding: 12px 2px 0;
+  color: #6f8794;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
 .v2-empty {
   padding: 48px 20px;
   color: #6f8794;
@@ -253,13 +287,27 @@ textarea:focus-visible {
   font-size: 38px;
 }
 
+.v2-patient-row {
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+}
+
 .v2-patient {
   display: grid;
+  flex: 1;
   gap: 3px;
+  min-width: 0;
   width: 100%;
   padding: 15px;
+  border: 0;
   color: #12303d;
+  background: transparent;
   text-align: left;
+}
+
+.v2-patient:hover {
+  background: #f7fcfc;
 }
 
 .v2-patient strong {
@@ -268,7 +316,65 @@ textarea:focus-visible {
 
 .v2-patient span,
 .v2-patient small {
+  overflow: hidden;
   color: #6f8794;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.v2-patient__delete {
+  align-self: center;
+  width: 46px;
+  min-height: 52px;
+  margin-right: 6px;
+  color: #6f8794;
+  font-size: 21px;
+}
+
+.v2-patient__delete:hover,
+.v2-patient__delete:focus-visible {
+  color: #a02936;
+  background: #fff1f2;
+}
+
+.v2-patient-delete-confirm {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: #fff8f8;
+}
+
+.v2-patient-delete-confirm > div {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+
+.v2-patient-delete-confirm strong {
+  overflow: hidden;
+  color: #a02936;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.v2-patient-delete-confirm small {
+  color: #6f8794;
+}
+
+.v2-patient-delete-confirm .v2-button {
+  flex: none;
+  min-height: 36px;
+  padding: 6px 10px;
+  font-size: 11px;
+}
+
+.v2-patient-delete-confirm .v2-patient-delete-confirm__action {
+  border-color: #a02936;
+  color: #fff;
+  background: #a02936;
 }
 
 .v2-fab {
@@ -2103,6 +2209,24 @@ textarea:focus-visible {
 
   .v2-form__row {
     grid-template-columns: 1fr;
+  }
+
+  .v2-list-tools {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .v2-list-tools__count {
+    grid-column: 1 / -1;
+    min-height: 0;
+    padding-top: 0;
+  }
+
+  .v2-patient-delete-confirm {
+    flex-wrap: wrap;
+  }
+
+  .v2-patient-delete-confirm > div {
+    flex-basis: 100%;
   }
 
   .v2-sync-status {

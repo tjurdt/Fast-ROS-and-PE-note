@@ -20,6 +20,7 @@ import {
 import {
   addPatient,
   emptyPatientDatabase,
+  removePatient,
   replacePatient,
   type PatientDatabase,
 } from "../../src/domain/patient-database";
@@ -186,6 +187,27 @@ describe("SynchronizedPatientRepository", () => {
     expect(merged.patients.map((item) => item.problem)).toEqual(["local", "remote"]);
     expect(cache.record?.dirty).toBe(false);
     expect(repository.getSyncState().status).toBe("synced");
+  });
+
+  it("persists a confirmed local patient deletion to the remote database", async () => {
+    const original = database(patient("patient-to-delete"));
+    const cache = new MemorySyncCache(cacheRecord(original));
+    const remote = new FakeRemoteStore(original);
+    const repository = new SynchronizedPatientRepository(cache, remote, () => 40);
+
+    await repository.load();
+    await repository.save(removePatient(original, "patient-to-delete"));
+    expect(repository.getSyncState()).toMatchObject({
+      status: "pending",
+      dirty: true,
+    });
+
+    const synced = await repository.sync();
+
+    expect(synced.patients).toEqual([]);
+    expect(remote.snapshot?.database.patients).toEqual([]);
+    expect(remote.actions).toEqual(["read", "write:r1"]);
+    expect(cache.record?.dirty).toBe(false);
   });
 
   it("backs up the remote version before local-active conflict resolution", async () => {
