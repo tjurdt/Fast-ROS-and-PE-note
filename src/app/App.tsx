@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { PatientRepository } from "../application/patient-repository";
+import type {
+  CachedCloudAccount,
+  CloudAccount,
+  CloudRepositoryConnection,
+  CloudRepositoryConnector,
+} from "../application/cloud-repository-connector";
 import {
   isSyncCapablePatientRepository,
   type PatientSyncState,
@@ -41,6 +47,7 @@ import { PatientNote } from "../features/patient-note/PatientNote";
 import { StorageChoice } from "../features/storage-choice/StorageChoice";
 import { SyncStatusPanel } from "../features/sync-status/SyncStatusPanel";
 import { TodoList } from "../features/todo-list/TodoList";
+import { GoogleDriveConnector } from "../infrastructure/google/google-drive-connector";
 import { LocalPatientRepository } from "../infrastructure/storage/local-patient-repository";
 
 type View = "landing" | "list" | "note";
@@ -48,6 +55,7 @@ type View = "landing" | "list" | "note";
 interface AppProps {
   repository?: PatientRepository;
   googleRepository?: SyncCapablePatientRepository;
+  cloudConnector?: CloudRepositoryConnector;
   patientFactory?: PatientFactoryDependencies;
 }
 
@@ -63,13 +71,23 @@ function errorMessage(error: unknown): string {
 export function App({
   repository: suppliedRepository,
   googleRepository,
+  cloudConnector: suppliedCloudConnector,
   patientFactory,
 }: AppProps) {
   const localRepository = useMemo(
     () => suppliedRepository ?? new LocalPatientRepository(),
     [suppliedRepository],
   );
+  const defaultCloudConnector = useMemo(() => new GoogleDriveConnector(), []);
+  const cloudConnector = suppliedCloudConnector ?? defaultCloudConnector;
+  const googleAvailability = googleRepository
+    ? {
+        available: true,
+        detail: "先開啟此裝置快取，再安全同步遠端版本。",
+      }
+    : cloudConnector.getAvailability();
   const [repository, setRepository] = useState<PatientRepository>(localRepository);
+  const repositoryRef = useRef<PatientRepository>(repository);
   const factory = patientFactory ?? DEFAULT_PATIENT_FACTORY;
   const [view, setView] = useState<View>("landing");
   const [database, setDatabase] = useState<PatientDatabase>(emptyPatientDatabase);
@@ -81,6 +99,9 @@ export function App({
   const [templateEditorOpen, setTemplateEditorOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [syncState, setSyncState] = useState<PatientSyncState | null>(null);
+  const [cloudAccount, setCloudAccount] = useState<CloudAccount | null>(null);
+  const [cachedCloudAccount, setCachedCloudAccount] =
+    useState<CachedCloudAccount | null>(() => cloudConnector.getCachedAccount());
   const saveQueue = useRef<Promise<void>>(Promise.resolve());
   const saveRevision = useRef(0);
 
@@ -91,6 +112,10 @@ export function App({
     }
     return repository.subscribe(setSyncState);
   }, [repository]);
+
+  useEffect(() => {
+    setCachedCloudAccount(cloudConnector.getCachedAccount());
+  }, [cloudConnector]);
 
   function adoptDatabase(next: PatientDatabase) {
     databaseRef.current = next;
@@ -118,6 +143,7 @@ export function App({
       const loaded = await nextRepository.load();
       saveQueue.current = Promise.resolve();
       saveRevision.current = 0;
+      repositoryRef.current = nextRepository;
       setRepository(nextRepository);
       adoptDatabase(loaded);
       setView("list");
@@ -135,12 +161,75 @@ export function App({
   }
 
   async function chooseGoogle() {
-    if (!googleRepository) return;
-    if (!(await openRepository(googleRepository))) return;
-    void googleRepository
-      .sync()
-      .then((synced) => adoptSyncedDatabase(synced))
-      .catch(() => undefined);
+    if (googleRepository) {
+      if (!(await openRepository(googleRepository))) return;
+      void syncRepository(googleRepository);
+      return;
+    }
+    await connectGoogle();
+  }
+
+  async function openCloudConnection(
+    connection: CloudRepositoryConnection,
+    synchronize: boolean,
+  ): Promise<void> {
+    if (!(await openRepository(connection.repository))) return;
+    setCloudAccount(connection.account);
+    setCachedCloudAccount(cloudConnector.getCachedAccount());
+    if (synchronize) void syncRepository(connection.repository);
+  }
+
+  async function connectGoogle() {
+    setLoading(true);
+    setError(null);
+    try {
+      await openCloudConnection(await cloudConnector.connect(), true);
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function openCachedGoogle() {
+    setLoading(true);
+    setError(null);
+    try {
+      const connection = await cloudConnector.openCached();
+      if (!connection) {
+        setCachedCloudAccount(null);
+        throw new Error("找不到可開啟的 Google 裝置快取。");
+      }
+      await openCloudConnection(connection, false);
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function reconnectGoogle() {
+    await saveQueue.current;
+    await connectGoogle();
+  }
+
+  async function leaveGoogle(clearCache: boolean) {
+    if (!cloudAccount) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await saveQueue.current;
+      await cloudConnector.disconnect(cloudAccount.key, { clearCache });
+      setCloudAccount(null);
+      setCachedCloudAccount(cloudConnector.getCachedAccount());
+      setActivePatientId(null);
+      setExportOpen(false);
+      await openRepository(localRepository);
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setLoading(false);
+    }
   }
 
   function adoptSyncedDatabase(next: PatientDatabase) {
@@ -158,8 +247,13 @@ export function App({
   async function syncNow() {
     if (!isSyncCapablePatientRepository(repository)) return;
     await saveQueue.current;
+    await syncRepository(repository);
+  }
+
+  async function syncRepository(nextRepository: SyncCapablePatientRepository) {
     try {
-      adoptSyncedDatabase(await repository.sync());
+      const synced = await nextRepository.sync();
+      if (repositoryRef.current === nextRepository) adoptSyncedDatabase(synced);
     } catch {
       // The repository exposes a recoverable state and retains its local cache.
     }
@@ -266,6 +360,17 @@ export function App({
     activePatientId === null
       ? undefined
       : database.patients.find((patient) => patient.id === activePatientId);
+  const syncPanel = syncState ? (
+    <SyncStatusPanel
+      accountLabel={cloudAccount?.label ?? null}
+      disabled={saving || loading}
+      state={syncState}
+      onClearCache={cloudAccount ? () => void leaveGoogle(true) : null}
+      onLeave={cloudAccount ? () => void leaveGoogle(false) : null}
+      onReconnect={cloudAccount ? () => void reconnectGoogle() : null}
+      onSync={() => void syncNow()}
+    />
+  ) : null;
 
   return (
     <>
@@ -295,10 +400,13 @@ export function App({
 
       {view === "landing" ? (
         <StorageChoice
+          cachedAccountLabel={cachedCloudAccount?.account.label ?? null}
           disabled={loading}
-          googleAvailable={Boolean(googleRepository)}
+          googleAvailable={googleAvailability.available}
+          googleDetail={googleAvailability.detail}
           onChooseGoogle={() => void chooseGoogle()}
           onChooseLocal={() => void chooseLocal()}
+          onOpenGoogleCache={() => void openCachedGoogle()}
         />
       ) : null}
 
@@ -311,7 +419,9 @@ export function App({
             setActivePatientId(patientId);
             setView("note");
           }}
-        />
+        >
+          {syncPanel}
+        </PatientList>
       ) : null}
 
       {view === "note" && activePatient ? (
@@ -326,13 +436,7 @@ export function App({
           onChange={updateActivePatient}
           onExport={() => setExportOpen(true)}
         >
-          {syncState ? (
-            <SyncStatusPanel
-              disabled={saving}
-              state={syncState}
-              onSync={() => void syncNow()}
-            />
-          ) : null}
+          {syncPanel}
           <TodoList
             createId={factory.createId}
             now={factory.now}

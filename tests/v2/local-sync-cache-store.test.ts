@@ -11,7 +11,7 @@ import {
   V2_GOOGLE_CACHE_PREFIX,
 } from "../../src/infrastructure/storage/local-sync-cache-store";
 
-class MemoryStorage implements Pick<Storage, "getItem" | "setItem"> {
+class MemoryStorage implements Pick<Storage, "getItem" | "setItem" | "removeItem"> {
   readonly values = new Map<string, string>();
   writeError: Error | null = null;
 
@@ -22,6 +22,10 @@ class MemoryStorage implements Pick<Storage, "getItem" | "setItem"> {
   setItem(key: string, value: string): void {
     if (this.writeError) throw this.writeError;
     this.values.set(key, value);
+  }
+
+  removeItem(key: string): void {
+    this.values.delete(key);
   }
 }
 
@@ -79,5 +83,20 @@ describe("LocalSyncCacheStore", () => {
 
     await expect(cache.save(record)).rejects.toBeInstanceOf(SyncCacheDataError);
     expect(storage.getItem(key)).toBe("previous");
+  });
+
+  it("reports whether an account cache exists and clears only that account", async () => {
+    const storage = new MemoryStorage();
+    const firstKey = `${V2_GOOGLE_CACHE_PREFIX}account-one`;
+    const secondKey = `${V2_GOOGLE_CACHE_PREFIX}account-two`;
+    storage.setItem(firstKey, "first");
+    storage.setItem(secondKey, "second");
+    const cache = new LocalSyncCacheStore("account-one", storage);
+
+    expect(cache.has()).toBe(true);
+    cache.clear();
+
+    expect(cache.has()).toBe(false);
+    expect(storage.getItem(secondKey)).toBe("second");
   });
 });

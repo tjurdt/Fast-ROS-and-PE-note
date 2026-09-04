@@ -3,15 +3,21 @@ import { Button } from "../../ui/Button";
 interface StorageChoiceProps {
   disabled: boolean;
   googleAvailable: boolean;
+  googleDetail: string;
+  cachedAccountLabel: string | null;
   onChooseLocal: () => void;
   onChooseGoogle: () => void;
+  onOpenGoogleCache: () => void;
 }
 
 export function StorageChoice({
   disabled,
   googleAvailable,
+  googleDetail,
+  cachedAccountLabel,
   onChooseLocal,
   onChooseGoogle,
+  onOpenGoogleCache,
 }: StorageChoiceProps) {
   return (
     <main className="v2-gate" aria-labelledby="v2-title">
@@ -37,12 +43,19 @@ export function StorageChoice({
             onClick={onChooseGoogle}
           >
             <strong>☁ Google 帳號</strong>
-            <span>
-              {googleAvailable
-                ? "先開啟此裝置快取，再安全同步遠端版本。"
-                : "同步核心已就緒；完成 OAuth 連線後開放。"}
-            </span>
+            <span>{googleDetail}</span>
           </Button>
+          {cachedAccountLabel ? (
+            <Button
+              className="v2-storage-grid__cached"
+              data-testid="open-google-cache-v2"
+              disabled={disabled}
+              onClick={onOpenGoogleCache}
+            >
+              <strong>📦 離線開啟 Google 裝置快取</strong>
+              <span>{cachedAccountLabel} · 不需登入或網路，可稍後再同步。</span>
+            </Button>
+          ) : null}
         </div>
 
         <p className="v2-privacy">

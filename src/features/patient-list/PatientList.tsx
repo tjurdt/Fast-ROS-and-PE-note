@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type PropsWithChildren } from "react";
 
 import type { Gender, Patient, PatientDraft } from "../../domain/patient";
 import { SPECIALTIES, specialtyLabel } from "../../domain/specialty";
@@ -19,7 +19,13 @@ const EMPTY_DRAFT: PatientDraft = {
   problem: "",
 };
 
-export function PatientList({ patients, saving, onCreate, onOpen }: PatientListProps) {
+export function PatientList({
+  patients,
+  saving,
+  onCreate,
+  onOpen,
+  children,
+}: PropsWithChildren<PatientListProps>) {
   const [showForm, setShowForm] = useState(false);
   const [draft, setDraft] = useState<PatientDraft>(EMPTY_DRAFT);
 
@@ -45,6 +51,8 @@ export function PatientList({ patients, saving, onCreate, onOpen }: PatientListP
           {saving ? "儲存中…" : "已儲存在本機"}
         </span>
       </header>
+
+      {children}
 
       {showForm ? (
         <form className="v2-card v2-form" onSubmit={submit}>

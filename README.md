@@ -21,7 +21,7 @@ npm start
 - `npm run build:v2` 產生自包含的 `dist-v2/index.html`，但不覆蓋正式入口。
 - `npm run verify` 執行 legacy baseline、TypeScript、lint、單元測試、單檔契約與 Playwright parity。
 
-目前 v2 已包含完整 25 區塊／194 題／16 科別 typed catalog、全部 ROS/PE 題型、Admission/ADL、PMH、待辦、全域與區塊備註、所有專用／自訂組套、臨床摘要匯出／列印，以及本機重載。Google 同步已有 cache-first repository、三方合併、衝突備份與 Drive adapter；正式建置仍待 Google OAuth 組裝後才會開放雲端入口。
+目前 v2 已包含完整 25 區塊／194 題／16 科別 typed catalog、全部 ROS/PE 題型、Admission/ADL、PMH、待辦、全域與區塊備註、所有專用／自訂組套、臨床摘要匯出／列印，以及本機重載。Google 模式已完成 Identity Services 登入、session-only token、帳號隔離快取、離線開啟、三方合併、衝突備份與 Drive `appDataFolder` adapter；正式入口仍須通過剩餘 parity gate 才會切換。
 
 ## 專案地圖
 

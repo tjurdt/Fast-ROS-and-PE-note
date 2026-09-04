@@ -14,12 +14,12 @@ export class SyncCacheDataError extends Error {
 }
 
 export class LocalSyncCacheStore implements SyncCacheStore {
-  readonly #storage: Pick<Storage, "getItem" | "setItem">;
+  readonly #storage: Pick<Storage, "getItem" | "setItem" | "removeItem">;
   readonly #key: string;
 
   constructor(
     accountKey: string,
-    storage: Pick<Storage, "getItem" | "setItem"> = window.localStorage,
+    storage: Pick<Storage, "getItem" | "setItem" | "removeItem"> = window.localStorage,
   ) {
     const normalized = accountKey.trim();
     if (!normalized) throw new Error("Google sync cache requires an account key.");
@@ -40,12 +40,26 @@ export class LocalSyncCacheStore implements SyncCacheStore {
     }
   }
 
+  has(): boolean {
+    return this.#storage.getItem(this.#key) !== null;
+  }
+
   async save(record: SyncCacheRecord): Promise<void> {
     const validated = SyncCacheRecordSchema.parse(record);
     try {
       this.#storage.setItem(this.#key, JSON.stringify(validated));
     } catch (error) {
       throw new SyncCacheDataError("瀏覽器無法儲存 Google 同步快取。", {
+        cause: error,
+      });
+    }
+  }
+
+  clear(): void {
+    try {
+      this.#storage.removeItem(this.#key);
+    } catch (error) {
+      throw new SyncCacheDataError("無法清除此 Google 帳號的裝置快取。", {
         cause: error,
       });
     }

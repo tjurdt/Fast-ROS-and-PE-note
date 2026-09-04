@@ -48,7 +48,9 @@ infrastructure adapters ──implements──▶ application ports
 
 v2 已打通「選擇 repository → 載入 → 建立病人 → 編輯完整 workspace／ROS／PE／組套 → 序列化儲存 → 重載 → 摘要匯出」。Legacy oracle 機械同步 25 個區塊、194 個題目、16 個科別及臨床選項；全部題型、專用／自訂組套、匯出與列印皆已有 typed 實作。
 
-Google 同步採 cache-first repository：病人每筆獨立做三方合併，全域設定以共同 base snapshot 判斷；無共同 base 時只做加法合併，避免空白新裝置誤刪遠端紀錄。真正雙邊衝突採目前裝置版本，但必須先成功建立遠端備份才允許覆寫。同步期間的新輸入會再 rebase 並維持 dirty，下一輪才上傳。Drive adapter 與 App 已透過 port 接合；正式建置尚未組裝 Google Identity OAuth，因此雲端按鈕維持停用。
+Google 同步採 cache-first repository：病人每筆獨立做三方合併，全域設定以共同 base snapshot 判斷；無共同 base 時只做加法合併，避免空白新裝置誤刪遠端紀錄。真正雙邊衝突採目前裝置版本，但必須先成功建立遠端備份才允許覆寫。同步期間的新輸入會再 rebase 並維持 dirty，下一輪才上傳。
+
+Google Identity Services 只在使用者明確登入時動態載入，access token 僅放記憶體與 `sessionStorage`，過期後由 UI 重新授權，不在背景開啟登入視窗。`CloudRepositoryConnector` 取得 Drive 的 opaque `permissionId` 後才建立該帳號的 cache repository；`localStorage` 只保存帳號標籤、cache locator 與已驗證資料，不保存 token。離線入口只載入上次帳號的裝置快取，切換帳號會建立不同 key；離開模式預設保留快取，永久清除必須再次確認。
 
 ## 資料策略
 
@@ -65,7 +67,7 @@ Google 同步採 cache-first repository：病人每筆獨立做三方合併，�
 - `test:legacy`：既有 jsdom 單機冒煙流程。
 - `test:unit`：v2 domain、repository、同步衝突／離線／401／版本競爭與 React slice 測試。
 - `build:v2` / `check:v2-artifact`：確認候選成品只有單一 HTML，沒有外部本機 CSS/JS。
-- `test:e2e`：Chromium 驗證 legacy parity、手機寬度、v2 建立/重載、特殊 widget 與完整 workspace 持久化。
+- `test:e2e`：Chromium 驗證 legacy parity、手機寬度、v2 建立/重載、特殊 widget、完整 workspace，以及 mock Google 登入／離線快取生命週期。
 - GitHub Actions：安裝 Chromium 後執行完整 `npm run verify`。
 
 ## 切換正式入口的 gate

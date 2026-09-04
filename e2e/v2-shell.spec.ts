@@ -8,7 +8,7 @@ test("v2 single-file shell creates and reloads a typed local patient", async ({
   await page.evaluate(() => window.localStorage.clear());
   await page.reload();
 
-  await expect(page.getByTestId("choose-google-v2")).toBeDisabled();
+  await expect(page.getByTestId("choose-google-v2")).toBeEnabled();
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
   await page.getByLabel("病人代號 Patient code").fill("V2-TEST-01");
@@ -880,4 +880,125 @@ test("v2 clinical summary previews, copies, downloads, and prints without changi
 
   await preview.getByRole("button", { name: "關閉匯出預覽" }).click();
   await expect(preview).toHaveCount(0);
+});
+
+test("v2 Google mode keeps session credentials separate and reopens its cache offline", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    type TokenClientOptions = {
+      callback: (response: { access_token: string; expires_in: number }) => void;
+    };
+    const browser = window as typeof window & {
+      google?: {
+        accounts: {
+          oauth2: {
+            initTokenClient: (options: TokenClientOptions) => {
+              requestAccessToken: () => void;
+            };
+            revoke: (_token: string, callback?: () => void) => void;
+          };
+        };
+      };
+    };
+    browser.google = {
+      accounts: {
+        oauth2: {
+          initTokenClient: (options) => ({
+            requestAccessToken: () =>
+              options.callback({ access_token: "e2e-session-token", expires_in: 3600 }),
+          }),
+          revoke: (_token, callback) => callback?.(),
+        },
+      },
+    };
+    const nativeFetch = window.fetch.bind(window);
+    window.fetch = async (input, init) => {
+      const url = String(input);
+      if (url.includes("/drive/v3/about")) {
+        return new Response(
+          JSON.stringify({
+            user: {
+              permissionId: "e2e-account-1",
+              displayName: "E2E User",
+              emailAddress: "e2e@example.invalid",
+            },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      if ((init?.method ?? "GET") === "GET" && url.includes("/drive/v3/files")) {
+        return new Response(JSON.stringify({ files: [] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      if (init?.method === "POST" && url.includes("/upload/drive/v3/files")) {
+        return new Response(
+          JSON.stringify({
+            id: "e2e-cloud-file",
+            name: "pe_note_v2_cloud.json",
+            version: "1",
+          }),
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+              etag: '"e2e-etag-1"',
+            },
+          },
+        );
+      }
+      return nativeFetch(input, init);
+    };
+  });
+
+  await page.goto("http://127.0.0.1:4174/");
+  await page.evaluate(() => {
+    window.localStorage.clear();
+    window.sessionStorage.clear();
+  });
+  await page.reload();
+
+  await page.getByTestId("choose-google-v2").click();
+  await expect(page.getByTestId("sync-status-panel")).toContainText("E2E User");
+  await expect(page.getByTestId("sync-status-panel")).toContainText("同步完成");
+
+  const credentialStorage = await page.evaluate(() => ({
+    session: window.sessionStorage.getItem("pe_note_v2_google_session"),
+    account: window.localStorage.getItem("pe_note_v2_google_last_account"),
+  }));
+  expect(credentialStorage.session).toContain("e2e-session-token");
+  expect(credentialStorage.account).not.toContain("e2e-session-token");
+
+  await page.getByRole("button", { name: "＋ 新增病人" }).click();
+  await page.getByLabel("病人代號 Patient code").fill("GOOGLE-OFFLINE-CACHE");
+  await page.getByLabel("主要問題").fill("local-first draft");
+  await page.getByRole("button", { name: "建立並開始" }).click();
+  await expect(page.getByTestId("sync-status-panel")).toContainText("待同步");
+
+  await page.getByText("帳號與快取").click();
+  await page.getByRole("button", { name: "離開 Google 模式" }).click();
+  await expect(page.getByRole("button", { name: /GOOGLE-OFFLINE-CACHE/ })).toHaveCount(
+    0,
+  );
+  expect(
+    await page.evaluate(() =>
+      window.sessionStorage.getItem("pe_note_v2_google_session"),
+    ),
+  ).toBeNull();
+
+  await page.reload();
+  await expect(page.getByTestId("open-google-cache-v2")).toContainText("E2E User");
+  await page.getByTestId("open-google-cache-v2").click();
+  await expect(
+    page.getByRole("button", { name: /GOOGLE-OFFLINE-CACHE/ }),
+  ).toBeVisible();
+
+  await page.getByText("帳號與快取").click();
+  await page.getByRole("button", { name: "清除此帳號快取" }).click();
+  await expect(page.getByRole("alert")).toContainText("無法復原");
+  await page.getByRole("button", { name: "確認清除此帳號快取" }).click();
+  await page.reload();
+  await expect(page.getByTestId("open-google-cache-v2")).toHaveCount(0);
 });

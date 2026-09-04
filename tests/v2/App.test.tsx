@@ -3,6 +3,10 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { App } from "../../src/app/App";
+import type {
+  CloudAccount,
+  CloudRepositoryConnector,
+} from "../../src/application/cloud-repository-connector";
 import type { PatientRepository } from "../../src/application/patient-repository";
 import type {
   PatientSyncState,
@@ -73,6 +77,59 @@ class MemorySyncPatientRepository
       lastSyncedAt: 200,
     });
     return structuredClone(this.database);
+  }
+}
+
+class DeferredSyncPatientRepository extends MemorySyncPatientRepository {
+  completeSync: ((database: PatientDatabase) => void) | null = null;
+
+  override async sync(): Promise<PatientDatabase> {
+    this.syncCount += 1;
+    this.emit({ status: "syncing", detail: "正在同步" });
+    return new Promise<PatientDatabase>((resolve) => {
+      this.completeSync = resolve;
+    });
+  }
+}
+
+class MemoryCloudConnector implements CloudRepositoryConnector {
+  readonly account: CloudAccount = {
+    key: "google-account-1",
+    label: "測試帳號（test@example.invalid）",
+  };
+  readonly repository: MemorySyncPatientRepository;
+  cached = true;
+  connectCount = 0;
+  openCachedCount = 0;
+  disconnectCalls: Array<{ accountKey: string; clearCache: boolean }> = [];
+
+  constructor(
+    repository: MemorySyncPatientRepository = new MemorySyncPatientRepository(),
+  ) {
+    this.repository = repository;
+  }
+
+  getAvailability() {
+    return { available: true, detail: "登入後安全同步。" };
+  }
+
+  getCachedAccount() {
+    return this.cached ? { account: this.account } : null;
+  }
+
+  async connect() {
+    this.connectCount += 1;
+    return { account: this.account, repository: this.repository };
+  }
+
+  async openCached() {
+    this.openCachedCount += 1;
+    return this.cached ? { account: this.account, repository: this.repository } : null;
+  }
+
+  async disconnect(accountKey: string, options: { clearCache: boolean }) {
+    this.disconnectCalls.push({ accountKey, clearCache: options.clearCache });
+    if (options.clearCache) this.cached = false;
   }
 }
 
@@ -183,5 +240,121 @@ describe("v2 app shell", () => {
     await user.click(screen.getByRole("button", { name: "立即同步" }));
     await waitFor(() => expect(syncPanel.textContent).toContain("同步完成"));
     expect(googleRepository.syncCount).toBe(2);
+  });
+
+  it("opens an account-isolated cache offline and leaves it recoverable", async () => {
+    const user = userEvent.setup();
+    const localRepository = new MemoryPatientRepository();
+    const connector = new MemoryCloudConnector();
+    connector.repository.database = addPatient(
+      emptyPatientDatabase(),
+      createPatient(
+        {
+          code: "OFFLINE-CACHED",
+          specialty: "general",
+          sex: "",
+          age: "",
+          problem: "retained cache",
+        },
+        { createId: () => "patient-cached", now: () => 100 },
+      ),
+    );
+    render(<App cloudConnector={connector} repository={localRepository} />);
+
+    expect(screen.getByTestId("choose-google-v2").hasAttribute("disabled")).toBe(false);
+    expect(screen.getByTestId("open-google-cache-v2").textContent).toContain(
+      connector.account.label,
+    );
+    await user.click(screen.getByTestId("open-google-cache-v2"));
+
+    expect(await screen.findByRole("button", { name: /OFFLINE-CACHED/ })).toBeTruthy();
+    expect(screen.getByTestId("sync-status-panel").textContent).toContain(
+      connector.account.label,
+    );
+    expect(connector.openCachedCount).toBe(1);
+    expect(connector.repository.syncCount).toBe(0);
+
+    await user.click(screen.getByText("帳號與快取"));
+    await user.click(screen.getByRole("button", { name: "離開 Google 模式" }));
+
+    await waitFor(() =>
+      expect(connector.disconnectCalls).toEqual([
+        { accountKey: connector.account.key, clearCache: false },
+      ]),
+    );
+    expect(connector.cached).toBe(true);
+    expect(screen.queryByRole("button", { name: /OFFLINE-CACHED/ })).toBeNull();
+  });
+
+  it("requires a second confirmation before deleting a Google device cache", async () => {
+    const user = userEvent.setup();
+    const connector = new MemoryCloudConnector();
+    render(
+      <App cloudConnector={connector} repository={new MemoryPatientRepository()} />,
+    );
+
+    await user.click(screen.getByTestId("open-google-cache-v2"));
+    await screen.findByTestId("sync-status-panel");
+    await user.click(screen.getByText("帳號與快取"));
+    await user.click(screen.getByRole("button", { name: "清除此帳號快取" }));
+
+    expect(screen.getByRole("alert").textContent).toContain("無法復原");
+    expect(connector.disconnectCalls).toEqual([]);
+
+    await user.click(screen.getByRole("button", { name: "確認清除此帳號快取" }));
+    await waitFor(() =>
+      expect(connector.disconnectCalls).toEqual([
+        { accountKey: connector.account.key, clearCache: true },
+      ]),
+    );
+    expect(connector.cached).toBe(false);
+  });
+
+  it("ignores a late cloud response after returning to local storage", async () => {
+    const user = userEvent.setup();
+    const localRepository = new MemoryPatientRepository();
+    localRepository.database = addPatient(
+      emptyPatientDatabase(),
+      createPatient(
+        {
+          code: "LOCAL-SAFE",
+          specialty: "general",
+          sex: "",
+          age: "",
+          problem: "local",
+        },
+        { createId: () => "local-patient", now: () => 100 },
+      ),
+    );
+    const deferredRepository = new DeferredSyncPatientRepository();
+    const cloudDatabase = addPatient(
+      emptyPatientDatabase(),
+      createPatient(
+        {
+          code: "CLOUD-OLD",
+          specialty: "general",
+          sex: "",
+          age: "",
+          problem: "cloud",
+        },
+        { createId: () => "cloud-patient", now: () => 100 },
+      ),
+    );
+    deferredRepository.database = cloudDatabase;
+    const connector = new MemoryCloudConnector(deferredRepository);
+    render(<App cloudConnector={connector} repository={localRepository} />);
+
+    await user.click(screen.getByTestId("choose-google-v2"));
+    await waitFor(() => expect(deferredRepository.syncCount).toBe(1));
+    await user.click(screen.getByText("帳號與快取"));
+    await user.click(screen.getByRole("button", { name: "離開 Google 模式" }));
+    expect(await screen.findByRole("button", { name: /LOCAL-SAFE/ })).toBeTruthy();
+
+    deferredRepository.completeSync?.(cloudDatabase);
+
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: /CLOUD-OLD/ })).toBeNull(),
+    );
+    expect(screen.getByRole("button", { name: /LOCAL-SAFE/ })).toBeTruthy();
   });
 });

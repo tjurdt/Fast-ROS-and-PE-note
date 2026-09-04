@@ -99,6 +99,11 @@ h1 {
   opacity: 0.78;
 }
 
+.v2-storage-grid .v2-storage-grid__cached {
+  grid-column: 1 / -1;
+  min-height: 88px;
+}
+
 .v2-privacy {
   margin: 22px 0 0;
   color: #6f8794;
@@ -296,7 +301,7 @@ textarea:focus-visible {
   background: #f7fcfc;
 }
 
-.v2-sync-status > div {
+.v2-sync-status > div:first-child {
   display: flex;
   align-items: flex-start;
   gap: 10px;
@@ -321,6 +326,16 @@ textarea:focus-visible {
   display: block;
 }
 
+.v2-sync-status > div:first-child > div > span {
+  display: block;
+  margin-top: 1px;
+  overflow: hidden;
+  color: #3d5a67;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .v2-sync-status p {
   margin: 2px 0;
   color: #3d5a67;
@@ -332,11 +347,63 @@ textarea:focus-visible {
   font-size: 10px;
 }
 
-.v2-sync-status > .v2-button {
+.v2-sync-status__actions {
+  display: flex;
+  flex: none;
+  align-items: flex-end;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.v2-sync-status__actions > .v2-button {
   flex: none;
   min-height: 36px;
   padding: 6px 10px;
   font-size: 11px;
+}
+
+.v2-sync-account {
+  position: relative;
+  color: #3d5a67;
+  font-size: 11px;
+  text-align: right;
+}
+
+.v2-sync-account summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.v2-sync-account > div {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 7px);
+  right: 0;
+  display: grid;
+  gap: 6px;
+  width: min(280px, calc(100vw - 56px));
+  padding: 10px;
+  border: 1px solid #d6e0e4;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 8px 28px rgb(18 48 61 / 16%);
+}
+
+.v2-sync-account .v2-button {
+  width: 100%;
+  min-height: 34px;
+  font-size: 11px;
+}
+
+.v2-sync-account__danger {
+  display: grid;
+  gap: 6px;
+}
+
+.v2-sync-account__danger p {
+  margin: 0 0 2px;
+  color: #a02936;
+  text-align: left;
 }
 
 .v2-sync-status.is-pending,
@@ -2043,8 +2110,16 @@ textarea:focus-visible {
     flex-direction: column;
   }
 
-  .v2-sync-status > .v2-button {
+  .v2-sync-status__actions,
+  .v2-sync-status__actions > .v2-button,
+  .v2-sync-account {
     width: 100%;
+  }
+
+  .v2-sync-account > div {
+    position: static;
+    width: 100%;
+    margin-top: 7px;
   }
 }
 
