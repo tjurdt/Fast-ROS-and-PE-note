@@ -1,5 +1,21 @@
 # 貢獻指南
 
+## Commit message
+
+- 格式:`<area>: <改了什麼>，because <為什麼／解決什麼問題>`。`area` 用路徑片段或 feature 名稱(如 `bundles`、`google-drive-connector`、`docs`),不要只寫動詞。
+- 禁止只寫 `improve`、`fix`、`update`、`WIP` 這類空泛訊息。目標是讓之後的人(或下一次接手的 AI session)光看 `git log` 就知道這個 commit 做了什麼、為什麼要做,不用重新讀 diff 猜意圖。
+- 一個 commit 一個目的,不要把無關的 cleanup、依賴升版和行為變更混在同一個 commit。
+- 若這個 commit 更新了 legacy baseline 或 clinical catalog,訊息要帶上 `accept:legacy`/`sync:clinical-catalog` 使用的 `--reason`,不要只寫「更新 baseline」。
+
+## Git hooks
+
+`npm install` 會透過 `prepare` script 自動安裝 Husky hook:
+
+- **pre-commit**:對本次 staged 的檔案跑 `eslint --fix` + `prettier --write`(見 `lint-staged` 設定),再跑一次全專案 `typecheck`。幾秒內完成,抓格式與型別問題。
+- **pre-push**:跑 `check:architecture`、`check:v2-boundaries`、`check:clinical-catalog`、`check:legacy` 與 `test:unit`。約一分鐘內完成,抓結構邊界與行為回歸。
+
+這兩層都只是本地快速防線,不含 `build:v2`、`test:e2e` 等較重的步驟。它們不能取代推送前完整跑一次 `npm run verify`——CI 仍然是最終判準。臨時需要略過(例如中間暫存 commit)可用 `git commit --no-verify` / `git push --no-verify`,但正常流程不應依賴它。
+
 ## 基本流程
 
 1. 從最新主分支建立小而單一目的的變更。
