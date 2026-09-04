@@ -1,4 +1,5 @@
 import globals from "globals";
+import tseslint from "typescript-eslint";
 
 const sharedRules = {
   eqeqeq: ["error", "always"],
@@ -17,6 +18,9 @@ export default [
       "index.html",
       "node_modules/",
       "coverage/",
+      "dist-v2/",
+      "playwright-report/",
+      "test-results/",
       "src/index.template.html",
       "src/legacy/",
     ],
@@ -38,5 +42,22 @@ export default [
       sourceType: "script",
     },
     rules: sharedRules,
+  },
+  ...tseslint.configs.recommended.map((config) => ({
+    ...config,
+    files: ["**/*.{ts,tsx}"],
+  })),
+  {
+    files: ["**/*.{ts,tsx}"],
+    rules: {
+      eqeqeq: ["error", "always"],
+      "no-constant-condition": ["error", { checkLoops: false }],
+      "no-unreachable": "error",
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
+      ],
+    },
   },
 ];

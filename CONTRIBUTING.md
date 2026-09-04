@@ -1,16 +1,36 @@
 # 貢獻指南
 
+## Commit message
+
+- 格式:`<area>: <改了什麼>，because <為什麼／解決什麼問題>`。`area` 用路徑片段或 feature 名稱(如 `bundles`、`google-drive-connector`、`docs`),不要只寫動詞。
+- 禁止只寫 `improve`、`fix`、`update`、`WIP` 這類空泛訊息。目標是讓之後的人(或下一次接手的 AI session)光看 `git log` 就知道這個 commit 做了什麼、為什麼要做,不用重新讀 diff 猜意圖。
+- 一個 commit 一個目的,不要把無關的 cleanup、依賴升版和行為變更混在同一個 commit。
+- 若這個 commit 更新了 legacy baseline 或 clinical catalog,訊息要帶上 `accept:legacy`/`sync:clinical-catalog` 使用的 `--reason`,不要只寫「更新 baseline」。
+
+## Git hooks
+
+`npm install` 會透過 `prepare` script 自動安裝 Husky hook:
+
+- **pre-commit**:對本次 staged 的檔案跑 `eslint --fix` + `prettier --write`(見 `lint-staged` 設定),再跑一次全專案 `typecheck`。幾秒內完成,抓格式與型別問題。
+- **pre-push**:跑 `check:architecture`、`check:v2-boundaries`、`check:clinical-catalog`、`check:legacy` 與 `test:unit`。約一分鐘內完成,抓結構邊界與行為回歸。
+
+這兩層都只是本地快速防線,不含 `build:v2`、`test:e2e` 等較重的步驟。它們不能取代推送前完整跑一次 `npm run verify`——CI 仍然是最終判準。臨時需要略過(例如中間暫存 commit)可用 `git commit --no-verify` / `git push --no-verify`,但正常流程不應依賴它。
+
 ## 基本流程
 
 1. 從最新主分支建立小而單一目的的變更。
 2. 新功能建立在 `src/features/<feature-name>/`，先寫該功能的 `README.md` 契約。
-3. 需要進入單檔成品的 CSS/JS，依執行順序明確加入 `config/assets.mjs`。
-4. 執行 `npm run build`，再執行 `npm run verify`。
-5. 一併提交來源、測試與生成後的 `index.html`。
+3. 新功能預設進入 TypeScript/React v2，以 ES module 明確匯入；不要加入 legacy asset manifest。
+4. 先為要搬移的既有行為加入 parity 或 contract test。
+5. 執行 `npm run build && npm run build:v2 && npm run verify`。
+6. legacy 未變時根目錄 `index.html` 應保持原 hash；v2 成品在 CI 重建，不提交 `dist-v2/`。
+
+若 intentional legacy 修正改動 `SECTIONS`、`SPECIALTIES`、神經學 widget、PMH、Admission 或 ADL 選項，必須執行 `npm run sync:clinical-catalog`，審查生成 catalog 差異並更新相應 parity 測試。
 
 ## 不可破壞的契約
 
 - 根目錄 `index.html` 必須維持單檔可執行，不增加本機靜態資源依賴。
+- `dist-v2/index.html` 也必須是單檔，且未達 parity gate 前不得取代根目錄成品。
 - 既有 localStorage key、Google Drive schema 與離線資料必須向後相容。
 - migration 必須可重複執行，且不得刪除未知欄位。
 - 不提交 Client Secret、private key、病人資料或測試用真實識別資訊。
@@ -28,6 +48,7 @@
 ```bash
 npm run accept:legacy -- --reason "修正哪個既有契約，以及為何無法從 feature 邊界處理"
 npm run build
+npm run build:v2
 npm run verify
 ```
 

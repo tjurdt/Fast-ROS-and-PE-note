@@ -1,8 +1,8 @@
 /**
  * Ordered source manifest for the generated single-file application.
  *
- * Keep the legacy entries first. New runtime code belongs in a named
- * src/features/<feature>/ directory and must be explicitly added here.
+ * This manifest is frozen with the legacy production track. v2 modules are
+ * bundled by Vite and must not be added here.
  */
 export const assetManifest = Object.freeze({
   styles: Object.freeze(["src/styles/app.css"]),
