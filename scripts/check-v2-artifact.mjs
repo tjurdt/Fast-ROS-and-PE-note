@@ -30,7 +30,13 @@ if (!/<meta\b[^>]*name=["']google-oauth-client-id["']/i.test(html)) {
   failures.push("public Google OAuth client identifier is missing");
 }
 
-const executableScripts = html.match(/<script\b/gi) ?? [];
+// Count closing tags, not opening tags: React's minified runtime embeds the string
+// "<script><\/script>" as a DOM sentinel, with the closing half deliberately
+// backslash-escaped so it cannot terminate the real surrounding <script> block. That
+// escape defeats an opening-tag scan (a bare "<script" substring still matches) but
+// leaves no unescaped "</script>" behind, so counting closing tags reflects the
+// actual number of script elements instead of false-positiving on bundled JS text.
+const executableScripts = html.match(/<\/script>/gi) ?? [];
 const inlineStyles = html.match(/<style\b/gi) ?? [];
 if (executableScripts.length !== 1) {
   failures.push(`artifact contains ${executableScripts.length} script elements`);
