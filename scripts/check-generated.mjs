@@ -1,19 +1,23 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-import { renderApp, rootDir } from "./lib/render-app.mjs";
+import { rootDir } from "./lib/render-app.mjs";
 
 const outputPath = path.join(rootDir, "index.html");
-const [actual, expected] = await Promise.all([
-  readFile(outputPath, "utf8"),
-  renderApp(),
-]);
+const sourcePath = path.join(rootDir, "dist-v2", "index.html");
 
-if (actual !== expected) {
-  console.error(
-    "index.html is stale or was edited directly. Run `npm run build` and commit the generated result.",
-  );
+const expected = await readFile(sourcePath, "utf8").catch(() => null);
+if (expected === null) {
+  console.error("Missing dist-v2/index.html. Run `npm run build:v2` first.");
   process.exitCode = 1;
 } else {
-  console.log("Generated index.html matches its sources.");
+  const actual = await readFile(outputPath, "utf8");
+  if (actual !== expected) {
+    console.error(
+      "index.html is stale or was edited directly. Run `npm run build` and commit the generated result.",
+    );
+    process.exitCode = 1;
+  } else {
+    console.log("Generated index.html matches the v2 production bundle.");
+  }
 }

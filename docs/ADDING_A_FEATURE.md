@@ -25,9 +25,9 @@ Domain 不得 import React、DOM、localStorage、fetch 或 Google API。Feature
 
 v2 使用標準 ES module import，不加入 `config/assets.mjs`。Vite 會把 module graph 與 CSS 內嵌至 `dist-v2/index.html`。不得加入未內嵌的本機圖片、字型、stylesheet 或 script。
 
-只有修正正式 legacy 行為時才使用 classic-script manifest 與 baseline 例外流程。
+只有在 ADR 0004 的 Phase 2 觀察期修正 legacy 行為時才使用 classic-script manifest 與 baseline 例外流程；legacy 已不是正式入口（見 [ADR 0005](../docs/adr/0005-v2-production-cutover.md)）。
 
-Clinical 題目定義不得直接修改 `catalog.generated.json`。來源仍在 frozen legacy 時，執行 `npm run sync:clinical-catalog` 產生差異；未來正式切換後會另立 v2 catalog 的 source-of-truth ADR。
+Clinical 題目定義不得直接修改 `catalog.generated.json`。來源仍是 frozen legacy oracle，執行 `npm run sync:clinical-catalog` 產生差異；v2 catalog 專屬的 source-of-truth ADR 尚未另立，仍待規劃。
 
 ## 4. 以風險決定測試
 
@@ -43,9 +43,7 @@ Clinical 題目定義不得直接修改 `catalog.generated.json`。來源仍在 
 ## 5. 完成條件
 
 ```bash
-npm run build
-npm run build:v2
 npm run verify
 ```
 
-確認 legacy `index.html` 沒有非預期變動、v2 單檔檢查通過、feature README 已更新，而且對應 parity gate 有可自動執行的證據。
+確認根目錄 `index.html`（v2 正式成品）與 `dist-legacy/index.html`（legacy 回退預覽）都沒有非預期變動、v2 單檔檢查通過、feature README 已更新，而且對應 parity gate 有可自動執行的證據。

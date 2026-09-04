@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("legacy local workflow persists findings and preserves export semantics", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("http://127.0.0.1:4175/");
   await expect(page.getByRole("heading", { name: "查房快速紀錄" })).toBeVisible();
   await page.getByRole("button", { name: /單機使用/ }).click();
 
@@ -51,7 +51,7 @@ test("legacy local workflow persists findings and preserves export semantics", a
 });
 
 test("legacy specialty focus and gynecology gates remain stable", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("http://127.0.0.1:4175/");
   await page.getByRole("button", { name: /單機使用/ }).click();
   await page.locator("#fabNew").click();
   await page.locator("#nf_code").fill("GATE-TEST");
@@ -80,7 +80,7 @@ test("legacy landing and patient list remain usable at a mobile viewport", async
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
+  await page.goto("http://127.0.0.1:4175/");
   await page.getByRole("button", { name: /單機使用/ }).click();
   await expect(page.locator("#fabNew")).toBeVisible();
 
@@ -94,7 +94,7 @@ test("legacy note workspace persists todo, history, ADL, and block notes", async
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
+  await page.goto("http://127.0.0.1:4175/");
   await page.getByRole("button", { name: /單機使用/ }).click();
   await page.locator("#fabNew").click();
   await page.locator("#nf_code").fill("WORKSPACE-LEGACY");

@@ -8,9 +8,10 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "node scripts/build.mjs",
+    "build": "npm run build:v2 && npm run promote:v2",
+    "build:legacy": "node scripts/build-legacy.mjs",
     "build:v2": "vite build --config vite.config.ts",
-    "build:all": "npm run build && npm run build:v2",
+    "build:all": "npm run build && npm run build:legacy",
     "check:architecture": "node scripts/check-architecture.mjs",
     "check:clinical-catalog": "node scripts/check-clinical-catalog.mjs",
     "check:generated": "node scripts/check-generated.mjs",
@@ -25,15 +26,17 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "preview:legacy": "node scripts/serve.mjs dist-legacy/index.html",
     "preview:v2": "vite preview --config vite.config.ts --host 127.0.0.1 --port 4174",
     "prepare": "husky",
+    "promote:v2": "node scripts/promote-v2-artifact.mjs",
     "start": "node scripts/serve.mjs",
     "test": "npm run test:legacy && npm run test:unit",
     "test:e2e": "playwright test",
-    "test:legacy": "node --test --test-isolation=none tests/app.smoke.test.mjs",
+    "test:legacy": "node --test --test-isolation=none tests/legacy.smoke.test.mjs",
     "test:unit": "vitest run --config vitest.config.ts",
     "typecheck": "tsc --noEmit",
-    "verify": "npm run check:generated && npm run check:legacy && npm run check:clinical-catalog && npm run check:architecture && npm run check:v2-boundaries && npm run check:v2-parity && npm run check:syntax && npm run typecheck && npm run lint && npm run format:check && npm run build:v2 && npm run check:v2-artifact && npm test && npm run test:e2e"
+    "verify": "npm run check:legacy && npm run check:clinical-catalog && npm run check:architecture && npm run check:v2-boundaries && npm run check:v2-parity && npm run check:syntax && npm run typecheck && npm run lint && npm run format:check && npm run build:v2 && npm run check:generated && npm run check:v2-artifact && npm run build:legacy && npm test && npm run test:e2e"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
