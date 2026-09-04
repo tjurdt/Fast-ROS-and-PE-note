@@ -46,7 +46,9 @@ infrastructure adapters ──implements──▶ application ports
 - `app`：畫面協調、依賴組裝、儲存佇列與全域錯誤呈現。
 - `ui`：真正跨 feature、且不含 domain 流程的展示元件。
 
-v2 已打通「選擇單機 → 載入 repository → 建立病人 → 編輯 → workspace/ROS/PE → 序列化儲存 → 重載」。Legacy oracle 機械同步 25 個區塊、194 個題目、16 個科別、神經學 widget、PMH、生活習慣與 ADL 選項；全部 ROS/PE 題型、Admission/ADL、PMH、待辦及全域/區塊備註已有 typed 實作。組套、匯出/列印與 Google 同步仍由 legacy 提供。
+v2 已打通「選擇 repository → 載入 → 建立病人 → 編輯完整 workspace／ROS／PE／組套 → 序列化儲存 → 重載 → 摘要匯出」。Legacy oracle 機械同步 25 個區塊、194 個題目、16 個科別及臨床選項；全部題型、專用／自訂組套、匯出與列印皆已有 typed 實作。
+
+Google 同步採 cache-first repository：病人每筆獨立做三方合併，全域設定以共同 base snapshot 判斷；無共同 base 時只做加法合併，避免空白新裝置誤刪遠端紀錄。真正雙邊衝突採目前裝置版本，但必須先成功建立遠端備份才允許覆寫。同步期間的新輸入會再 rebase 並維持 dirty，下一輪才上傳。Drive adapter 與 App 已透過 port 接合；正式建置尚未組裝 Google Identity OAuth，因此雲端按鈕維持停用。
 
 ## 資料策略
 
@@ -61,7 +63,7 @@ v2 已打通「選擇單機 → 載入 repository → 建立病人 → 編輯 �
 - `check:clinical-catalog`：確保生成的 25/194/16 catalog、CN panel、特殊 widget 與 workspace 選項和 frozen legacy oracle 完全一致。
 - `check:v2-boundaries`：機械驗證 domain/application/infrastructure/feature/ui 的依賴方向及 feature isolation。
 - `test:legacy`：既有 jsdom 單機冒煙流程。
-- `test:unit`：v2 domain、repository 與 React slice 測試。
+- `test:unit`：v2 domain、repository、同步衝突／離線／401／版本競爭與 React slice 測試。
 - `build:v2` / `check:v2-artifact`：確認候選成品只有單一 HTML，沒有外部本機 CSS/JS。
 - `test:e2e`：Chromium 驗證 legacy parity、手機寬度、v2 建立/重載、特殊 widget 與完整 workspace 持久化。
 - GitHub Actions：安裝 Chromium 後執行完整 `npm run verify`。
@@ -79,3 +81,4 @@ v2 已打通「選擇單機 → 載入 repository → 建立病人 → 編輯 �
 7. 單檔 `file://`/靜態部署契約與安全檢查。
 
 詳細決策見 `docs/adr/0002-controlled-v2-rewrite.md`。
+同步安全決策見 `docs/adr/0003-local-first-google-sync.md`。

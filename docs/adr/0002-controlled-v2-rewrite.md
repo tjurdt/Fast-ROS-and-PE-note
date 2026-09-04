@@ -13,7 +13,7 @@
 
 - domain 不依賴 UI、browser 或 storage。
 - application 定義 use cases 與 repository ports。
-- infrastructure 實作 localStorage 與未來的 Google Drive adapters。
+- infrastructure 實作 localStorage 與 Google Drive adapters；OAuth 組裝與 token 生命週期維持獨立邊界。
 - feature 以垂直切片組織 React UI。
 - Vite production build 重新內嵌所有 CSS/JavaScript，輸出單一 `dist-v2/index.html`。
 - legacy 保持正式入口，直到每一項功能都有 parity/contract coverage 且整體 gate 通過。

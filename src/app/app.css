@@ -285,6 +285,77 @@ textarea:focus-visible {
   font-size: 13px;
 }
 
+.v2-sync-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px 14px;
+  padding: 12px 14px;
+  border-color: #b7d7dc;
+  background: #f7fcfc;
+}
+
+.v2-sync-status > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.v2-sync-status__icon {
+  display: grid;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 50%;
+  color: #0e6b7a;
+  background: #dff2f4;
+  font-weight: 900;
+}
+
+.v2-sync-status strong,
+.v2-sync-status p,
+.v2-sync-status small {
+  display: block;
+}
+
+.v2-sync-status p {
+  margin: 2px 0;
+  color: #3d5a67;
+  font-size: 11px;
+}
+
+.v2-sync-status small {
+  color: #6f8794;
+  font-size: 10px;
+}
+
+.v2-sync-status > .v2-button {
+  flex: none;
+  min-height: 36px;
+  padding: 6px 10px;
+  font-size: 11px;
+}
+
+.v2-sync-status.is-pending,
+.v2-sync-status.is-offline,
+.v2-sync-status.is-auth-required {
+  border-color: #e4ba84;
+  background: #fffaf2;
+}
+
+.v2-sync-status.is-error {
+  border-color: #dc9ca4;
+  background: #fff1f2;
+}
+
+.v2-sync-status.is-conflict {
+  border-color: #cdb4dc;
+  background: #faf7fc;
+}
+
 .v2-workspace-card,
 .v2-workspace-section {
   margin: 16px 14px;
@@ -1965,6 +2036,15 @@ textarea:focus-visible {
 
   .v2-form__row {
     grid-template-columns: 1fr;
+  }
+
+  .v2-sync-status {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .v2-sync-status > .v2-button {
+    width: 100%;
   }
 }
 

@@ -7,7 +7,7 @@
 ## Non-goals
 
 - 本元件只處理病人基本資料與版面容器；ROS/PE 由 App 組合 `clinical-note` feature。
-- 匯出由 App 組合 `export-preview` feature；Google 同步尚未遷入，未達 parity 前不取代正式入口。
+- 匯出與同步狀態由 App 組合獨立 feature；Google OAuth 連線尚未遷入，未達 parity 前不取代正式入口。
 - 元件不直接呼叫 repository，也不直接 import 其他 feature。
 
 ## Data and integration

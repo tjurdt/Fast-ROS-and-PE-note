@@ -8,6 +8,7 @@ test("v2 single-file shell creates and reloads a typed local patient", async ({
   await page.evaluate(() => window.localStorage.clear());
   await page.reload();
 
+  await expect(page.getByTestId("choose-google-v2")).toBeDisabled();
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
   await page.getByLabel("病人代號 Patient code").fill("V2-TEST-01");

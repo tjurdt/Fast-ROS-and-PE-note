@@ -1,6 +1,11 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { PatientRepository } from "../application/patient-repository";
+import {
+  isSyncCapablePatientRepository,
+  type PatientSyncState,
+  type SyncCapablePatientRepository,
+} from "../application/synchronized-patient-repository";
 import {
   createPatientInDatabase,
   updateBundlesInDatabase,
@@ -34,6 +39,7 @@ import { PastMedicalHistory } from "../features/past-medical-history/PastMedical
 import { PatientList } from "../features/patient-list/PatientList";
 import { PatientNote } from "../features/patient-note/PatientNote";
 import { StorageChoice } from "../features/storage-choice/StorageChoice";
+import { SyncStatusPanel } from "../features/sync-status/SyncStatusPanel";
 import { TodoList } from "../features/todo-list/TodoList";
 import { LocalPatientRepository } from "../infrastructure/storage/local-patient-repository";
 
@@ -41,6 +47,7 @@ type View = "landing" | "list" | "note";
 
 interface AppProps {
   repository?: PatientRepository;
+  googleRepository?: SyncCapablePatientRepository;
   patientFactory?: PatientFactoryDependencies;
 }
 
@@ -53,11 +60,16 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "發生未預期的錯誤。";
 }
 
-export function App({ repository: suppliedRepository, patientFactory }: AppProps) {
-  const repository = useMemo(
+export function App({
+  repository: suppliedRepository,
+  googleRepository,
+  patientFactory,
+}: AppProps) {
+  const localRepository = useMemo(
     () => suppliedRepository ?? new LocalPatientRepository(),
     [suppliedRepository],
   );
+  const [repository, setRepository] = useState<PatientRepository>(localRepository);
   const factory = patientFactory ?? DEFAULT_PATIENT_FACTORY;
   const [view, setView] = useState<View>("landing");
   const [database, setDatabase] = useState<PatientDatabase>(emptyPatientDatabase);
@@ -68,8 +80,17 @@ export function App({ repository: suppliedRepository, patientFactory }: AppProps
   const [error, setError] = useState<string | null>(null);
   const [templateEditorOpen, setTemplateEditorOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [syncState, setSyncState] = useState<PatientSyncState | null>(null);
   const saveQueue = useRef<Promise<void>>(Promise.resolve());
   const saveRevision = useRef(0);
+
+  useEffect(() => {
+    if (!isSyncCapablePatientRepository(repository)) {
+      setSyncState(null);
+      return;
+    }
+    return repository.subscribe(setSyncState);
+  }, [repository]);
 
   function adoptDatabase(next: PatientDatabase) {
     databaseRef.current = next;
@@ -90,16 +111,57 @@ export function App({ repository: suppliedRepository, patientFactory }: AppProps
       });
   }
 
-  async function chooseLocal() {
+  async function openRepository(nextRepository: PatientRepository): Promise<boolean> {
     setLoading(true);
     setError(null);
     try {
-      adoptDatabase(await repository.load());
+      const loaded = await nextRepository.load();
+      saveQueue.current = Promise.resolve();
+      saveRevision.current = 0;
+      setRepository(nextRepository);
+      adoptDatabase(loaded);
       setView("list");
+      return true;
     } catch (caught) {
       setError(errorMessage(caught));
+      return false;
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function chooseLocal() {
+    await openRepository(localRepository);
+  }
+
+  async function chooseGoogle() {
+    if (!googleRepository) return;
+    if (!(await openRepository(googleRepository))) return;
+    void googleRepository
+      .sync()
+      .then((synced) => adoptSyncedDatabase(synced))
+      .catch(() => undefined);
+  }
+
+  function adoptSyncedDatabase(next: PatientDatabase) {
+    adoptDatabase(next);
+    if (
+      activePatientId !== null &&
+      !next.patients.some((patient) => patient.id === activePatientId)
+    ) {
+      setExportOpen(false);
+      setActivePatientId(null);
+      setView("list");
+    }
+  }
+
+  async function syncNow() {
+    if (!isSyncCapablePatientRepository(repository)) return;
+    await saveQueue.current;
+    try {
+      adoptSyncedDatabase(await repository.sync());
+    } catch {
+      // The repository exposes a recoverable state and retains its local cache.
     }
   }
 
@@ -232,7 +294,12 @@ export function App({ repository: suppliedRepository, patientFactory }: AppProps
       ) : null}
 
       {view === "landing" ? (
-        <StorageChoice disabled={loading} onChooseLocal={() => void chooseLocal()} />
+        <StorageChoice
+          disabled={loading}
+          googleAvailable={Boolean(googleRepository)}
+          onChooseGoogle={() => void chooseGoogle()}
+          onChooseLocal={() => void chooseLocal()}
+        />
       ) : null}
 
       {view === "list" ? (
@@ -259,6 +326,13 @@ export function App({ repository: suppliedRepository, patientFactory }: AppProps
           onChange={updateActivePatient}
           onExport={() => setExportOpen(true)}
         >
+          {syncState ? (
+            <SyncStatusPanel
+              disabled={saving}
+              state={syncState}
+              onSync={() => void syncNow()}
+            />
+          ) : null}
           <TodoList
             createId={factory.createId}
             now={factory.now}

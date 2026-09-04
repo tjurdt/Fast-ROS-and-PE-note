@@ -2,10 +2,17 @@ import { Button } from "../../ui/Button";
 
 interface StorageChoiceProps {
   disabled: boolean;
+  googleAvailable: boolean;
   onChooseLocal: () => void;
+  onChooseGoogle: () => void;
 }
 
-export function StorageChoice({ disabled, onChooseLocal }: StorageChoiceProps) {
+export function StorageChoice({
+  disabled,
+  googleAvailable,
+  onChooseLocal,
+  onChooseGoogle,
+}: StorageChoiceProps) {
   return (
     <main className="v2-gate" aria-labelledby="v2-title">
       <section className="v2-card v2-gate__card">
@@ -23,9 +30,18 @@ export function StorageChoice({ disabled, onChooseLocal }: StorageChoiceProps) {
             <strong>💻 單機使用</strong>
             <span>資料保存在此瀏覽器的 v2 獨立空間。</span>
           </Button>
-          <Button disabled aria-disabled="true">
+          <Button
+            aria-disabled={!googleAvailable}
+            data-testid="choose-google-v2"
+            disabled={disabled || !googleAvailable}
+            onClick={onChooseGoogle}
+          >
             <strong>☁ Google 帳號</strong>
-            <span>完成同步 adapter parity 後開放。</span>
+            <span>
+              {googleAvailable
+                ? "先開啟此裝置快取，再安全同步遠端版本。"
+                : "同步核心已就緒；完成 OAuth 連線後開放。"}
+            </span>
           </Button>
         </div>
 
