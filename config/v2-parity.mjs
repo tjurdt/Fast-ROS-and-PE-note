@@ -104,7 +104,8 @@ export const v2ParityGates = Object.freeze([
       {
         kind: "browser",
         path: "e2e/legacy-parity.spec.ts",
-        marker: 'test("legacy landing and patient list remain usable at a mobile viewport"',
+        marker:
+          'test("legacy landing and patient list remain usable at a mobile viewport"',
       },
       {
         kind: "browser",
@@ -125,7 +126,8 @@ export const v2ParityGates = Object.freeze([
       {
         kind: "browser",
         path: "e2e/v2-deployment.spec.ts",
-        marker: 'test("v2 built artifact boots and persists locally over file protocol"',
+        marker:
+          'test("v2 built artifact boots and persists locally over file protocol"',
       },
     ],
   },

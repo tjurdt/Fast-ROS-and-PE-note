@@ -36,3 +36,11 @@ These rules apply to human and AI-assisted changes in this repository.
 - Any behavior migrated from legacy requires a Playwright parity test or an equivalent deterministic contract test before cutover.
 - If an intentional legacy fix changes `src/legacy/app.js`, add regression coverage and update its baseline with `npm run accept:legacy -- --reason "..."`.
 - Keep changes small and avoid unrelated cleanup in behavior-changing work.
+
+## Commit messages
+
+- `npm install` sets up Husky hooks (`prepare` script) that run lint/typecheck on commit and structural checks plus unit tests on push. They catch mechanical drift; they do not replace `npm run verify` before finishing a task.
+- Every commit message states what changed and why, in one line: `<area>: <what>, because <why or what problem it fixes>`. `area` is a path segment or feature name (`bundles`, `google-drive-connector`, `docs`), not a verb.
+- Never commit with a bare label like "improve", "fix", "update", or "WIP". A reviewer or a future AI session reading `git log` alone must be able to tell what the commit did without opening the diff.
+- One commit, one purpose. Do not fold an unrelated cleanup, a dependency bump, and a behavior change into the same commit.
+- When a commit changes the legacy baseline or a clinical catalog, the message states the accepted reason (matching the `--reason` passed to `accept:legacy` or `sync:clinical-catalog`), not just that the baseline changed.

@@ -43,9 +43,9 @@ const styleBlocks = [...html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)].ma
   (match) => match[1] ?? "",
 );
 for (const css of styleBlocks) {
-  const externalUrls = [
-    ...css.matchAll(/url\(\s*["']?([^"')]+)["']?\s*\)/gi),
-  ].map((match) => match[1]?.trim() ?? "");
+  const externalUrls = [...css.matchAll(/url\(\s*["']?([^"')]+)["']?\s*\)/gi)].map(
+    (match) => match[1]?.trim() ?? "",
+  );
   if (externalUrls.some((url) => url && !url.startsWith("data:") && url !== "#")) {
     failures.push("artifact CSS contains a non-embedded URL");
   }
