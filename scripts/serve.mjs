@@ -7,7 +7,7 @@ import { rootDir } from "./lib/render-app.mjs";
 const host = "127.0.0.1";
 const requestedPort = Number.parseInt(process.env.PE_NOTE_PORT ?? "4173", 10);
 const port = Number.isInteger(requestedPort) ? requestedPort : 4173;
-const indexPath = path.join(rootDir, "index.html");
+const indexPath = path.join(rootDir, process.argv[2] ?? "index.html");
 
 const server = createServer((request, response) => {
   const pathname = new URL(request.url ?? "/", `http://${host}`).pathname;

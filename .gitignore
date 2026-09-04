@@ -1,6 +1,7 @@
 node_modules/
 coverage/
 dist-v2/
+dist-legacy/
 playwright-report/
 test-results/
 *.log

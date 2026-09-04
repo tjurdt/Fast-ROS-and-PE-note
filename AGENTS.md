@@ -4,11 +4,10 @@ These rules apply to human and AI-assisted changes in this repository.
 
 ## Source of truth
 
-- The root `index.html` is the generated legacy production artifact. Never hand-edit it.
-- Legacy source remains in `src/index.template.html`, `src/styles/app.css`, and `src/legacy/app.js`; run `npm run build` after an intentional legacy runtime change.
-- v2 runtime source is TypeScript/React under `src/app`, `src/domain`, `src/application`, `src/infrastructure`, `src/features`, and `src/ui`; run `npm run build:v2` to produce `dist-v2/index.html`.
-- Preserve a single-file offline artifact in both tracks. Do not add external local stylesheet, font, image, or script dependencies to either production build.
-- Do not replace the root production artifact with v2 until the documented parity gates pass.
+- Since ADR 0005 (2026-09-05), the root `index.html` is the generated **v2** production artifact. Never hand-edit it. `npm run build` (`build:v2` then `promote:v2`) regenerates it from `src/app`, `src/domain`, `src/application`, `src/infrastructure`, `src/features`, and `src/ui`.
+- Legacy source (`src/index.template.html`, `src/styles/app.css`, `src/legacy/app.js`) is frozen and no longer the production entry — it is kept as the Phase 2 rollback reference from ADR 0004. Run `npm run build:legacy` to produce `dist-legacy/index.html` for rollback preview/testing; never point it at the root artifact.
+- Preserve a single-file offline artifact in both tracks. Do not add external local stylesheet, font, image, or script dependencies to either build.
+- Do not delete legacy source, its baseline protection, or its dedicated tests before the ADR 0004 Phase 2 observation period ends and a human confirms Phase 3 (retirement) explicitly.
 
 ## Change boundaries
 
@@ -23,7 +22,7 @@ These rules apply to human and AI-assisted changes in this repository.
 
 ## Compatibility and safety
 
-- Legacy persisted keys stay frozen. v2 uses its own versioned schema and storage namespace until cutover.
+- Legacy persisted keys stay frozen. v2 uses its own versioned schema and storage namespace (`pe_note_v2`); the one-time `rounding_notes_v1` → v2 import (ADR 0004, `src/infrastructure/legacy-import/`) is the only sanctioned bridge, and it must never write back to or delete the legacy key.
 - Validate all data crossing storage/network boundaries at runtime. A failed parse must not overwrite the original stored value.
 - Storage or synchronization changes require tests for offline/local behavior, cached Google behavior, and conflict/error recovery as applicable.
 - Never include real patient identifiers, OAuth secrets, access tokens, private keys, or production exports in source or fixtures.
@@ -32,9 +31,8 @@ These rules apply to human and AI-assisted changes in this repository.
 ## Verification
 
 - Add or update tests for every behavior change.
-- Run `npm run build`, `npm run build:v2`, and `npm run verify` before declaring a task complete.
-- Any behavior migrated from legacy requires a Playwright parity test or an equivalent deterministic contract test before cutover.
-- If an intentional legacy fix changes `src/legacy/app.js`, add regression coverage and update its baseline with `npm run accept:legacy -- --reason "..."`.
+- Run `npm run verify` before declaring a task complete (it builds and checks both `index.html`/`dist-v2` and `dist-legacy` as part of the chain).
+- If an intentional legacy fix changes `src/legacy/app.js` during the Phase 2 rollback window, add regression coverage and update its baseline with `npm run accept:legacy -- --reason "..."`.
 - Keep changes small and avoid unrelated cleanup in behavior-changing work.
 
 ## Commit messages

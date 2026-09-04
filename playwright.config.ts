@@ -25,5 +25,12 @@ export default defineConfig({
       reuseExistingServer: !process.env.CI,
       timeout: 30_000,
     },
+    {
+      command: "node scripts/serve.mjs dist-legacy/index.html",
+      url: "http://127.0.0.1:4175",
+      env: { PE_NOTE_PORT: "4175" },
+      reuseExistingServer: !process.env.CI,
+      timeout: 30_000,
+    },
   ],
 });

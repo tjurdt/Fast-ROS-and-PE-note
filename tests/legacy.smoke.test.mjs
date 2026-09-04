@@ -18,7 +18,7 @@ async function waitFor(check, description, timeoutMs = 3000) {
 }
 
 test("offline local-mode happy path boots and persists a patient", async () => {
-  const html = await readFile(path.join(rootDir, "index.html"), "utf8");
+  const html = await readFile(path.join(rootDir, "dist-legacy", "index.html"), "utf8");
   const consoleErrors = [];
   const virtualConsole = new VirtualConsole();
   virtualConsole.on("error", (...args) => consoleErrors.push(args.join(" ")));
