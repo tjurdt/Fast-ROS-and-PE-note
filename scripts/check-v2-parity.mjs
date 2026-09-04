@@ -65,7 +65,8 @@ for (const expectedId of expectedGateIds) {
   if (!seenIds.has(expectedId)) failures.push(`Missing parity gate: ${expectedId}`);
 }
 for (const actualId of seenIds) {
-  if (!expectedGateIds.includes(actualId)) failures.push(`Unexpected parity gate: ${actualId}`);
+  if (!expectedGateIds.includes(actualId))
+    failures.push(`Unexpected parity gate: ${actualId}`);
 }
 
 if (failures.length > 0) {
