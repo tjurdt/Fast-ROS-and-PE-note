@@ -9,6 +9,7 @@ import {
 import {
   buildClinicalView,
   countFindings,
+  countFindingsByKind,
   hasFinding,
 } from "../../src/domain/clinical/clinical-rules";
 import { createPatient, updatePatientFinding } from "../../src/domain/patient";
@@ -99,6 +100,18 @@ describe("clinical catalog parity", () => {
 
     const updated = updatePatientFinding(patientFor("inf"), "fever", { on: true }, 200);
     expect(countFindings(updated)).toBe(1);
+  });
+
+  it("scopes countFindingsByKind to just the ROS or just the PE section", () => {
+    let patient = patientFor("inf");
+    patient = updatePatientFinding(patient, "fever", { on: true }, 200);
+    patient = updatePatientFinding(patient, "pe_dtr", { dtr: { biceps_L: "3+" } }, 200);
+
+    expect(countFindingsByKind(patient, "ROS")).toBe(1);
+    expect(countFindingsByKind(patient, "PE")).toBe(1);
+    expect(countFindings(patient)).toBe(
+      countFindingsByKind(patient, "ROS") + countFindingsByKind(patient, "PE"),
+    );
   });
 
   it("matches DTR, plantar, sensory, and cranial nerve positive rules", () => {

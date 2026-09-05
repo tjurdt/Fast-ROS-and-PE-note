@@ -36,11 +36,13 @@ import {
   type PatientDatabase,
 } from "../domain/patient-database";
 import type { UserBundleTemplate } from "../domain/bundle-templates";
+import { countFindingsByKind } from "../domain/clinical/clinical-rules";
+import { admissionFindingCount } from "../domain/note-workspace";
 import { AdditionalNotes } from "../features/additional-notes/AdditionalNotes";
 import { AdmissionHistory } from "../features/admission-history/AdmissionHistory";
 import { BundleWorkspace } from "../features/bundles/BundleWorkspace";
 import { BundleTemplateEditor } from "../features/bundle-template-editor/BundleTemplateEditor";
-import { ClinicalNote } from "../features/clinical-note/ClinicalNote";
+import { ClinicalKindWorkspace } from "../features/clinical-note/ClinicalKindWorkspace";
 import { ClinicalExportPreview } from "../features/export-preview/ClinicalExportPreview";
 import {
   LegacyImportBanner,
@@ -48,7 +50,7 @@ import {
 } from "../features/legacy-import/LegacyImportBanner";
 import { PastMedicalHistory } from "../features/past-medical-history/PastMedicalHistory";
 import { PatientList } from "../features/patient-list/PatientList";
-import { PatientNote } from "../features/patient-note/PatientNote";
+import { PatientNote, type PatientNoteTab } from "../features/patient-note/PatientNote";
 import { StorageChoice } from "../features/storage-choice/StorageChoice";
 import { SyncStatusPanel } from "../features/sync-status/SyncStatusPanel";
 import { TodoList } from "../features/todo-list/TodoList";
@@ -432,6 +434,101 @@ export function App({
       onSync={() => void syncNow()}
     />
   ) : null;
+  const patientNoteTabs: PatientNoteTab[] = activePatient
+    ? [
+        {
+          key: "history",
+          label: "病史",
+          badge:
+            admissionFindingCount(activePatient.admission) + activePatient.pmh.length,
+          content: (
+            <>
+              <AdmissionHistory
+                admission={activePatient.admission}
+                adl={activePatient.adl}
+                onAdmissionChange={(admission) => updateActiveWorkspace({ admission })}
+                onAdlChange={(adl) => updateActiveWorkspace({ adl })}
+              />
+              <PastMedicalHistory
+                createId={factory.createId}
+                entries={activePatient.pmh}
+                onChange={(pmh) => updateActiveWorkspace({ pmh })}
+              />
+            </>
+          ),
+        },
+        {
+          key: "ros",
+          label: "ROS",
+          badge: countFindingsByKind(activePatient, "ROS"),
+          content: (
+            <ClinicalKindWorkspace
+              kind="ROS"
+              patient={activePatient}
+              onBlockNoteChange={updateActiveBlockNote}
+              onFindingChange={updateActiveFinding}
+            />
+          ),
+        },
+        {
+          key: "pe",
+          label: "PE",
+          badge: countFindingsByKind(activePatient, "PE"),
+          content: (
+            <ClinicalKindWorkspace
+              kind="PE"
+              patient={activePatient}
+              onBlockNoteChange={updateActiveBlockNote}
+              onFindingChange={updateActiveFinding}
+            />
+          ),
+        },
+        {
+          key: "bundles",
+          label: "組套",
+          badge:
+            activePatient.lqq.length +
+            Object.keys(activePatient.customSets).length +
+            (activePatient.postop ? 1 : 0) +
+            activePatient.infections.length +
+            (activePatient.chemo ? 1 : 0),
+          content: (
+            <BundleWorkspace
+              antibioticOptions={database.antibioticOptions}
+              chemo={activePatient.chemo}
+              createId={factory.createId}
+              customBundleTemplates={database.customBundleTemplates}
+              customSets={activePatient.customSets}
+              infections={activePatient.infections}
+              lqq={activePatient.lqq}
+              onChange={updateActiveBundles}
+              onManageTemplates={() => setTemplateEditorOpen(true)}
+              patientAge={activePatient.age}
+              postop={activePatient.postop}
+            />
+          ),
+        },
+        {
+          key: "todo",
+          label: "待辦與備註",
+          badge: activePatient.todos.filter((todo) => todo.status === "todo").length,
+          content: (
+            <>
+              <TodoList
+                createId={factory.createId}
+                now={factory.now}
+                todos={activePatient.todos}
+                onChange={(todos) => updateActiveWorkspace({ todos })}
+              />
+              <AdditionalNotes
+                value={activePatient.globalNote}
+                onChange={(globalNote) => updateActiveWorkspace({ globalNote })}
+              />
+            </>
+          ),
+        },
+      ]
+    : [];
 
   return (
     <>
@@ -491,6 +588,8 @@ export function App({
         <PatientNote
           patient={activePatient}
           saving={saving}
+          syncPanel={syncPanel}
+          tabs={patientNoteTabs}
           onBack={() => {
             setExportOpen(false);
             setActivePatientId(null);
@@ -498,48 +597,7 @@ export function App({
           }}
           onChange={updateActivePatient}
           onExport={() => setExportOpen(true)}
-        >
-          {syncPanel}
-          <TodoList
-            createId={factory.createId}
-            now={factory.now}
-            todos={activePatient.todos}
-            onChange={(todos) => updateActiveWorkspace({ todos })}
-          />
-          <AdditionalNotes
-            value={activePatient.globalNote}
-            onChange={(globalNote) => updateActiveWorkspace({ globalNote })}
-          />
-          <BundleWorkspace
-            antibioticOptions={database.antibioticOptions}
-            chemo={activePatient.chemo}
-            createId={factory.createId}
-            customBundleTemplates={database.customBundleTemplates}
-            customSets={activePatient.customSets}
-            infections={activePatient.infections}
-            lqq={activePatient.lqq}
-            onChange={updateActiveBundles}
-            onManageTemplates={() => setTemplateEditorOpen(true)}
-            patientAge={activePatient.age}
-            postop={activePatient.postop}
-          />
-          <AdmissionHistory
-            admission={activePatient.admission}
-            adl={activePatient.adl}
-            onAdmissionChange={(admission) => updateActiveWorkspace({ admission })}
-            onAdlChange={(adl) => updateActiveWorkspace({ adl })}
-          />
-          <PastMedicalHistory
-            createId={factory.createId}
-            entries={activePatient.pmh}
-            onChange={(pmh) => updateActiveWorkspace({ pmh })}
-          />
-          <ClinicalNote
-            patient={activePatient}
-            onBlockNoteChange={updateActiveBlockNote}
-            onFindingChange={updateActiveFinding}
-          />
-        </PatientNote>
+        />
       ) : null}
     </>
   );

@@ -1,8 +1,16 @@
-import type { PropsWithChildren } from "react";
+import { useState, type ReactNode } from "react";
 
 import type { Gender, Patient, PatientEditableFields } from "../../domain/patient";
 import { SPECIALTIES } from "../../domain/specialty";
 import { Button } from "../../ui/Button";
+
+export interface PatientNoteTab {
+  key: string;
+  label: string;
+  /** Shown as a small badge on the tab button; omit or pass 0 to hide it. */
+  badge?: number;
+  content: ReactNode;
+}
 
 interface PatientNoteProps {
   patient: Patient;
@@ -10,6 +18,8 @@ interface PatientNoteProps {
   onBack: () => void;
   onChange: (patch: Partial<PatientEditableFields>) => void;
   onExport: () => void;
+  syncPanel?: ReactNode;
+  tabs: PatientNoteTab[];
 }
 
 export function PatientNote({
@@ -18,24 +28,13 @@ export function PatientNote({
   onBack,
   onChange,
   onExport,
-  children,
-}: PropsWithChildren<PatientNoteProps>) {
-  return (
-    <main className="v2-shell">
-      <header className="v2-topbar v2-topbar--note">
-        <Button onClick={onBack} tone="ghost">
-          ‹ 病人清單
-        </Button>
-        <div className="v2-topbar__actions">
-          <span className="v2-save-state" role="status">
-            {saving ? "儲存中…" : "已儲存在本機"}
-          </span>
-          <Button data-testid="open-clinical-export" onClick={onExport}>
-            匯出／列印
-          </Button>
-        </div>
-      </header>
-
+  syncPanel,
+  tabs,
+}: PatientNoteProps) {
+  const basicInfoTab: PatientNoteTab = {
+    key: "basic",
+    label: "基本資料",
+    content: (
       <section className="v2-card v2-note" aria-labelledby="v2-note-title">
         <span className="v2-eyebrow">v2 typed patient shell</span>
         <h1 id="v2-note-title">病人基本資料</h1>
@@ -95,8 +94,51 @@ export function PatientNote({
           />
         </label>
       </section>
+    ),
+  };
 
-      {children}
+  const allTabs = [basicInfoTab, ...tabs];
+  const [activeTabKey, setActiveTabKey] = useState(basicInfoTab.key);
+  const activeTab = allTabs.find((tab) => tab.key === activeTabKey) ?? basicInfoTab;
+
+  return (
+    <main className="v2-shell">
+      <header className="v2-topbar v2-topbar--note">
+        <Button onClick={onBack} tone="ghost">
+          ‹ 病人清單
+        </Button>
+        <div className="v2-topbar__actions">
+          <span className="v2-save-state" role="status">
+            {saving ? "儲存中…" : "已儲存在本機"}
+          </span>
+          <Button data-testid="open-clinical-export" onClick={onExport}>
+            匯出／列印
+          </Button>
+        </div>
+      </header>
+
+      {syncPanel}
+
+      <nav aria-label="病人筆記分頁" className="v2-note-tabs">
+        {allTabs.map((tab) => (
+          <button
+            aria-pressed={tab.key === activeTabKey}
+            className={`v2-note-tab ${tab.key === activeTabKey ? "is-active" : ""}`}
+            key={tab.key}
+            onClick={() => setActiveTabKey(tab.key)}
+            type="button"
+          >
+            {tab.badge ? (
+              <span aria-hidden="true" className="v2-note-tab__badge">
+                {tab.badge}
+              </span>
+            ) : null}
+            {tab.label}
+          </button>
+        ))}
+      </nav>
+
+      {activeTab.content}
     </main>
   );
 }

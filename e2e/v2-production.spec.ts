@@ -14,6 +14,7 @@ test("v2 production artifact (index.html via npm start) boots, persists, and shi
   await page.getByLabel("病人代號 Patient code").fill("PROD-01");
   await page.getByLabel("主要問題").fill("production entry check");
   await page.getByRole("button", { name: "建立並開始" }).click();
+  await page.getByRole("button", { name: "ROS" }).click();
   await page.getByRole("button", { name: /^一般全身 Constitutional/ }).click();
   await page.getByTestId("finding-control-fever").click();
   await expect(page.getByTestId("finding-total")).toContainText("1");

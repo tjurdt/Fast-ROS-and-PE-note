@@ -323,6 +323,61 @@ textarea:focus-visible {
   font-size: 12px;
 }
 
+/* Top-level patient-note navigation: 基本資料/病史/ROS/PE/組套/待辦與備註. Uses
+   the app's neutral brand teal, kept distinct from ROS's blue and PE's gold
+   identity colors used one level down, inside the ROS/PE tabs themselves. */
+.v2-note-tabs {
+  position: sticky;
+  z-index: 9;
+  top: 55px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgb(255 255 255 / 94%);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.v2-note-tab {
+  position: relative;
+  flex: 1 1 auto;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--ink-700);
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.v2-note-tab.is-active {
+  border-color: var(--brand);
+  color: var(--surface);
+  background: var(--brand);
+  font-weight: 700;
+}
+
+.v2-note-tab__badge {
+  position: absolute;
+  top: -7px;
+  right: -6px;
+  min-width: 18px;
+  padding: 1px 5px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--ink-900);
+  background: var(--surface-muted);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
 .v2-form,
 .v2-note {
   margin: 16px 14px;
@@ -2479,23 +2534,15 @@ textarea:focus-visible {
   resize: vertical;
 }
 
-/* ROS/PE tab groups: one row of small tiles per kind, plus a single panel
-   below both rows that shows whichever tab is currently active. */
-.v2-clinical-kind {
-  display: grid;
-  gap: 8px;
-}
-
-.v2-clinical-kind__label {
-  margin: 0;
-  font-size: 20px;
-}
-
-.v2-clinical-kind--ros .v2-clinical-kind__label {
+/* One kind's (ROS or PE) row of small section tiles, plus the single panel
+   below them that shows whichever tab is currently active. ROS and PE each
+   get their own top-level patient-note tab (see PatientNote.tsx), so only
+   one of .v2-clinical--ros / .v2-clinical--pe is ever on screen at once. */
+.v2-clinical--ros h2 {
   color: var(--ros-strong);
 }
 
-.v2-clinical-kind--pe .v2-clinical-kind__label {
+.v2-clinical--pe h2 {
   color: var(--pe-strong);
 }
 
@@ -2980,12 +3027,12 @@ textarea:focus-visible {
     line-height: 1.2;
   }
 
-  .v2-clinical-kind {
-    gap: 5px;
+  .v2-clinical {
+    gap: 10px;
   }
 
-  .v2-clinical-kind__label {
-    font-size: 16px;
+  .v2-clinical-summary h2 {
+    font-size: 18px;
   }
 
   .v2-clinical-item__row {
