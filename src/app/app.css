@@ -59,6 +59,17 @@
   --bundle-postop: #97cbd3;
   --bundle-infection: #ddb188;
 
+  /* ROS/PE tab identity — a deep, saturated tone for the active tab and
+     panel border, a light tint for inactive tabs and the panel header. */
+  --ros-strong: #33538a;
+  --ros-tint: #d7e2f6;
+  --ros-tint-border: #aec3ea;
+  --ros-tint-text: #1f3a63;
+  --pe-strong: #96690a;
+  --pe-tint: #faecb8;
+  --pe-tint-border: #e9d284;
+  --pe-tint-text: #6b4c08;
+
   /* One-off tones kept distinct from the scales above. */
   --sync-border: #b3d3d8;
   --disabled-bg: #eef1f2;
@@ -313,8 +324,7 @@ textarea:focus-visible {
 }
 
 .v2-form,
-.v2-note,
-.v2-parity-notice {
+.v2-note {
   margin: 16px 14px;
   padding: 18px;
 }
@@ -530,16 +540,6 @@ textarea:focus-visible {
   transform: translateX(-50%);
   border-radius: 999px;
   box-shadow: 0 8px 24px rgb(14 107 122 / 30%);
-}
-
-.v2-parity-notice {
-  border-style: dashed;
-  color: var(--ink-700);
-}
-
-.v2-parity-notice p {
-  margin: 5px 0 0;
-  font-size: 13px;
 }
 
 .v2-sync-status {
@@ -2395,14 +2395,8 @@ textarea:focus-visible {
 
 .v2-clinical {
   display: grid;
-  gap: 10px;
+  gap: 14px;
   margin: 16px 14px;
-}
-
-.v2-clinical-sections {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
 }
 
 .v2-clinical-summary {
@@ -2425,6 +2419,8 @@ textarea:focus-visible {
   font-size: 13px;
 }
 
+/* Shared card look. Also used, unmodified, by the Admission and PMH
+   accordion sections (see AdmissionHistory.tsx / PastMedicalHistory.tsx). */
 .v2-clinical-section {
   overflow: hidden;
   border: 1px solid var(--border);
@@ -2433,19 +2429,11 @@ textarea:focus-visible {
   box-shadow: 0 5px 18px rgb(18 48 61 / 6%);
 }
 
-.v2-clinical-section.is-focus {
-  border-color: var(--bundle-postop);
-  background: var(--surface-muted);
-}
-
-.v2-clinical-section.is-expanded {
-  grid-column: 1 / -1;
-}
-
 .v2-clinical-section__header {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
+  gap: 12px;
   width: 100%;
   min-height: 48px;
   padding: 11px 14px;
@@ -2456,49 +2444,18 @@ textarea:focus-visible {
   text-align: left;
 }
 
-.v2-kind-tag {
-  flex: none;
-  padding: 2px 7px;
-  border-radius: 999px;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-}
-
-.v2-kind-tag--ros {
-  color: var(--brand-strong);
-  background: var(--brand-tint);
-}
-
-.v2-kind-tag--pe {
-  color: var(--accent-text);
-  background: var(--accent-bg);
-}
-
-.v2-clinical-section__label {
-  flex: 1;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.v2-clinical-section__head {
-  display: flex;
-  align-items: stretch;
-}
-
-.v2-clinical-section__head .v2-clinical-section__header {
-  flex: 1;
-}
-
 .v2-section-note-button {
-  width: 42px;
-  border: 0;
-  border-left: 1px solid var(--border-subtle);
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
   color: var(--ink-500);
-  background: transparent;
+  background: var(--surface);
 }
 
 .v2-section-note-button.has-note {
+  border-color: var(--brand);
   color: var(--brand);
   background: var(--brand-tint);
 }
@@ -2522,15 +2479,131 @@ textarea:focus-visible {
   resize: vertical;
 }
 
-.v2-clinical-section__count {
-  flex: none;
-  color: var(--ink-500);
-  font-size: 12px;
-  font-weight: 700;
-  white-space: nowrap;
+/* ROS/PE tab groups: one row of small tiles per kind, plus a single panel
+   below both rows that shows whichever tab is currently active. */
+.v2-clinical-kind {
+  display: grid;
+  gap: 8px;
 }
 
-.v2-clinical-section__body {
+.v2-clinical-kind__label {
+  margin: 0;
+  font-size: 20px;
+}
+
+.v2-clinical-kind--ros .v2-clinical-kind__label {
+  color: var(--ros-strong);
+}
+
+.v2-clinical-kind--pe .v2-clinical-kind__label {
+  color: var(--pe-strong);
+}
+
+.v2-clinical-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.v2-clinical-tab {
+  position: relative;
+  flex: 1 1 140px;
+  min-width: 108px;
+  max-width: 220px;
+  padding: 9px 12px;
+  border: 1px solid var(--ros-tint-border);
+  border-radius: 10px;
+  color: var(--ros-tint-text);
+  background: var(--ros-tint);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+  overflow-wrap: anywhere;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.v2-clinical-tab--pe {
+  border-color: var(--pe-tint-border);
+  color: var(--pe-tint-text);
+  background: var(--pe-tint);
+}
+
+.v2-clinical-tab.is-focus {
+  box-shadow: inset 0 0 0 2px var(--caution-border);
+}
+
+.v2-clinical-tab.is-active {
+  border-color: var(--ros-strong);
+  color: var(--surface);
+  background: var(--ros-strong);
+  font-weight: 800;
+}
+
+.v2-clinical-tab--pe.is-active {
+  border-color: var(--pe-strong);
+  background: var(--pe-strong);
+}
+
+.v2-clinical-tab__badge {
+  position: absolute;
+  top: -8px;
+  right: -6px;
+  min-width: 20px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  color: var(--ink-900);
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.v2-clinical-panel {
+  overflow: visible;
+  border-color: var(--ros-strong);
+}
+
+.v2-clinical-panel--pe {
+  border-color: var(--pe-strong);
+}
+
+.v2-clinical-panel__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--ros-tint);
+}
+
+.v2-clinical-panel--pe .v2-clinical-panel__header {
+  background: var(--pe-tint);
+}
+
+.v2-clinical-panel__label {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink-900);
+  font-weight: 800;
+}
+
+.v2-clinical-panel__close {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--ink-700);
+  background: var(--surface);
+  font-size: 14px;
+}
+
+.v2-clinical-panel__body {
   border-top: 1px solid var(--border-subtle);
 }
 
@@ -2887,8 +2960,8 @@ textarea:focus-visible {
 }
 
 @media (max-width: 560px) {
-  .v2-clinical-sections {
-    grid-template-columns: 1fr;
+  .v2-clinical-tab {
+    flex-basis: calc(50% - 4px);
   }
 
   .v2-clinical-item__row {
