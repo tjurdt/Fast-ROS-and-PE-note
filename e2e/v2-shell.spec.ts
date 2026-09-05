@@ -202,20 +202,21 @@ test("v2 note workspace persists todo, history, ADL, and block notes", async ({
   await page.getByLabel("其他備註 Additional notes").fill("家屬已知情");
 
   await page.getByRole("button", { name: /^病史/ }).click();
-  const admission = page.getByTestId("admission-section");
-  await admission.locator(".v2-clinical-section__header").click();
-  await admission.getByRole("button", { name: "菸 Smoking" }).click();
+  const history = page.getByTestId("history-workspace");
+  await history.getByRole("button", { name: "入院評估" }).click();
+  await history.getByRole("button", { name: "菸 Smoking" }).click();
   await page.getByTestId("admission-drugAllergy").click();
   await page.getByLabel("藥物過敏內容").fill("Penicillin rash");
-  await page.getByLabel("旅遊 Travel").fill("日本");
   await page.getByLabel("家族史 Family history").fill("父親 HTN");
+  await history.getByRole("button", { name: "TOCC" }).click();
+  await page.getByLabel("旅遊 Travel").fill("日本");
+  await history.getByRole("button", { name: "ADL", exact: true }).click();
   await page.getByTestId("adl-level").click();
-  await admission.getByRole("button", { name: "家人 Family" }).click();
+  await history.getByRole("button", { name: "家人 Family" }).click();
   await page.getByLabel("家人姓名或關係 Family member").fill("女兒");
-  await expect(admission.locator(".v2-clinical-section__header")).toContainText("4 項");
+  await expect(history.getByRole("button", { name: "入院評估" })).toContainText("3");
 
-  const pmh = page.getByTestId("pmh-section");
-  await pmh.locator(".v2-clinical-section__header").click();
+  await history.getByRole("button", { name: "過去病史" }).click();
   await page.getByLabel("選擇常見過去病史").selectOption("高血壓 Hypertension");
 
   await page.getByRole("button", { name: "ROS" }).click();
@@ -247,15 +248,15 @@ test("v2 note workspace persists todo, history, ADL, and block notes", async ({
   await expect(page.getByLabel("其他備註 Additional notes")).toHaveValue("家屬已知情");
 
   await page.getByRole("button", { name: /^病史/ }).click();
-  await page
-    .getByTestId("admission-section")
-    .locator(".v2-clinical-section__header")
-    .click();
+  const historyReload = page.getByTestId("history-workspace");
+  await historyReload.getByRole("button", { name: "入院評估" }).click();
   await expect(page.getByLabel("藥物過敏內容")).toHaveValue("Penicillin rash");
+
+  await historyReload.getByRole("button", { name: "ADL", exact: true }).click();
   await expect(page.getByTestId("adl-level")).toContainText("部分依賴");
   await expect(page.getByLabel("家人姓名或關係 Family member")).toHaveValue("女兒");
 
-  await page.getByTestId("pmh-section").locator(".v2-clinical-section__header").click();
+  await historyReload.getByRole("button", { name: "過去病史" }).click();
   await expect(
     page.getByRole("textbox", { name: "過去病史 1", exact: true }),
   ).toHaveValue("高血壓 Hypertension");

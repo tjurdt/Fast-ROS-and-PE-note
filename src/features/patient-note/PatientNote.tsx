@@ -128,12 +128,12 @@ export function PatientNote({
             onClick={() => setActiveTabKey(tab.key)}
             type="button"
           >
+            {tab.label}
             {tab.badge ? (
               <span aria-hidden="true" className="v2-note-tab__badge">
                 {tab.badge}
               </span>
             ) : null}
-            {tab.label}
           </button>
         ))}
       </nav>

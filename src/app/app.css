@@ -301,8 +301,29 @@ textarea:focus-visible {
   font-size: 22px;
 }
 
+/* Note view: a solid blue banner, tighter than the neutral list topbar. */
 .v2-topbar--note {
-  padding-block: 10px;
+  padding-block: 7px;
+  border-bottom-color: var(--brand-strong);
+  background: var(--brand);
+}
+
+.v2-topbar--note .v2-button--ghost {
+  color: var(--surface);
+}
+
+.v2-topbar--note .v2-button--ghost:hover:not(:disabled) {
+  background: rgb(255 255 255 / 16%);
+}
+
+.v2-topbar--note .v2-save-state {
+  color: rgb(255 255 255 / 82%);
+}
+
+.v2-topbar--note .v2-topbar__actions .v2-button:not(.v2-button--ghost) {
+  border-color: rgb(255 255 255 / 55%);
+  color: var(--surface);
+  background: rgb(255 255 255 / 14%);
 }
 
 .v2-save-state {
@@ -318,64 +339,133 @@ textarea:focus-visible {
 }
 
 .v2-topbar__actions .v2-button {
-  min-height: 36px;
-  padding: 6px 10px;
+  min-height: 34px;
+  padding: 5px 10px;
   font-size: 12px;
 }
 
-/* Top-level patient-note navigation: 基本資料/病史/ROS/PE/組套/待辦與備註. Uses
-   the app's neutral brand teal, kept distinct from ROS's blue and PE's gold
-   identity colors used one level down, inside the ROS/PE tabs themselves. */
+/* Top-level patient-note navigation: 基本資料/病史/ROS/PE/組套/待辦與備註, a
+   single connected segmented bar. Each segment carries its own identity tint
+   (ROS blue and PE gold match the section tabs one level down); the active
+   segment fills with the saturated version of that same hue. */
 .v2-note-tabs {
   position: sticky;
   z-index: 9;
-  top: 55px;
+  top: 48px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 8px 14px;
+  gap: 0;
+  padding: 5px 14px;
   background: rgb(255 255 255 / 94%);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border-subtle);
 }
 
 .v2-note-tab {
-  position: relative;
-  flex: 1 1 auto;
-  padding: 8px 12px;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 7px 3px;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-right-width: 0;
   color: var(--ink-700);
   background: var(--surface);
   font-size: 13px;
   font-weight: 600;
+  line-height: 1.2;
   white-space: nowrap;
+  text-align: center;
   transition:
     background-color var(--transition-fast),
-    border-color var(--transition-fast),
     color var(--transition-fast);
 }
 
+.v2-note-tab:first-child {
+  border-radius: 8px 0 0 8px;
+}
+
+.v2-note-tab:last-child {
+  border-right-width: 1px;
+  border-radius: 0 8px 8px 0;
+}
+
+.v2-note-tab:nth-child(1) {
+  color: #42606e;
+  background: #e9eef2;
+}
+
+.v2-note-tab:nth-child(2) {
+  color: var(--brand-strong);
+  background: var(--brand-tint);
+}
+
+.v2-note-tab:nth-child(3) {
+  color: var(--ros-tint-text);
+  background: var(--ros-tint);
+}
+
+.v2-note-tab:nth-child(4) {
+  color: var(--pe-tint-text);
+  background: var(--pe-tint);
+}
+
+.v2-note-tab:nth-child(5) {
+  color: var(--positive-text);
+  background: var(--positive-bg);
+}
+
+.v2-note-tab:nth-child(6) {
+  color: var(--accent-text);
+  background: var(--accent-tint);
+}
+
 .v2-note-tab.is-active {
-  border-color: var(--brand);
   color: var(--surface);
+  font-weight: 800;
+}
+
+.v2-note-tab:nth-child(1).is-active {
+  border-color: #4f6b78;
+  background: #4f6b78;
+}
+
+.v2-note-tab:nth-child(2).is-active {
+  border-color: var(--brand);
   background: var(--brand);
-  font-weight: 700;
+}
+
+.v2-note-tab:nth-child(3).is-active {
+  border-color: var(--ros-strong);
+  background: var(--ros-strong);
+}
+
+.v2-note-tab:nth-child(4).is-active {
+  border-color: var(--pe-strong);
+  background: var(--pe-strong);
+}
+
+.v2-note-tab:nth-child(5).is-active {
+  border-color: #1c7a4e;
+  background: #1c7a4e;
+}
+
+.v2-note-tab:nth-child(6).is-active {
+  border-color: var(--accent-text);
+  background: var(--accent-text);
 }
 
 .v2-note-tab__badge {
-  position: absolute;
-  top: -7px;
-  right: -6px;
-  min-width: 18px;
-  padding: 1px 5px;
-  border: 1px solid var(--border);
+  display: inline-block;
+  margin-left: 3px;
+  min-width: 15px;
+  padding: 0 3px;
   border-radius: 999px;
-  color: var(--ink-900);
-  background: var(--surface-muted);
+  background: rgb(20 44 54 / 14%);
   font-size: 10px;
   font-weight: 800;
-  line-height: 1.4;
+  vertical-align: 1px;
+}
+
+.v2-note-tab.is-active .v2-note-tab__badge {
+  background: rgb(255 255 255 / 26%);
 }
 
 .v2-form,
@@ -730,12 +820,8 @@ textarea:focus-visible {
   background: var(--accent-bg);
 }
 
-.v2-workspace-card,
-.v2-workspace-section {
-  margin: 16px 14px;
-}
-
 .v2-workspace-card {
+  margin: 16px 14px;
   padding: 14px;
 }
 
@@ -846,8 +932,7 @@ textarea:focus-visible {
 
 .v2-pmh-body,
 .v2-admission-body {
-  padding: 10px 12px;
-  border-top: 1px solid var(--border-subtle);
+  padding: 12px;
   background: var(--surface-muted);
 }
 
@@ -1022,15 +1107,17 @@ textarea:focus-visible {
 
 .v2-bundle-launcher__actions .v2-button {
   min-width: 0;
-  min-height: 54px;
-  padding: 7px;
+  min-height: 38px;
+  padding: 6px 8px;
+  font-size: 13px;
   white-space: normal;
 }
 
 .v2-bundle-launcher__actions .v2-button > span {
   display: inline-grid;
-  min-width: 20px;
-  min-height: 20px;
+  min-width: 18px;
+  min-height: 18px;
+  margin-left: 5px;
   place-items: center;
   border-radius: 999px;
   color: var(--surface);
@@ -1038,10 +1125,66 @@ textarea:focus-visible {
   font-size: 11px;
 }
 
-.v2-bundle-launcher__actions .is-active {
-  border-color: var(--positive-border);
-  color: var(--positive-text);
-  background: var(--positive-bg);
+/* Each launcher carries its own hue; adding the bundle (.is-active) fills it
+   with the saturated version of that same hue. */
+.v2-bundle-btn--lqq {
+  border-color: var(--brand-tint);
+  color: var(--brand-strong);
+  background: var(--brand-tint);
+}
+
+.v2-bundle-btn--infection {
+  border-color: var(--warning-border);
+  color: var(--warning-text);
+  background: var(--warning-bg);
+}
+
+.v2-bundle-btn--sys_dialysis {
+  border-color: var(--ros-tint-border);
+  color: var(--ros-tint-text);
+  background: var(--ros-tint);
+}
+
+.v2-bundle-btn--sys_orders {
+  border-color: var(--attention-border);
+  color: var(--warning-text);
+  background: var(--attention-bg);
+}
+
+.v2-bundle-btn--postop {
+  border-color: var(--bundle-postop);
+  color: #0f5b66;
+  background: #e2f1f3;
+}
+
+.v2-bundle-btn--chemo {
+  border-color: var(--accent-border);
+  color: var(--accent-text);
+  background: var(--accent-tint);
+}
+
+.v2-bundle-launcher__actions .v2-bundle-btn.is-active {
+  color: var(--surface);
+}
+
+.v2-bundle-btn--sys_dialysis.is-active {
+  border-color: var(--ros-strong);
+  background: var(--ros-strong);
+}
+
+.v2-bundle-btn--sys_orders.is-active {
+  border-color: var(--warning-text);
+  background: var(--warning-text);
+}
+
+.v2-bundle-btn--postop.is-active {
+  border-color: #0f5b66;
+  background: #0f5b66;
+}
+
+.v2-bundle-btn--chemo.is-active {
+  border-color: var(--accent-text);
+  background: var(--accent-text);
 }
 
 .v2-bundle-launcher__custom {
@@ -1108,14 +1251,6 @@ textarea:focus-visible {
   background: var(--surface-muted);
 }
 
-.v2-bundle-card__actions {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  gap: 8px;
-}
-
-.v2-bundle-card__actions label,
 .v2-bundle-field {
   display: grid;
   gap: 5px;
@@ -1127,27 +1262,29 @@ textarea:focus-visible {
   font-size: 12px;
 }
 
-.v2-bundle-card__actions label {
-  font-weight: 800;
-}
-
-.v2-bundle-card__actions .v2-button,
-.v2-bundle-card__remove .v2-button {
-  min-height: 34px;
-  padding: 4px 8px;
+/* "✕ 刪除" pinned to the top-left of every expanded bundle body. */
+.v2-bundle-card__delete {
+  justify-self: start;
+  min-height: 30px;
+  padding: 4px 11px;
+  border: 1px solid var(--danger-border);
+  border-radius: 999px;
   color: var(--danger-text);
+  background: var(--danger-bg);
   font-size: 11px;
+  font-weight: 700;
 }
 
-.v2-bundle-card__remove {
-  display: flex;
-  justify-content: flex-end;
+.v2-bundle-card__delete:hover,
+.v2-bundle-card__delete:focus-visible {
+  border-color: var(--danger-strong);
+  color: var(--surface);
+  background: var(--danger-strong);
 }
 
 .v2-bundle-field textarea,
 .v2-bundle-field select,
 .v2-bundle-field > input,
-.v2-bundle-card__actions textarea,
 .v2-bundle-date input {
   width: 100%;
   min-width: 0;
@@ -1159,8 +1296,7 @@ textarea:focus-visible {
   background: var(--surface);
 }
 
-.v2-bundle-field textarea,
-.v2-bundle-card__actions textarea {
+.v2-bundle-field textarea {
   resize: vertical;
 }
 
@@ -2412,6 +2548,22 @@ textarea:focus-visible {
     grid-template-columns: 1fr;
   }
 
+  .v2-note-tabs {
+    padding-inline: 8px;
+  }
+
+  .v2-note-tab {
+    padding: 6px 1px;
+    font-size: 11px;
+    letter-spacing: -0.03em;
+    white-space: normal;
+  }
+
+  .v2-note-tab__badge {
+    margin-left: 2px;
+    letter-spacing: 0;
+  }
+
   .v2-list-tools {
     grid-template-columns: minmax(0, 1fr) auto;
   }
@@ -2474,29 +2626,13 @@ textarea:focus-visible {
   font-size: 13px;
 }
 
-/* Shared card look. Also used, unmodified, by the Admission and PMH
-   accordion sections (see AdmissionHistory.tsx / PastMedicalHistory.tsx). */
+/* Shared card look for every ROS/PE/History expanded panel. */
 .v2-clinical-section {
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface);
   box-shadow: 0 5px 18px rgb(18 48 61 / 6%);
-}
-
-.v2-clinical-section__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-  min-height: 48px;
-  padding: 11px 14px;
-  border: 0;
-  color: var(--ink-900);
-  background: transparent;
-  font-weight: 800;
-  text-align: left;
 }
 
 .v2-section-note-button {
@@ -2546,6 +2682,10 @@ textarea:focus-visible {
   color: var(--pe-strong);
 }
 
+.v2-clinical--history h2 {
+  color: var(--brand-strong);
+}
+
 .v2-clinical-tabs {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -2588,6 +2728,12 @@ textarea:focus-visible {
   background: var(--pe-tint);
 }
 
+.v2-clinical-tab--history {
+  border-color: var(--brand-tint);
+  color: var(--brand-strong);
+  background: var(--brand-tint);
+}
+
 .v2-clinical-tab.is-focus {
   box-shadow: inset 0 0 0 2px var(--caution-border);
 }
@@ -2602,6 +2748,11 @@ textarea:focus-visible {
 .v2-clinical-tab--pe.is-active {
   border-color: var(--pe-strong);
   background: var(--pe-strong);
+}
+
+.v2-clinical-tab--history.is-active {
+  border-color: var(--brand);
+  background: var(--brand);
 }
 
 .v2-clinical-tab__badge {
@@ -2628,6 +2779,10 @@ textarea:focus-visible {
   border-color: var(--pe-strong);
 }
 
+.v2-clinical-panel--history {
+  border-color: var(--brand);
+}
+
 .v2-clinical-panel__header {
   display: flex;
   align-items: center;
@@ -2638,6 +2793,10 @@ textarea:focus-visible {
 
 .v2-clinical-panel--pe .v2-clinical-panel__header {
   background: var(--pe-tint);
+}
+
+.v2-clinical-panel--history .v2-clinical-panel__header {
+  background: var(--brand-tint);
 }
 
 .v2-clinical-panel__label {
@@ -2664,7 +2823,7 @@ textarea:focus-visible {
 }
 
 .v2-clinical-item {
-  padding: 11px 12px;
+  padding: 6px 10px;
   border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -2680,16 +2839,49 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
+}
+
+/* Per-item note: a pen toggle pinned to the item's left edge; the textarea
+   drops in below the row only once it is opened. */
+.v2-item-note-toggle {
+  flex: none;
+  align-self: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--ink-500);
+  background: var(--surface);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.v2-item-note-toggle[aria-pressed="true"],
+.v2-item-note-toggle.has-note {
+  border-color: var(--brand);
+  color: var(--brand);
+  background: var(--brand-tint);
+}
+
+.v2-item-note-text {
+  width: 100%;
+  margin-top: 5px;
+  padding: 7px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  resize: vertical;
 }
 
 .v2-clinical-label {
   display: grid;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
 .v2-clinical-label strong {
   font-size: 14px;
+  line-height: 1.3;
 }
 
 .v2-clinical-label small {
@@ -2761,28 +2953,12 @@ textarea:focus-visible {
 }
 
 .v2-follow-up select,
-.v2-follow-up textarea,
-.v2-item-note textarea {
+.v2-follow-up textarea {
   width: 100%;
   padding: 7px 8px;
   border: 1px solid var(--border);
   border-radius: 8px;
   resize: vertical;
-}
-
-.v2-item-note {
-  margin-top: 7px;
-  color: var(--ink-500);
-  font-size: 12px;
-}
-
-.v2-item-note summary {
-  cursor: pointer;
-  width: fit-content;
-}
-
-.v2-item-note textarea {
-  margin-top: 5px;
 }
 
 .v2-custom-pending {

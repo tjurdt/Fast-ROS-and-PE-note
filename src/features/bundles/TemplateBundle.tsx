@@ -223,11 +223,9 @@ export function TemplateBundle({
         {template.archived ? "（已封存範本）" : ""}
       </summary>
       <div className="v2-bundle-card__body">
-        <div className="v2-bundle-card__remove">
-          <Button onClick={onRemove} tone="ghost">
-            刪除組套
-          </Button>
-        </div>
+        <button className="v2-bundle-card__delete" onClick={onRemove} type="button">
+          ✕ 刪除
+        </button>
         {template.id === DNR_BUNDLE_ID ? (
           <p className="v2-dnr__hint">
             請依病人正式意願書、同意書、健保卡註記與醫囑核對；此處為查房提示。

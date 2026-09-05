@@ -249,7 +249,7 @@ describe("v2 app shell", () => {
     await user.type(screen.getByLabelText("病人代號 Patient code"), "AUTO-HD");
     await user.click(screen.getByRole("button", { name: "建立並開始" }));
     await user.click(screen.getByRole("button", { name: /^病史/ }));
-    await user.click(screen.getByRole("button", { name: /Past history 過去病史/ }));
+    await user.click(screen.getByRole("button", { name: "過去病史" }));
     await user.selectOptions(
       screen.getByLabelText("選擇常見過去病史"),
       "末期腎病／洗腎 ESRD",
