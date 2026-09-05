@@ -2435,8 +2435,7 @@ textarea:focus-visible {
 .v2-clinical-section__header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
   min-height: 48px;
   padding: 11px 14px;
@@ -2445,6 +2444,30 @@ textarea:focus-visible {
   background: transparent;
   font-weight: 800;
   text-align: left;
+}
+
+.v2-kind-tag {
+  flex: none;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.v2-kind-tag--ros {
+  color: var(--brand-strong);
+  background: var(--brand-tint);
+}
+
+.v2-kind-tag--pe {
+  color: var(--accent-text);
+  background: var(--accent-bg);
+}
+
+.v2-clinical-section__label {
+  flex: 1;
+  min-width: 0;
 }
 
 .v2-clinical-section__head {
@@ -2488,7 +2511,8 @@ textarea:focus-visible {
   resize: vertical;
 }
 
-.v2-clinical-section__header span:last-child {
+.v2-clinical-section__count {
+  flex: none;
   color: var(--ink-500);
   font-size: 12px;
   font-weight: 700;
