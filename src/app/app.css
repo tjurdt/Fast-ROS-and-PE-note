@@ -2515,8 +2515,8 @@ textarea:focus-visible {
   border-radius: 10px;
   color: var(--ros-tint-text);
   background: var(--ros-tint);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
   line-height: 1.35;
   text-align: center;
   overflow-wrap: anywhere;
@@ -2524,6 +2524,17 @@ textarea:focus-visible {
     background-color var(--transition-fast),
     border-color var(--transition-fast),
     color var(--transition-fast);
+}
+
+.v2-bilingual__zh {
+  display: block;
+  font-size: 1.15em;
+}
+
+.v2-bilingual__en {
+  display: block;
+  font-size: 0.8em;
+  font-weight: 500;
 }
 
 .v2-clinical-tab--pe {
