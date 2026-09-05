@@ -23,8 +23,29 @@ function splitBilingualLabel(label: string): { zh: string; en: string } {
   return { zh: match?.[1] ?? "", en: match?.[2] ?? label };
 }
 
-function BilingualLabel({ label }: { label: string }) {
-  const { zh, en } = splitBilingualLabel(label);
+/** Focus section labels ("★ Focus ROS（重點問診）") read English-first with a
+ * trailing Chinese annotation -- the opposite order of every other section
+ * label -- so the generic split above would put the star alone on its own
+ * large line and wrap "Focus ROS（重點問診）" as the small line. Building the
+ * two halves directly from section.kind keeps the same "large 中文 / small
+ * English" convention as every other tab instead. */
+function focusLabelParts(kind: "ROS" | "PE"): { zh: string; en: string } {
+  return {
+    zh: kind === "ROS" ? "重點問診" : "重點理學檢查",
+    en: `★ Focus ${kind}`,
+  };
+}
+
+function BilingualLabel({
+  label,
+  focusKind,
+}: {
+  label: string;
+  focusKind: "ROS" | "PE" | undefined;
+}) {
+  const { zh, en } = focusKind
+    ? focusLabelParts(focusKind)
+    : splitBilingualLabel(label);
   return (
     <>
       {zh ? (
@@ -74,7 +95,10 @@ function KindTabs({
                   {count}
                 </span>
               ) : null}
-              <BilingualLabel label={section.label} />
+              <BilingualLabel
+                focusKind={section.focus ? section.kind : undefined}
+                label={section.label}
+              />
             </button>
           );
         })}
@@ -139,7 +163,10 @@ export function ClinicalNote({
         >
           <div className="v2-clinical-panel__header">
             <span className="v2-clinical-panel__label">
-              <BilingualLabel label={activeSection.label} />
+              <BilingualLabel
+                focusKind={activeSection.focus ? activeSection.kind : undefined}
+                label={activeSection.label}
+              />
             </span>
             <button
               aria-label={`區塊備註：${activeSection.label}`}

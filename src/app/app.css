@@ -2500,16 +2500,14 @@ textarea:focus-visible {
 }
 
 .v2-clinical-tabs {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   gap: 8px;
 }
 
 .v2-clinical-tab {
   position: relative;
-  flex: 1 1 140px;
-  min-width: 108px;
-  max-width: 220px;
+  min-width: 0;
   padding: 9px 12px;
   border: 1px solid var(--ros-tint-border);
   border-radius: 10px;
@@ -2971,8 +2969,23 @@ textarea:focus-visible {
 }
 
 @media (max-width: 560px) {
+  .v2-clinical-tabs {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 6px;
+  }
+
   .v2-clinical-tab {
-    flex-basis: calc(50% - 4px);
+    padding: 6px 5px;
+    font-size: 11px;
+    line-height: 1.2;
+  }
+
+  .v2-clinical-kind {
+    gap: 5px;
+  }
+
+  .v2-clinical-kind__label {
+    font-size: 16px;
   }
 
   .v2-clinical-item__row {
