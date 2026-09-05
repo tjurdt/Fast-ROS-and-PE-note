@@ -15,6 +15,28 @@ interface ClinicalNoteProps {
   onBlockNoteChange: (sectionKey: string, note: string) => void;
 }
 
+/** Splits "中文 English" labels so the Chinese half can render larger than the
+ * English half. Falls back to treating the whole label as the English half
+ * when there is no bilingual space (e.g. a label with no English at all). */
+function splitBilingualLabel(label: string): { zh: string; en: string } {
+  const match = /^(.+?)\s+([A-Za-z].*)$/.exec(label);
+  return { zh: match?.[1] ?? "", en: match?.[2] ?? label };
+}
+
+function BilingualLabel({ label }: { label: string }) {
+  const { zh, en } = splitBilingualLabel(label);
+  return (
+    <>
+      {zh ? (
+        <>
+          <span className="v2-bilingual__zh">{zh}</span>{" "}
+        </>
+      ) : null}
+      <span className="v2-bilingual__en">{en}</span>
+    </>
+  );
+}
+
 function KindTabs({
   kind,
   sections,
@@ -52,7 +74,7 @@ function KindTabs({
                   {count}
                 </span>
               ) : null}
-              {section.label}
+              <BilingualLabel label={section.label} />
             </button>
           );
         })}
@@ -116,7 +138,9 @@ export function ClinicalNote({
           className={`v2-clinical-section v2-clinical-panel v2-clinical-panel--${activeSection.kind.toLowerCase()}`}
         >
           <div className="v2-clinical-panel__header">
-            <span className="v2-clinical-panel__label">{activeSection.label}</span>
+            <span className="v2-clinical-panel__label">
+              <BilingualLabel label={activeSection.label} />
+            </span>
             <button
               aria-label={`區塊備註：${activeSection.label}`}
               aria-pressed={isNoteOpen}
