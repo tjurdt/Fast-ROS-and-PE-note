@@ -97,11 +97,6 @@ export function PatientNote({
       </section>
 
       {children}
-
-      <section className="v2-card v2-parity-notice">
-        <strong>尚未切換正式入口</strong>
-        <p>Google OAuth 連線與正式病歷輸入仍會在 parity 測試保護下逐步遷入。</p>
-      </section>
     </main>
   );
 }

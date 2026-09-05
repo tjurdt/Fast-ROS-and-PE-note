@@ -20,7 +20,7 @@ test("v2 single-file shell creates and reloads a typed local patient", async ({
   await expect(page.getByLabel("病人代號")).toHaveValue("V2-TEST-01");
   const focusRos = page.locator('[data-clinical-section="focus_ros"]');
   await expect(focusRos).toContainText("Focus ROS");
-  await focusRos.locator(".v2-clinical-section__header").click();
+  await focusRos.click();
   await page.getByTestId("finding-control-cough").click();
   await expect(page.getByTestId("finding-total")).toContainText("1");
   await page.getByRole("button", { name: /病人清單/ }).click();
@@ -118,7 +118,7 @@ test("v2 neurological widgets match legacy state and survive reload", async ({
   await page.getByRole("button", { name: "建立並開始" }).click();
 
   const focusPe = page.locator('[data-clinical-section="focus_pe"]');
-  await focusPe.locator(".v2-clinical-section__header").click();
+  await focusPe.click();
 
   await page.getByTestId("finding-control-pe_cn").click();
   await page.getByTestId("finding-control-pe_cn").click();
@@ -150,9 +150,7 @@ test("v2 neurological widgets match legacy state and survive reload", async ({
   await page.reload();
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: /NEURO-V2/ }).click();
-  await page
-    .locator('[data-clinical-section="focus_pe"] .v2-clinical-section__header')
-    .click();
+  await page.locator('[data-clinical-section="focus_pe"]').click();
 
   await expect(page.getByTestId("cn-cell-cn1-anosmia_L")).toHaveAttribute(
     "aria-pressed",
@@ -215,6 +213,7 @@ test("v2 note workspace persists todo, history, ADL, and block notes", async ({
   await pmh.locator(".v2-clinical-section__header").click();
   await page.getByLabel("選擇常見過去病史").selectOption("高血壓 Hypertension");
 
+  await page.locator('[data-clinical-section="ros_const"]').click();
   await page.getByRole("button", { name: "區塊備註：一般全身 Constitutional" }).click();
   await page
     .getByLabel("區塊備註內容：一般全身 Constitutional")
@@ -1120,7 +1119,7 @@ test("v2 offers and imports legacy local data once, leaving the legacy record un
   await expect(page.getByRole("button", { name: /LEGACY-E2E/ })).toBeVisible();
 });
 
-test("v2 clinical sections lay out as a compact grid and expand in place, not to a new page", async ({
+test("v2 clinical section tabs switch a single panel in place, without navigating", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
@@ -1130,36 +1129,41 @@ test("v2 clinical sections lay out as a compact grid and expand in place, not to
 
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
-  await page.getByLabel("病人代號 Patient code").fill("GRID-TEST");
+  await page.getByLabel("病人代號 Patient code").fill("TAB-TEST");
   await page.getByRole("button", { name: "建立並開始" }).click();
 
   const constitutional = page.locator('[data-clinical-section="ros_const"]');
   const skin = page.locator('[data-clinical-section="ros_skin"]');
-  await expect(constitutional).toBeVisible();
-  await expect(skin).toBeVisible();
   const beforeUrl = page.url();
 
-  const [constitutionalBox, skinBox] = await Promise.all([
-    constitutional.boundingBox(),
-    skin.boundingBox(),
-  ]);
-  expect(constitutionalBox).not.toBeNull();
-  expect(skinBox).not.toBeNull();
-  // Two collapsed sections sit side by side in the same grid row.
-  expect(Math.abs((constitutionalBox?.y ?? 0) - (skinBox?.y ?? 0))).toBeLessThan(2);
-  expect(skinBox?.x ?? 0).toBeGreaterThan(constitutionalBox?.x ?? 0);
-
-  await constitutional.locator(".v2-clinical-section__header").click();
-  await page.getByTestId("finding-control-fever").click();
-
-  // Expanding stayed on the same page; the sibling section is still there.
-  expect(page.url()).toBe(beforeUrl);
+  // No panel is open yet: both tabs are visible, neither is "active".
+  await expect(constitutional).toBeVisible();
   await expect(skin).toBeVisible();
+  await expect(page.locator(".v2-clinical-panel")).toHaveCount(0);
+
+  await constitutional.click();
+  await expect(constitutional).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".v2-clinical-panel")).toHaveCount(1);
+  await expect(page.locator(".v2-clinical-panel__label")).toHaveText(
+    "一般全身 Constitutional",
+  );
+  await page.getByTestId("finding-control-fever").click();
+  expect(page.url()).toBe(beforeUrl);
   await expect(page.getByTestId("finding-total")).toContainText("1");
 
-  const expandedWidth = await constitutional.evaluate(
-    (el) => el.getBoundingClientRect().width,
-  );
-  const collapsedWidth = await skin.evaluate((el) => el.getBoundingClientRect().width);
-  expect(expandedWidth).toBeGreaterThan(collapsedWidth * 1.8);
+  // Switching to a different tab replaces the panel instead of opening a second one.
+  await skin.click();
+  await expect(constitutional).toHaveAttribute("aria-pressed", "false");
+  await expect(skin).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".v2-clinical-panel")).toHaveCount(1);
+  await expect(page.locator(".v2-clinical-panel__label")).toHaveText("皮膚 Skin");
+  // The finding made earlier is preserved even though its panel is closed.
+  await expect(page.getByTestId("finding-total")).toContainText("1");
+
+  // The count badge on the fever section's tab reflects the earlier finding.
+  await expect(constitutional.locator(".v2-clinical-tab__badge")).toHaveText("1");
+
+  await page.getByRole("button", { name: "關閉區塊" }).click();
+  await expect(page.locator(".v2-clinical-panel")).toHaveCount(0);
+  await expect(skin).toHaveAttribute("aria-pressed", "false");
 });
