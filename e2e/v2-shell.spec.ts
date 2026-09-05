@@ -1167,3 +1167,51 @@ test("v2 clinical section tabs switch a single panel in place, without navigatin
   await expect(page.locator(".v2-clinical-panel")).toHaveCount(0);
   await expect(skin).toHaveAttribute("aria-pressed", "false");
 });
+
+test("v2 clinical tabs stay compact on mobile and every tab in a row is the same height", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("http://127.0.0.1:4174/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload();
+
+  await page.getByTestId("choose-local-v2").click();
+  await page.getByRole("button", { name: "＋ 新增病人" }).click();
+  await page.getByLabel("病人代號 Patient code").fill("COMPACT-TEST");
+  await page.getByLabel("科別 Department").selectOption("cms");
+  await page.getByRole("button", { name: "建立並開始" }).click();
+
+  const rosHeading = page.getByRole("heading", { name: "ROS", exact: true });
+  const rosTabs = page.locator(".v2-clinical-kind--ros .v2-clinical-tabs");
+  const peTabs = page.locator(".v2-clinical-kind--pe .v2-clinical-tabs");
+  const [rosHeadingBox, rosTabsBox, peTabsBox] = await Promise.all([
+    rosHeading.boundingBox(),
+    rosTabs.boundingBox(),
+    peTabs.boundingBox(),
+  ]);
+  const totalTabAreaHeight =
+    (peTabsBox?.y ?? 0) + (peTabsBox?.height ?? 0) - (rosHeadingBox?.y ?? 0);
+  // The full ROS + PE tab bar (12 + 11 sections) must stay well under one
+  // mobile screen, not the "at least 1.5 screens" a flex-wrap layout gave.
+  expect(totalTabAreaHeight).toBeLessThan(500);
+
+  // A short trailing row (e.g. ROS's last row of 2) must not stretch to fill
+  // the row -- every tab in the grid is the same size, gaps stay empty.
+  const focusRosBox = await page
+    .locator('[data-clinical-section="focus_ros"]')
+    .boundingBox();
+  const constitutionalBox = await page
+    .locator('[data-clinical-section="ros_const"]')
+    .boundingBox();
+  expect(focusRosBox?.width).toBeCloseTo(constitutionalBox?.width ?? 0, 0);
+  expect(focusRosBox?.height).toBeCloseTo(constitutionalBox?.height ?? 0, 0);
+
+  const rosTabsHeight = rosTabsBox?.height ?? 0;
+  expect(rosTabsHeight).toBeGreaterThan(0);
+
+  const hasHorizontalOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > window.innerWidth + 1,
+  );
+  expect(hasHorizontalOverflow).toBe(false);
+});
