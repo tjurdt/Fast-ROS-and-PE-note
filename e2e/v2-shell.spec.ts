@@ -1119,3 +1119,47 @@ test("v2 offers and imports legacy local data once, leaving the legacy record un
   await expect(page.getByTestId("legacy-import-offer")).toHaveCount(0);
   await expect(page.getByRole("button", { name: /LEGACY-E2E/ })).toBeVisible();
 });
+
+test("v2 clinical sections lay out as a compact grid and expand in place, not to a new page", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("http://127.0.0.1:4174/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload();
+
+  await page.getByTestId("choose-local-v2").click();
+  await page.getByRole("button", { name: "＋ 新增病人" }).click();
+  await page.getByLabel("病人代號 Patient code").fill("GRID-TEST");
+  await page.getByRole("button", { name: "建立並開始" }).click();
+
+  const constitutional = page.locator('[data-clinical-section="ros_const"]');
+  const skin = page.locator('[data-clinical-section="ros_skin"]');
+  await expect(constitutional).toBeVisible();
+  await expect(skin).toBeVisible();
+  const beforeUrl = page.url();
+
+  const [constitutionalBox, skinBox] = await Promise.all([
+    constitutional.boundingBox(),
+    skin.boundingBox(),
+  ]);
+  expect(constitutionalBox).not.toBeNull();
+  expect(skinBox).not.toBeNull();
+  // Two collapsed sections sit side by side in the same grid row.
+  expect(Math.abs((constitutionalBox?.y ?? 0) - (skinBox?.y ?? 0))).toBeLessThan(2);
+  expect(skinBox?.x ?? 0).toBeGreaterThan(constitutionalBox?.x ?? 0);
+
+  await constitutional.locator(".v2-clinical-section__header").click();
+  await page.getByTestId("finding-control-fever").click();
+
+  // Expanding stayed on the same page; the sibling section is still there.
+  expect(page.url()).toBe(beforeUrl);
+  await expect(skin).toBeVisible();
+  await expect(page.getByTestId("finding-total")).toContainText("1");
+
+  const expandedWidth = await constitutional.evaluate(
+    (el) => el.getBoundingClientRect().width,
+  );
+  const collapsedWidth = await skin.evaluate((el) => el.getBoundingClientRect().width);
+  expect(expandedWidth).toBeGreaterThan(collapsedWidth * 1.8);
+});

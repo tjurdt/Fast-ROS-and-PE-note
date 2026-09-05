@@ -2399,6 +2399,12 @@ textarea:focus-visible {
   margin: 16px 14px;
 }
 
+.v2-clinical-sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
 .v2-clinical-summary {
   display: flex;
   align-items: center;
@@ -2430,6 +2436,10 @@ textarea:focus-visible {
 .v2-clinical-section.is-focus {
   border-color: var(--bundle-postop);
   background: var(--surface-muted);
+}
+
+.v2-clinical-section.is-expanded {
+  grid-column: 1 / -1;
 }
 
 .v2-clinical-section__header {
@@ -2468,6 +2478,7 @@ textarea:focus-visible {
 .v2-clinical-section__label {
   flex: 1;
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .v2-clinical-section__head {
@@ -2876,6 +2887,10 @@ textarea:focus-visible {
 }
 
 @media (max-width: 560px) {
+  .v2-clinical-sections {
+    grid-template-columns: 1fr;
+  }
+
   .v2-clinical-item__row {
     align-items: flex-start;
   }
