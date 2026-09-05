@@ -61,8 +61,16 @@ export function ClinicalNote({
                 }
                 type="button"
               >
-                <span>{section.label}</span>
-                <span>{count > 0 ? `${count} 項` : "展開"}</span>
+                <span
+                  aria-hidden="true"
+                  className={`v2-kind-tag v2-kind-tag--${section.kind.toLowerCase()}`}
+                >
+                  {section.kind}
+                </span>
+                <span className="v2-clinical-section__label">{section.label}</span>
+                <span className="v2-clinical-section__count">
+                  {count > 0 ? `${count} 項` : "展開"}
+                </span>
               </button>
               <button
                 aria-label={`區塊備註：${section.label}`}
