@@ -79,6 +79,7 @@ export function BundleWorkspace({
         </div>
         <div className="v2-bundle-launcher__actions">
           <Button
+            className="v2-bundle-btn v2-bundle-btn--lqq"
             data-testid="add-lqq"
             onClick={() =>
               onChange({
@@ -90,6 +91,7 @@ export function BundleWorkspace({
             {lqq.length > 0 ? <span>{lqq.length}</span> : null}
           </Button>
           <Button
+            className="v2-bundle-btn v2-bundle-btn--infection"
             data-testid="add-infection"
             onClick={() =>
               onChange({
@@ -110,7 +112,7 @@ export function BundleWorkspace({
             const active = customSets[template.id] !== undefined;
             return (
               <Button
-                className={active ? "is-active" : ""}
+                className={`v2-bundle-btn v2-bundle-btn--${template.id} ${active ? "is-active" : ""}`}
                 data-testid={`add-bundle-${template.id}`}
                 disabled={active}
                 key={template.id}
@@ -124,7 +126,7 @@ export function BundleWorkspace({
             );
           })}
           <Button
-            className={postop ? "is-active" : ""}
+            className={`v2-bundle-btn v2-bundle-btn--postop ${postop ? "is-active" : ""}`}
             data-testid="add-bundle-postop"
             disabled={postop !== null}
             onClick={() => onChange({ postop: createPostoperativeCare() })}
@@ -132,7 +134,7 @@ export function BundleWorkspace({
             術後照護{postop ? " ✓" : ""}
           </Button>
           <Button
-            className={chemo ? "is-active" : ""}
+            className={`v2-bundle-btn v2-bundle-btn--chemo ${chemo ? "is-active" : ""}`}
             data-testid="add-bundle-chemo"
             disabled={chemo !== null}
             onClick={() => onChange({ chemo: createChemotherapyFollowup() })}

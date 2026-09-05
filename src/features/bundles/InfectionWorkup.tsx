@@ -258,21 +258,19 @@ export function InfectionWorkup({
         感染／敗血症 Sepsis workup · {infection.name.trim() || `#${index + 1}`}
       </summary>
       <div className="v2-bundle-card__body">
-        <div className="v2-bundle-card__actions">
-          <label>
-            感染項目
-            <textarea
-              aria-label={`感染組套 ${index + 1} 名稱`}
-              placeholder="例：肺炎 Pneumonia"
-              rows={1}
-              value={infection.name}
-              onChange={(event) => onChange({ ...infection, name: event.target.value })}
-            />
-          </label>
-          <Button onClick={onRemove} tone="ghost">
-            刪除組套
-          </Button>
-        </div>
+        <button className="v2-bundle-card__delete" onClick={onRemove} type="button">
+          ✕ 刪除
+        </button>
+        <label className="v2-bundle-field">
+          <strong>感染項目</strong>
+          <textarea
+            aria-label={`感染組套 ${index + 1} 名稱`}
+            placeholder="例：肺炎 Pneumonia"
+            rows={1}
+            value={infection.name}
+            onChange={(event) => onChange({ ...infection, name: event.target.value })}
+          />
+        </label>
 
         <div className="v2-infection-grid">
           <div className="v2-infection-field">

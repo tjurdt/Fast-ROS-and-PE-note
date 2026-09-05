@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { hasFinding } from "../../domain/clinical/clinical-rules";
 import type {
   ClinicalItem as ClinicalItemDefinition,
@@ -74,6 +76,9 @@ function FollowUpControl({
 export function ClinicalItem({ item, finding, onChange }: ClinicalItemProps) {
   const positive = hasFinding(item, finding);
   const label = itemLabel(item);
+  const hasNote = Boolean(finding.note?.trim());
+  const [noteOpen, setNoteOpen] = useState<boolean | null>(null);
+  const showNote = noteOpen ?? hasNote;
   const followUps = item.type === "toggle" || item.type === "select" ? item.fu : null;
   const showFollowUps =
     followUps !== null &&
@@ -167,6 +172,15 @@ export function ClinicalItem({ item, finding, onChange }: ClinicalItemProps) {
       data-clinical-item={item.id}
     >
       <div className="v2-clinical-item__row">
+        <button
+          aria-label={`${label}備註`}
+          aria-pressed={showNote}
+          className={`v2-item-note-toggle ${hasNote ? "has-note" : ""}`}
+          onClick={() => setNoteOpen(!showNote)}
+          type="button"
+        >
+          ✎
+        </button>
         <div className="v2-clinical-label">
           <strong>
             {item.en || item.label}
@@ -196,15 +210,15 @@ export function ClinicalItem({ item, finding, onChange }: ClinicalItemProps) {
         />
       ) : null}
 
-      <details className="v2-item-note" open={Boolean(finding.note)}>
-        <summary>備註</summary>
+      {showNote ? (
         <textarea
           aria-label={`${label}備註`}
+          className="v2-item-note-text"
           rows={2}
           value={finding.note ?? ""}
           onChange={(event) => onChange({ ...finding, note: event.target.value })}
         />
-      </details>
+      ) : null}
     </article>
   );
 }

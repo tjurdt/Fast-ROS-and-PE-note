@@ -43,21 +43,19 @@ export function LqqBundle({ entry, index, onChange, onRemove }: LqqBundleProps) 
         症狀分析 LQQOPERA · {entry.name.trim() || `未命名 ${index + 1}`}
       </summary>
       <div className="v2-bundle-card__body">
-        <div className="v2-bundle-card__actions">
-          <label>
-            症狀名稱
-            <textarea
-              aria-label={`症狀分析 ${index + 1} 名稱`}
-              rows={1}
-              placeholder="例：胸痛 Chest pain"
-              value={entry.name}
-              onChange={(event) => setText("name", event.target.value)}
-            />
-          </label>
-          <Button onClick={onRemove} tone="ghost">
-            刪除
-          </Button>
-        </div>
+        <button className="v2-bundle-card__delete" onClick={onRemove} type="button">
+          ✕ 刪除
+        </button>
+        <label className="v2-bundle-field">
+          <span>症狀名稱</span>
+          <textarea
+            aria-label={`症狀分析 ${index + 1} 名稱`}
+            rows={1}
+            placeholder="例：胸痛 Chest pain"
+            value={entry.name}
+            onChange={(event) => setText("name", event.target.value)}
+          />
+        </label>
 
         {TEXT_FIELDS.slice(0, 1).map((field) => (
           <label className="v2-bundle-field" key={field.key}>

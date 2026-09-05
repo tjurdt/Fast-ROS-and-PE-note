@@ -208,11 +208,9 @@ export function ChemotherapyFollowup({
     <details className="v2-bundle-card v2-chemo" data-testid="bundle-chemo" open>
       <summary>組套 · 化療／標靶治療副作用</summary>
       <div className="v2-bundle-card__body">
-        <div className="v2-bundle-card__remove">
-          <Button onClick={onRemove} tone="ghost">
-            刪除組套
-          </Button>
-        </div>
+        <button className="v2-bundle-card__delete" onClick={onRemove} type="button">
+          ✕ 刪除
+        </button>
         <div className="v2-chemo-grid">
           <ChemoField
             fieldKey="regimen"

@@ -39,16 +39,15 @@ import type { UserBundleTemplate } from "../domain/bundle-templates";
 import { countFindingsByKind } from "../domain/clinical/clinical-rules";
 import { admissionFindingCount } from "../domain/note-workspace";
 import { AdditionalNotes } from "../features/additional-notes/AdditionalNotes";
-import { AdmissionHistory } from "../features/admission-history/AdmissionHistory";
 import { BundleWorkspace } from "../features/bundles/BundleWorkspace";
 import { BundleTemplateEditor } from "../features/bundle-template-editor/BundleTemplateEditor";
 import { ClinicalKindWorkspace } from "../features/clinical-note/ClinicalKindWorkspace";
 import { ClinicalExportPreview } from "../features/export-preview/ClinicalExportPreview";
+import { HistoryWorkspace } from "../features/history-workspace/HistoryWorkspace";
 import {
   LegacyImportBanner,
   type LegacyImportBannerState,
 } from "../features/legacy-import/LegacyImportBanner";
-import { PastMedicalHistory } from "../features/past-medical-history/PastMedicalHistory";
 import { PatientList } from "../features/patient-list/PatientList";
 import { PatientNote, type PatientNoteTab } from "../features/patient-note/PatientNote";
 import { StorageChoice } from "../features/storage-choice/StorageChoice";
@@ -442,19 +441,15 @@ export function App({
           badge:
             admissionFindingCount(activePatient.admission) + activePatient.pmh.length,
           content: (
-            <>
-              <AdmissionHistory
-                admission={activePatient.admission}
-                adl={activePatient.adl}
-                onAdmissionChange={(admission) => updateActiveWorkspace({ admission })}
-                onAdlChange={(adl) => updateActiveWorkspace({ adl })}
-              />
-              <PastMedicalHistory
-                createId={factory.createId}
-                entries={activePatient.pmh}
-                onChange={(pmh) => updateActiveWorkspace({ pmh })}
-              />
-            </>
+            <HistoryWorkspace
+              admission={activePatient.admission}
+              adl={activePatient.adl}
+              createId={factory.createId}
+              pmh={activePatient.pmh}
+              onAdlChange={(adl) => updateActiveWorkspace({ adl })}
+              onAdmissionChange={(admission) => updateActiveWorkspace({ admission })}
+              onPmhChange={(pmh) => updateActiveWorkspace({ pmh })}
+            />
           ),
         },
         {

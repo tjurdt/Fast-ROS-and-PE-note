@@ -314,11 +314,9 @@ export function PostoperativeCare({
     <details className="v2-bundle-card v2-postop" data-testid="bundle-postop" open>
       <summary>組套 · 外科術後照護 Postoperative care</summary>
       <div className="v2-bundle-card__body">
-        <div className="v2-bundle-card__remove">
-          <Button onClick={onRemove} tone="ghost">
-            刪除組套
-          </Button>
-        </div>
+        <button className="v2-bundle-card__delete" onClick={onRemove} type="button">
+          ✕ 刪除
+        </button>
         <div className="v2-postop-grid">
           <PostopField
             care={care}

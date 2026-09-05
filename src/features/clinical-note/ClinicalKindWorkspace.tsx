@@ -24,10 +24,17 @@ function splitBilingualLabel(label: string): { zh: string; en: string } {
  * English" convention as every other tab instead. */
 function focusLabelParts(kind: "ROS" | "PE"): { zh: string; en: string } {
   return {
-    zh: kind === "ROS" ? "重點問診" : "重點理學檢查",
+    zh: kind === "ROS" ? "重點問診" : "重點PE",
     en: `★ Focus ${kind}`,
   };
 }
+
+/** Presentation-only short labels for sections whose frozen-legacy catalog
+ * label is too long for the compact tile grid. The catalog data itself is
+ * left byte-for-byte matched to the legacy oracle (check:clinical-catalog). */
+const SHORT_SECTION_LABELS: Record<string, string> = {
+  pe_general: "外觀徵象 General",
+};
 
 function BilingualLabel({
   label,
@@ -115,9 +122,12 @@ export function ClinicalKindWorkspace({
 }: ClinicalKindWorkspaceProps) {
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [noteOpen, setNoteOpen] = useState<Record<string, boolean>>({});
-  const sections = buildClinicalView(patient).filter(
-    (section) => section.kind === kind && section.items.length > 0,
-  );
+  const sections = buildClinicalView(patient)
+    .filter((section) => section.kind === kind && section.items.length > 0)
+    .map((section) => {
+      const short = SHORT_SECTION_LABELS[section.key];
+      return short ? { ...section, label: short } : section;
+    });
   const total = sections.reduce(
     (sum, section) =>
       sum +
@@ -143,10 +153,7 @@ export function ClinicalKindWorkspace({
       aria-labelledby={`v2-clinical-title-${kind.toLowerCase()}`}
     >
       <div className="v2-clinical-summary">
-        <div>
-          <span className="v2-eyebrow">Typed clinical catalog</span>
-          <h2 id={`v2-clinical-title-${kind.toLowerCase()}`}>{kind}</h2>
-        </div>
+        <h2 id={`v2-clinical-title-${kind.toLowerCase()}`}>{kind}</h2>
         <strong data-testid="finding-total">陽性／異常 {total}</strong>
       </div>
 
