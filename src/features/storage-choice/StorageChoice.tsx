@@ -22,9 +22,9 @@ export function StorageChoice({
   return (
     <main className="v2-gate" aria-labelledby="v2-title">
       <section className="v2-card v2-gate__card">
-        <span className="v2-eyebrow">PE Note v2 · parity development build</span>
+        <span className="v2-eyebrow">PE Note</span>
         <h1 id="v2-title">查房快速紀錄</h1>
-        <p>新版架構驗證中。正式入口仍使用既有版本。</p>
+        <p>可離線使用的單檔查房筆記。選擇儲存方式開始。</p>
 
         <div className="v2-storage-grid">
           <Button
