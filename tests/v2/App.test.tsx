@@ -162,6 +162,7 @@ describe("v2 app shell", () => {
     await user.clear(screen.getByLabelText("主要問題"));
     await user.type(screen.getByLabelText("主要問題"), "Improving pneumonia");
 
+    await user.click(screen.getByRole("button", { name: "ROS" }));
     await user.click(screen.getByRole("button", { name: /^一般全身 Constitutional/ }));
     await user.click(screen.getByTestId("finding-control-fever"));
     expect(screen.getByTestId("finding-total").textContent).toContain("1");
@@ -247,12 +248,14 @@ describe("v2 app shell", () => {
     await user.click(await screen.findByRole("button", { name: "＋ 新增病人" }));
     await user.type(screen.getByLabelText("病人代號 Patient code"), "AUTO-HD");
     await user.click(screen.getByRole("button", { name: "建立並開始" }));
+    await user.click(screen.getByRole("button", { name: /^病史/ }));
     await user.click(screen.getByRole("button", { name: /Past history 過去病史/ }));
     await user.selectOptions(
       screen.getByLabelText("選擇常見過去病史"),
       "末期腎病／洗腎 ESRD",
     );
 
+    await user.click(screen.getByRole("button", { name: /^組套/ }));
     expect(await screen.findByTestId("bundle-sys_dialysis")).toBeTruthy();
     await waitFor(() =>
       expect(repository.database.patients[0]?.autoTriggered.sys_dialysis).toBe(true),

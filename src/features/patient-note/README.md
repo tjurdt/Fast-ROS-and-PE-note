@@ -2,14 +2,15 @@
 
 ## Intent
 
-提供 v2 病人基本資料的可編輯筆記外殼，證明 typed domain → application workflow → repository → React UI 的完整資料流。
+提供 v2 病人筆記的頂層分頁外殼：固定的「基本資料」分頁（本元件自建，直接編輯 `Patient` 欄位）之後，接上呼叫端（App）傳入的 `tabs`（病史／ROS／PE／組套／待辦與備註），一次只顯示一個分頁的內容，切換分頁不離開頁面、不牽動網址。每個分頁按鈕可選擇顯示一個數字徽章。
 
 ## Non-goals
 
-- 本元件只處理病人基本資料與版面容器；ROS/PE 由 App 組合 `clinical-note` feature。
-- 匯出、同步狀態與 Google 帳號生命週期由 App 組合獨立 feature；未達完整 parity 前不取代正式入口。
+- 本元件不決定各分頁裡面放什麼內容、不知道 Admission、PMH、ROS/PE、組套、待辦的實作細節——只負責分頁列本身與「目前選的是哪一個」狀態，內容由 `tabs[].content` 傳入。
+- 徽章數字的計算（陽性數、待辦數…）由 App 組合時算好傳入，本元件只負責顯示。
+- 匯出、同步狀態與 Google 帳號生命週期由 App 組合獨立 feature；同步狀態列固定顯示在分頁列上方，不屬於任何一個分頁。
 - 元件不直接呼叫 repository，也不直接 import 其他 feature。
 
 ## Data and integration
 
-接收單一 `Patient`，每次欄位變更回傳 typed patch。App 層負責序列化儲存順序與錯誤呈現。
+接收單一 `Patient`，基本資料分頁每次欄位變更回傳 typed patch。分頁切換是元件內部 UI 狀態，重新選擇病人或重新整理後會重置回「基本資料」，不持久化。App 層負責序列化儲存順序與錯誤呈現。

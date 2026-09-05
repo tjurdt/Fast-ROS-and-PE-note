@@ -2,18 +2,11 @@ import { useState } from "react";
 
 import {
   buildClinicalView,
-  countFindings,
   hasFinding,
   type ClinicalViewSection,
 } from "../../domain/clinical/clinical-rules";
 import type { FindingValue, Patient } from "../../domain/patient";
 import { ClinicalItem } from "./ClinicalItem";
-
-interface ClinicalNoteProps {
-  patient: Patient;
-  onFindingChange: (itemId: string, finding: FindingValue) => void;
-  onBlockNoteChange: (sectionKey: string, note: string) => void;
-}
 
 /** Splits "中文 English" labels so the Chinese half can render larger than the
  * English half. Falls back to treating the whole label as the English half
@@ -71,55 +64,67 @@ function KindTabs({
   activeKey: string | null;
   onSelect: (key: string) => void;
 }) {
-  if (sections.length === 0) return null;
   return (
-    <div className={`v2-clinical-kind v2-clinical-kind--${kind.toLowerCase()}`}>
-      <h3 className="v2-clinical-kind__label">{kind}</h3>
-      <div className="v2-clinical-tabs">
-        {sections.map((section) => {
-          const count = section.items.filter((item) =>
-            hasFinding(item, patient.findings[item.id]),
-          ).length;
-          const isActive = activeKey === section.key;
-          return (
-            <button
-              aria-pressed={isActive}
-              className={`v2-clinical-tab v2-clinical-tab--${kind.toLowerCase()} ${isActive ? "is-active" : ""} ${section.focus ? "is-focus" : ""}`}
-              data-clinical-section={section.key}
-              key={section.key}
-              onClick={() => onSelect(section.key)}
-              type="button"
-            >
-              {count > 0 ? (
-                <span aria-hidden="true" className="v2-clinical-tab__badge">
-                  {count}
-                </span>
-              ) : null}
-              <BilingualLabel
-                focusKind={section.focus ? section.kind : undefined}
-                label={section.label}
-              />
-            </button>
-          );
-        })}
-      </div>
+    <div className="v2-clinical-tabs">
+      {sections.map((section) => {
+        const count = section.items.filter((item) =>
+          hasFinding(item, patient.findings[item.id]),
+        ).length;
+        const isActive = activeKey === section.key;
+        return (
+          <button
+            aria-pressed={isActive}
+            className={`v2-clinical-tab v2-clinical-tab--${kind.toLowerCase()} ${isActive ? "is-active" : ""} ${section.focus ? "is-focus" : ""}`}
+            data-clinical-section={section.key}
+            key={section.key}
+            onClick={() => onSelect(section.key)}
+            type="button"
+          >
+            {count > 0 ? (
+              <span aria-hidden="true" className="v2-clinical-tab__badge">
+                {count}
+              </span>
+            ) : null}
+            <BilingualLabel
+              focusKind={section.focus ? section.kind : undefined}
+              label={section.label}
+            />
+          </button>
+        );
+      })}
     </div>
   );
 }
 
-export function ClinicalNote({
+interface ClinicalKindWorkspaceProps {
+  kind: "ROS" | "PE";
+  patient: Patient;
+  onFindingChange: (itemId: string, finding: FindingValue) => void;
+  onBlockNoteChange: (sectionKey: string, note: string) => void;
+}
+
+/** One kind's (ROS or PE) row of section tabs plus the single panel below
+ * them that shows whichever tab is active. Each kind gets its own instance
+ * of this component (see App.tsx), so ROS and PE keep independent "which
+ * section is open" state rather than sharing one across both. */
+export function ClinicalKindWorkspace({
+  kind,
   patient,
   onFindingChange,
   onBlockNoteChange,
-}: ClinicalNoteProps) {
+}: ClinicalKindWorkspaceProps) {
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [noteOpen, setNoteOpen] = useState<Record<string, boolean>>({});
   const sections = buildClinicalView(patient).filter(
-    (section) => section.items.length > 0,
+    (section) => section.kind === kind && section.items.length > 0,
   );
-  const rosSections = sections.filter((section) => section.kind === "ROS");
-  const peSections = sections.filter((section) => section.kind === "PE");
-  const total = countFindings(patient);
+  const total = sections.reduce(
+    (sum, section) =>
+      sum +
+      section.items.filter((item) => hasFinding(item, patient.findings[item.id]))
+        .length,
+    0,
+  );
   const activeSection = sections.find((section) => section.key === activeKey) ?? null;
   const activeBlockNote = activeSection
     ? (patient.blockNotes[activeSection.key] ?? "")
@@ -133,33 +138,29 @@ export function ClinicalNote({
   }
 
   return (
-    <section className="v2-clinical" aria-labelledby="v2-clinical-title">
+    <section
+      className={`v2-clinical v2-clinical--${kind.toLowerCase()}`}
+      aria-labelledby={`v2-clinical-title-${kind.toLowerCase()}`}
+    >
       <div className="v2-clinical-summary">
         <div>
           <span className="v2-eyebrow">Typed clinical catalog</span>
-          <h2 id="v2-clinical-title">ROS / PE</h2>
+          <h2 id={`v2-clinical-title-${kind.toLowerCase()}`}>{kind}</h2>
         </div>
         <strong data-testid="finding-total">陽性／異常 {total}</strong>
       </div>
 
       <KindTabs
         activeKey={activeKey}
-        kind="ROS"
+        kind={kind}
         onSelect={selectSection}
         patient={patient}
-        sections={rosSections}
-      />
-      <KindTabs
-        activeKey={activeKey}
-        kind="PE"
-        onSelect={selectSection}
-        patient={patient}
-        sections={peSections}
+        sections={sections}
       />
 
       {activeSection ? (
         <section
-          className={`v2-clinical-section v2-clinical-panel v2-clinical-panel--${activeSection.kind.toLowerCase()}`}
+          className={`v2-clinical-section v2-clinical-panel v2-clinical-panel--${kind.toLowerCase()}`}
         >
           <div className="v2-clinical-panel__header">
             <span className="v2-clinical-panel__label">

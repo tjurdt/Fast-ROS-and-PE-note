@@ -18,6 +18,7 @@ test("v2 single-file shell creates and reloads a typed local patient", async ({
   await page.getByRole("button", { name: "建立並開始" }).click();
 
   await expect(page.getByLabel("病人代號")).toHaveValue("V2-TEST-01");
+  await page.getByRole("button", { name: "ROS" }).click();
   const focusRos = page.locator('[data-clinical-section="focus_ros"]');
   await expect(focusRos).toContainText("Focus ROS");
   await focusRos.click();
@@ -117,6 +118,7 @@ test("v2 neurological widgets match legacy state and survive reload", async ({
   await page.getByLabel("科別 Department").selectOption("neuro");
   await page.getByRole("button", { name: "建立並開始" }).click();
 
+  await page.getByRole("button", { name: "PE", exact: true }).click();
   const focusPe = page.locator('[data-clinical-section="focus_pe"]');
   await focusPe.click();
 
@@ -150,6 +152,7 @@ test("v2 neurological widgets match legacy state and survive reload", async ({
   await page.reload();
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: /NEURO-V2/ }).click();
+  await page.getByRole("button", { name: "PE", exact: true }).click();
   await page.locator('[data-clinical-section="focus_pe"]').click();
 
   await expect(page.getByTestId("cn-cell-cn1-anosmia_L")).toHaveAttribute(
@@ -190,6 +193,7 @@ test("v2 note workspace persists todo, history, ADL, and block notes", async ({
   await page.getByLabel("病人代號 Patient code").fill("WORKSPACE-V2");
   await page.getByRole("button", { name: "建立並開始" }).click();
 
+  await page.getByRole("button", { name: /^待辦與備註/ }).click();
   const todoRegion = page.getByRole("region", { name: "待辦事項" });
   await todoRegion.getByRole("button", { name: "＋ 新增" }).click();
   await page.getByLabel("待辦內容").fill("追蹤血液培養");
@@ -197,6 +201,7 @@ test("v2 note workspace persists todo, history, ADL, and block notes", async ({
   await page.getByRole("button", { name: "追蹤血液培養：完成" }).click();
   await page.getByLabel("其他備註 Additional notes").fill("家屬已知情");
 
+  await page.getByRole("button", { name: /^病史/ }).click();
   const admission = page.getByTestId("admission-section");
   await admission.locator(".v2-clinical-section__header").click();
   await admission.getByRole("button", { name: "菸 Smoking" }).click();
@@ -213,6 +218,7 @@ test("v2 note workspace persists todo, history, ADL, and block notes", async ({
   await pmh.locator(".v2-clinical-section__header").click();
   await page.getByLabel("選擇常見過去病史").selectOption("高血壓 Hypertension");
 
+  await page.getByRole("button", { name: "ROS" }).click();
   await page.locator('[data-clinical-section="ros_const"]').click();
   await page.getByRole("button", { name: "區塊備註：一般全身 Constitutional" }).click();
   await page
@@ -233,12 +239,14 @@ test("v2 note workspace persists todo, history, ADL, and block notes", async ({
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: /WORKSPACE-V2/ }).click();
 
+  await page.getByRole("button", { name: /^待辦與備註/ }).click();
   await expect(page.getByLabel("待辦內容")).toHaveValue("追蹤血液培養");
   await expect(
     page.getByRole("button", { name: "追蹤血液培養：完成" }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByLabel("其他備註 Additional notes")).toHaveValue("家屬已知情");
 
+  await page.getByRole("button", { name: /^病史/ }).click();
   await page
     .getByTestId("admission-section")
     .locator(".v2-clinical-section__header")
@@ -251,6 +259,8 @@ test("v2 note workspace persists todo, history, ADL, and block notes", async ({
   await expect(
     page.getByRole("textbox", { name: "過去病史 1", exact: true }),
   ).toHaveValue("高血壓 Hypertension");
+
+  await page.getByRole("button", { name: "ROS" }).click();
   await page.getByRole("button", { name: /^一般全身 Constitutional/ }).click();
   await expect(page.getByLabel("區塊備註內容：一般全身 Constitutional")).toHaveValue(
     "感染症狀區塊備註",
@@ -286,6 +296,7 @@ test("v2 LQQOPERA, dialysis, and DNR bundles persist and reload", async ({ page 
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
   await page.getByLabel("病人代號 Patient code").fill("BUNDLES-V2");
   await page.getByRole("button", { name: "建立並開始" }).click();
+  await page.getByRole("button", { name: /^組套/ }).click();
 
   await page.getByTestId("add-lqq").click();
   await page.getByLabel("症狀分析 1 名稱").fill("胸痛 Chest pain");
@@ -320,6 +331,7 @@ test("v2 LQQOPERA, dialysis, and DNR bundles persist and reload", async ({ page 
   await page.reload();
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: /BUNDLES-V2/ }).click();
+  await page.getByRole("button", { name: /^組套/ }).click();
 
   await expect(page.getByLabel("症狀分析 1 名稱")).toHaveValue("胸痛 Chest pain");
   await expect(page.getByRole("button", { name: "壓迫 pressure" })).toHaveAttribute(
@@ -371,6 +383,7 @@ test("v2 postoperative care preserves POD, multi-findings, and repeatable drains
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
   await page.getByLabel("病人代號 Patient code").fill("POSTOP-V2");
   await page.getByRole("button", { name: "建立並開始" }).click();
+  await page.getByRole("button", { name: /^組套/ }).click();
   await page.getByTestId("add-bundle-postop").click();
 
   const today = await page.evaluate(() => {
@@ -421,6 +434,7 @@ test("v2 postoperative care preserves POD, multi-findings, and repeatable drains
   await page.reload();
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: /POSTOP-V2/ }).click();
+  await page.getByRole("button", { name: /^組套/ }).click();
 
   await expect(page.getByLabel("術後照護 手術", { exact: true })).toHaveValue(
     "Laparoscopic colectomy",
@@ -478,6 +492,7 @@ test("v2 infection workups score risk and persist repeatable antibiotics", async
   await page.getByLabel("病人代號 Patient code").fill("INFECTION-V2");
   await page.getByLabel("年齡 Age").fill("70");
   await page.getByRole("button", { name: "建立並開始" }).click();
+  await page.getByRole("button", { name: /^組套/ }).click();
   await page.getByTestId("add-infection").click();
 
   const infection = page.getByTestId("infection-1");
@@ -554,6 +569,7 @@ test("v2 infection workups score risk and persist repeatable antibiotics", async
   await page.reload();
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: /INFECTION-V2/ }).click();
+  await page.getByRole("button", { name: /^組套/ }).click();
 
   await expect(page.getByTestId("add-infection")).toContainText("2");
   const reloaded = page.getByTestId("infection-1");
@@ -607,6 +623,7 @@ test("v2 chemotherapy follow-up preserves safety states and the limb matrix", as
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
   await page.getByLabel("病人代號 Patient code").fill("CHEMO-V2");
   await page.getByRole("button", { name: "建立並開始" }).click();
+  await page.getByRole("button", { name: /^組套/ }).click();
   await page.getByTestId("add-bundle-chemo").click();
 
   const chemo = page.getByTestId("bundle-chemo");
@@ -684,6 +701,7 @@ test("v2 chemotherapy follow-up preserves safety states and the limb matrix", as
   await page.reload();
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: /CHEMO-V2/ }).click();
+  await page.getByRole("button", { name: /^組套/ }).click();
 
   const reloaded = page.getByTestId("bundle-chemo");
   await expect(reloaded.getByLabel("化療副作用 療程", { exact: true })).toHaveValue(
@@ -744,6 +762,7 @@ test("v2 custom bundle templates retain stable patient values through edits and 
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
   await page.getByLabel("病人代號 Patient code").fill("CUSTOM-BUNDLE-V2");
   await page.getByRole("button", { name: "建立並開始" }).click();
+  await page.getByRole("button", { name: /^組套/ }).click();
 
   await page.getByTestId("manage-bundle-templates").click();
   await page.getByTestId("create-bundle-template").click();
@@ -792,6 +811,7 @@ test("v2 custom bundle templates retain stable patient values through edits and 
   await page.reload();
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: /CUSTOM-BUNDLE-V2/ }).click();
+  await page.getByRole("button", { name: /^組套/ }).click();
 
   const reloaded = page.getByTestId(`bundle-${templateId}`);
   await expect(reloaded.getByRole("button", { name: "(+) 是" })).toHaveAttribute(
@@ -877,9 +897,11 @@ test("v2 clinical summary previews, copies, downloads, and prints without changi
   await page.getByLabel("主要問題").fill("Pneumonia follow-up");
   await page.getByRole("button", { name: "建立並開始" }).click();
 
+  await page.getByRole("button", { name: "ROS" }).click();
   await page.getByRole("button", { name: /^一般全身 Constitutional/ }).click();
   await page.getByTestId("finding-control-fever").click();
   await page.getByLabel("體溫/描述").fill("38.5°C");
+  await page.getByRole("button", { name: /^待辦與備註/ }).click();
   await page.getByLabel("其他備註 Additional notes").fill("家屬已知情");
 
   const storedBefore = await page.evaluate(() =>
@@ -1131,6 +1153,7 @@ test("v2 clinical section tabs switch a single panel in place, without navigatin
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
   await page.getByLabel("病人代號 Patient code").fill("TAB-TEST");
   await page.getByRole("button", { name: "建立並開始" }).click();
+  await page.getByRole("button", { name: "ROS" }).click();
 
   const constitutional = page.locator('[data-clinical-section="ros_const"]');
   const skin = page.locator('[data-clinical-section="ros_skin"]');
@@ -1182,19 +1205,21 @@ test("v2 clinical tabs stay compact on mobile and every tab in a row is the same
   await page.getByLabel("科別 Department").selectOption("cms");
   await page.getByRole("button", { name: "建立並開始" }).click();
 
+  // ROS and PE are now separate top-level tabs (never on screen together),
+  // so each kind's own tab bar must independently stay compact.
+  await page.getByRole("button", { name: "ROS" }).click();
   const rosHeading = page.getByRole("heading", { name: "ROS", exact: true });
-  const rosTabs = page.locator(".v2-clinical-kind--ros .v2-clinical-tabs");
-  const peTabs = page.locator(".v2-clinical-kind--pe .v2-clinical-tabs");
-  const [rosHeadingBox, rosTabsBox, peTabsBox] = await Promise.all([
+  const rosTabs = page.locator(".v2-clinical-tabs");
+  const [rosHeadingBox, rosTabsBox] = await Promise.all([
     rosHeading.boundingBox(),
     rosTabs.boundingBox(),
-    peTabs.boundingBox(),
   ]);
-  const totalTabAreaHeight =
-    (peTabsBox?.y ?? 0) + (peTabsBox?.height ?? 0) - (rosHeadingBox?.y ?? 0);
-  // The full ROS + PE tab bar (12 + 11 sections) must stay well under one
-  // mobile screen, not the "at least 1.5 screens" a flex-wrap layout gave.
-  expect(totalTabAreaHeight).toBeLessThan(500);
+  const rosTabAreaHeight =
+    (rosTabsBox?.y ?? 0) + (rosTabsBox?.height ?? 0) - (rosHeadingBox?.y ?? 0);
+  // ROS alone (12 sections) must stay well under one mobile screen, not the
+  // "at least 1.5 screens" a flex-wrap layout gave the combined ROS+PE bar.
+  expect(rosTabAreaHeight).toBeLessThan(300);
+  expect(rosTabsBox?.height ?? 0).toBeGreaterThan(0);
 
   // A short trailing row (e.g. ROS's last row of 2) must not stretch to fill
   // the row -- every tab in the grid is the same size, gaps stay empty.
@@ -1207,8 +1232,16 @@ test("v2 clinical tabs stay compact on mobile and every tab in a row is the same
   expect(focusRosBox?.width).toBeCloseTo(constitutionalBox?.width ?? 0, 0);
   expect(focusRosBox?.height).toBeCloseTo(constitutionalBox?.height ?? 0, 0);
 
-  const rosTabsHeight = rosTabsBox?.height ?? 0;
-  expect(rosTabsHeight).toBeGreaterThan(0);
+  await page.getByRole("button", { name: "PE", exact: true }).click();
+  const peHeading = page.getByRole("heading", { name: "PE", exact: true });
+  const peTabs = page.locator(".v2-clinical-tabs");
+  const [peHeadingBox, peTabsBox] = await Promise.all([
+    peHeading.boundingBox(),
+    peTabs.boundingBox(),
+  ]);
+  const peTabAreaHeight =
+    (peTabsBox?.y ?? 0) + (peTabsBox?.height ?? 0) - (peHeadingBox?.y ?? 0);
+  expect(peTabAreaHeight).toBeLessThan(300);
 
   const hasHorizontalOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > window.innerWidth + 1,

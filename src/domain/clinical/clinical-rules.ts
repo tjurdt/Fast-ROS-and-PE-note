@@ -145,3 +145,19 @@ export function countFindings(patient: Patient): number {
   }
   return count;
 }
+
+/** Same as countFindings, scoped to just the ROS or just the PE sections --
+ * used for the per-kind badge on the patient note's top-level ROS/PE tabs. */
+export function countFindingsByKind(patient: Patient, kind: "ROS" | "PE"): number {
+  const seen = new Set<string>();
+  let count = 0;
+  for (const section of buildClinicalView(patient)) {
+    if (section.kind !== kind) continue;
+    for (const item of section.items) {
+      if (seen.has(item.id)) continue;
+      seen.add(item.id);
+      if (hasFinding(item, patient.findings[item.id])) count += 1;
+    }
+  }
+  return count;
+}
