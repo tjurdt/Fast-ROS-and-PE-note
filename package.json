@@ -39,29 +39,29 @@
     "verify": "npm run check:legacy && npm run check:clinical-catalog && npm run check:architecture && npm run check:v2-boundaries && npm run check:v2-parity && npm run check:syntax && npm run typecheck && npm run lint && npm run format:check && npm run build:v2 && npm run check:generated && npm run check:v2-artifact && npm run build:legacy && npm test && npm run test:e2e"
   },
   "devDependencies": {
-    "@playwright/test": "^1.62.1",
+    "@playwright/test": "^1.63.0",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
-    "@types/node": "^24.13.3",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.5",
+    "@types/node": "^26.6.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
-    "eslint": "^10.9.1",
+    "eslint": "^10.11.0",
     "globals": "^17.12.0",
     "husky": "^9.1.7",
-    "jsdom": "^30.0.1",
-    "lint-staged": "^17.4.1",
-    "prettier": "^3.9.6",
-    "typescript": "^6.0.3",
-    "typescript-eslint": "^8.69.0",
-    "vite": "^8.2.2",
+    "jsdom": "^30.1.0",
+    "lint-staged": "^17.5.1",
+    "prettier": "^3.9.8",
+    "typescript": "^7.0.2",
+    "typescript-eslint": "^8.70.0",
+    "vite": "^8.3.0",
     "vite-plugin-singlefile": "^2.3.3",
-    "vitest": "^4.1.11"
+    "vitest": "^5.0.1"
   },
   "dependencies": {
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "zod": "^4.5.4"
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "zod": "^4.6.5"
   },
   "lint-staged": {
     "*.{ts,tsx,mjs,js}": [
