@@ -27,8 +27,7 @@ export type OrderTier = "core" | "plus" | "ask";
 
 const TIER_RANK: Readonly<Record<OrderTier, number>> = { core: 3, plus: 2, ask: 1 };
 
-/** 規則可引用的「虛擬項目」，在最後一步依情境換成實際項目。 */
-type PseudoId = "trop" | "cxr";
+// 規則可引用「trop」「cxr」兩個虛擬項目，在 resolvePseudo 依情境換成實際項目。
 
 interface Rule {
   id: string;
@@ -51,6 +50,16 @@ interface Ctx {
   cardiacRisk: boolean;
   /** 免疫低下或重大共病（感染風險高）。 */
   vulnerable: boolean;
+  /** 未成年（< 18 歲）：CT 一律改為需討論。 */
+  child: boolean;
+  /** 有心血管相關病史（不含年齡）。 */
+  cardiacHistory: boolean;
+  /** 發燒但沒有咳嗽／喉嚨痛／流鼻水等明顯上呼吸道病灶。 */
+  noUriFocus: boolean;
+  /** 頭暈的危險因子：年長、血管風險病史或神經症狀。 */
+  dizzyRisk: boolean;
+  /** 頭痛紅旗：雷擊樣、頸僵硬、神經症狀、意識改變、抽搐、抗凝血、年長。 */
+  headacheRedFlag: boolean;
   yes: (id: string) => boolean;
   sel: (id: string) => string;
   text: (id: string) => string;
@@ -81,20 +90,40 @@ function buildContext(findings: EdFindings, patient: EdPatientContext): Ctx {
     "ckd",
     "esrd",
   ];
+  const yes = (id: string) => findings[edKey.history(id)]?.on === true;
+  const older = age !== null && age >= 65;
+  const hasCardiacHistory = cardiacHistory.some((id) => pmh.has(id));
   return {
     problems,
     pmh,
     age,
+    child: age !== null && age < 18,
+    cardiacHistory: hasCardiacHistory,
+    noUriFocus: !(yes("cough") || yes("sore_throat") || yes("rhinorrhea")),
+    dizzyRisk:
+      older ||
+      ["htn", "dm", "af", "stroke", "cad"].some((id) => pmh.has(id)) ||
+      yes("weak_focal") ||
+      yes("gait") ||
+      yes("vision") ||
+      yes("headache"),
+    headacheRedFlag:
+      older ||
+      yes("headache_worst") ||
+      yes("neck_stiff_h") ||
+      yes("weak_focal") ||
+      yes("confusion") ||
+      yes("seizure") ||
+      yes("anticoag"),
     female: patient.sex === "女 F",
     fertile: isFertilePatient(patient),
-    older: age !== null && age >= 65,
+    older,
     midlife: age !== null && age >= 50,
-    cardiacRisk:
-      (age !== null && age >= 50) || cardiacHistory.some((id) => pmh.has(id)),
+    cardiacRisk: (age !== null && age >= 50) || hasCardiacHistory,
     vulnerable: ["cancer", "immuno", "ckd", "esrd", "cirrhosis", "dm"].some((id) =>
       pmh.has(id),
     ),
-    yes: (id) => findings[edKey.history(id)]?.on === true,
+    yes,
     sel: (id) => findings[edKey.history(id)]?.sel ?? "",
     text: (id) => (findings[edKey.history(id)]?.text ?? "").trim(),
   };
@@ -113,81 +142,78 @@ const basic = (why: string, tier: OrderTier = "core"): Rule[] => [
 ];
 
 // ───────────── 各問題的規則 ─────────────
+//
+// 第一輪原則（使用者指定，依北榮急診 PGY 口袋書「抽血提醒」與各主訴章節）：
+//   - 不預設開：血液培養（B/C）、各種培養、床邊超音波、血氣（VBG/ABG）、備血。
+//     B/C、VBG、備血只有護理師抽，需要時打 IV 時再追加；這些項目仍在「其他常用檢查」可手動加入。
+//   - 所有抽血的人：CBC/DC、Crea、Na、K、Glu、CRP；再依主訴加項（口袋書第 22 節）。
+//   - 口袋書沒列的項目不隨便加；括號（±）項目只在情境成立時才出現。
+// 性別年齡：驗孕只給 12–55 歲女性；「老人」條件用 ≥ 65 歲；未成年（< 18）的 CT 一律改為需討論。
 
 const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
   fever: [
-    ...basic("發燒基本檢查"),
-    r("alt", "core", "發燒找感染源：肝功能"),
-    r("cxr" as PseudoId, "core", "發燒：肺部感染篩檢"),
-    r("urine_routine", "core", "發燒：泌尿道感染篩檢"),
-    r("flu", "core", "發燒：流感快篩"),
+    ...basic("發燒：所有抽血的人"),
+    r("alt", "core", "發燒：口袋書 3-5 類（ALT）"),
+    r("cxr", "core", "發燒：口袋書 3-5 類（CXR）"),
+    r("flu", "core", "發燒：口袋書 3-5 類（Flu Ag）"),
     r("covid_ag", "core", "發燒：COVID 快篩"),
-    r("bcx", "plus", "發燒：血液培養兩套（檢傷 1-2 類用抗生素前必開）"),
-    r("lactate", "plus", "發燒且高風險：評估敗血症", (c) => c.older || c.vulnerable),
-    r("pct", "plus", "發燒且年長：細菌感染參考", (c) => c.older),
-    r("tbil", "plus", "發燒：肝膽感染篩檢"),
-    r("ggt", "plus", "發燒：肝膽感染篩檢"),
     r(
-      "urine_cx",
-      "plus",
-      "發燒＋泌尿危險因子：尿液培養",
-      (c) => c.yes("dysuria") || c.yes("foley") || c.yes("flank_pain") || c.older,
+      "ggt",
+      "core",
+      "沒有明顯病灶或高風險的發燒：口袋書加做 GGT／Tbil／U/R",
+      (c) => c.noUriFocus || c.older || c.vulnerable,
     ),
-    r("sputum_cx", "plus", "發燒＋有痰：痰液培養", (c) => c.yes("sputum")),
-    r("stool_routine", "plus", "發燒＋腹瀉", (c) => c.yes("diarrhea")),
     r(
-      "c_diff",
-      "plus",
-      "腹瀉＋近期抗生素",
-      (c) => c.yes("diarrhea") && c.yes("abx_recent"),
+      "tbil",
+      "core",
+      "沒有明顯病灶或高風險的發燒：口袋書加做 GGT／Tbil／U/R",
+      (c) => c.noUriFocus || c.older || c.vulnerable,
     ),
-    r("vbg", "plus", "發燒＋喘", (c) => c.yes("dyspnea")),
-    r("ecg", "plus", "老人發燒常不典型", (c) => c.older),
+    r(
+      "urine_routine",
+      "core",
+      "沒有明顯病灶、高風險或有泌尿症狀的發燒：U/R",
+      (c) =>
+        c.noUriFocus ||
+        c.older ||
+        c.vulnerable ||
+        c.yes("dysuria") ||
+        c.yes("flank_pain") ||
+        c.yes("frequency") ||
+        c.yes("foley"),
+    ),
+    r("stool_routine", "plus", "發燒＋腹瀉：糞便常規", (c) => c.yes("diarrhea")),
   ],
 
   weakness: [
-    ...basic("全身無力基本檢查"),
-    r("alt", "core", "全身無力：肝功能"),
-    r("urine_routine", "core", "全身無力：泌尿道感染／電解質"),
-    r("ck", "plus", "全身無力：橫紋肌／心肌"),
-    r("ca", "plus", "全身無力：鈣"),
-    r("mg", "plus", "全身無力：鎂"),
-    r("phos", "plus", "全身無力：磷"),
-    r("bun", "plus", "全身無力：脫水／腎功能"),
-    r("ecg", "core", "年長或有心血管風險的無力", (c) => c.cardiacRisk),
-    r("ecg", "plus", "全身無力：排除心律不整"),
-    r("trop" as PseudoId, "plus", "年長或有心血管風險的無力", (c) => c.cardiacRisk),
-    r("cxr" as PseudoId, "plus", "年長無力：隱性肺炎", (c) => c.older),
-    r("lactate", "plus", "年長無力：隱性敗血症", (c) => c.older),
-    r("urine_cx", "plus", "年長無力：隱性泌尿道感染", (c) => c.older),
-    r("tsh", "plus", "全身無力：甲狀腺"),
+    ...basic("全身無力：所有抽血的人（年輕人多是低血鉀）"),
+    r("alt", "plus", "全身無力：肝功能"),
+    r(
+      "ecg",
+      "core",
+      "年長或有心血管病史的無力：排除 AMI",
+      (c) => c.older || c.cardiacHistory,
+    ),
+    r(
+      "trop",
+      "core",
+      "年長或有心血管病史的無力：排除 AMI",
+      (c) => c.older || c.cardiacHistory,
+    ),
+    r("ck", "plus", "全身無力：橫紋肌／心肌", (c) => c.older || c.cardiacHistory),
+    r("urine_routine", "plus", "年長無力：隱性泌尿道感染", (c) => c.older),
+    r("cxr", "plus", "年長無力：隱性肺炎", (c) => c.older),
   ],
 
   bp_abnormal: [
-    ...basic("血壓異常基本檢查"),
-    r("ecg", "core", "血壓異常"),
-    r("bun", "plus", "血壓異常：腎功能"),
-    r("urine_routine", "plus", "血壓異常：蛋白尿／感染"),
+    ...basic("血壓異常：所有抽血的人"),
+    r("ecg", "core", "血壓異常：EKG"),
+    r("trop", "plus", "血壓異常＋胸痛：排除心肌缺血", (c) => c.yes("chest_pain")),
     r(
-      "cxr" as PseudoId,
+      "cxr",
       "plus",
-      "血壓異常：肺水腫／縱膈",
-      (c) => c.sel("bp_type") === "偏高",
-    ),
-    r("trop" as PseudoId, "plus", "血壓異常且有風險", (c) => c.cardiacRisk),
-    r(
-      "bnp",
-      "plus",
-      "血壓異常＋喘或水腫",
-      (c) => c.yes("dyspnea") || c.yes("leg_edema"),
-    ),
-    r("lactate", "plus", "低血壓：灌流", (c) => c.sel("bp_type") === "偏低"),
-    r("vbg", "plus", "低血壓：酸鹼", (c) => c.sel("bp_type") === "偏低"),
-    r(
-      "bcx",
-      "plus",
-      "低血壓＋發燒",
-      (c) => c.sel("bp_type") === "偏低" && c.yes("fever"),
+      "血壓偏高＋喘：肺水腫",
+      (c) => c.sel("bp_type") === "偏高" && c.yes("dyspnea"),
     ),
   ],
 
@@ -199,97 +225,97 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
     r("crea", "core", "血糖異常：腎功能"),
     r("bun", "core", "血糖異常：腎功能"),
     r("ketone", "core", "高血糖：酮體", (c) => c.sel("glu_type") !== "偏低"),
-    r("vbg", "core", "高血糖：酸鹼（DKA/HHS）", (c) => c.sel("glu_type") !== "偏低"),
-    r("urine_routine", "core", "血糖異常：酮尿／感染"),
+    r(
+      "urine_routine",
+      "core",
+      "高血糖：酮尿／感染",
+      (c) => c.sel("glu_type") !== "偏低",
+    ),
     r("cbc_dc", "plus", "血糖異常：找誘因"),
     r("crp", "plus", "血糖異常：找誘因"),
     r("ecg", "plus", "血糖異常：鉀離子影響"),
-    r("hba1c", "plus", "血糖異常：長期控制"),
-    r("lactate", "plus", "血糖異常：酸中毒"),
-    r("mg", "plus", "血糖異常：電解質"),
-    r("phos", "plus", "血糖異常：電解質"),
-    r("alt", "plus", "低血糖：肝功能", (c) => c.sel("glu_type") === "偏低"),
   ],
 
   lab_referral: [
     ...basic("檢驗異常／門診轉入：重新確認"),
     r("alt", "plus", "檢驗異常／門診轉入"),
-    r("bun", "plus", "檢驗異常／門診轉入"),
-    r("urine_routine", "plus", "檢驗異常／門診轉入"),
-    r("ecg", "plus", "檢驗異常／門診轉入（電解質）"),
-    r("ck", "plus", "檢驗異常／門診轉入"),
   ],
 
   chest_pain: [
-    ...basic("胸痛基本檢查"),
-    r("ck", "core", "胸痛：心肌酵素"),
-    r("trop" as PseudoId, "core", "胸痛：心肌 troponin"),
+    ...basic("胸痛：所有抽血的人"),
+    r("ck", "core", "胸痛：口袋書 3-5 類（CK）"),
+    r("trop", "core", "胸痛：口袋書 3-5 類（TnI；年輕無共病改 hs-TnT）"),
     r("ecg", "core", "胸痛：10 分鐘內 EKG"),
-    r("cxr" as PseudoId, "core", "胸痛：胸部 X 光"),
-    r("ddimer", "plus", "胸痛：排除肺栓塞"),
-    r("pt", "plus", "胸痛：凝血（可能需抗凝或介入）"),
-    r("aptt", "plus", "胸痛：凝血（可能需抗凝或介入）"),
-    r("lactate", "plus", "胸痛：灌流"),
-    r("alt", "plus", "胸痛：肝功能／上腹痛"),
+    r("cxr", "core", "胸痛：口袋書 3-5 類（CXR）"),
+    r(
+      "ddimer",
+      "plus",
+      "胸痛＋肺栓塞危險因子（深呼吸痛、小腿痛／單側腫、久臥、咳血、喘）",
+      (c) =>
+        c.yes("pleuritic") ||
+        c.yes("calf_pain") ||
+        c.yes("immobil") ||
+        c.yes("hemoptysis") ||
+        c.yes("dyspnea"),
+    ),
     r(
       "bnp",
       "plus",
       "胸痛＋喘／水腫／心衰",
       (c) => c.yes("dyspnea") || c.yes("leg_edema") || c.pmh.has("chf"),
     ),
-    r("sono_cardiac", "plus", "胸痛：心包膜積液／心室功能"),
-    r("sono_sob", "plus", "胸痛＋喘：肺部超音波", (c) => c.yes("dyspnea")),
     r(
       "ct_chest",
       "ask",
       "懷疑主動脈剝離／肺栓塞（背痛放射、血壓差、D-dimer 高）→ 與 VS 討論",
-      (c) => c.yes("chest_radiate") || c.cardiacRisk,
+      (c) => c.yes("chest_radiate") || c.yes("pleuritic"),
     ),
   ],
 
   dyspnea: [
-    ...basic("喘基本檢查"),
-    r("ck", "core", "喘：心肌酵素"),
-    r("trop" as PseudoId, "core", "喘：心肌 troponin"),
+    ...basic("喘：所有抽血的人"),
+    r("bnp", "core", "喘：口袋書 3-5 類（BNP）"),
+    r("ck", "core", "喘：口袋書 3-5 類（CK）"),
+    r("trop", "core", "喘：口袋書 3-5 類（TnI）"),
     r("ecg", "core", "喘：EKG"),
-    r("cxr" as PseudoId, "core", "喘：胸部 X 光"),
-    r("vbg", "core", "喘：血氧／酸鹼（至少要有血氧）"),
-    r("bnp", "core", "喘：心衰竭"),
-    r("ddimer", "plus", "喘：排除肺栓塞"),
-    r("pt", "plus", "喘：凝血"),
-    r("aptt", "plus", "喘：凝血"),
-    r("lactate", "plus", "喘：灌流"),
-    r("alb", "plus", "喘：水腫／營養"),
-    r("alt", "plus", "喘：肝功能"),
-    r("tbil", "plus", "喘：肝功能"),
-    r("ca_free", "plus", "喘：離子鈣"),
-    r("bun", "plus", "喘：腎功能"),
-    r("flu", "plus", "喘＋發燒或咳嗽", (c) => c.yes("fever") || c.yes("cough")),
-    r("covid_ag", "plus", "喘＋發燒或咳嗽", (c) => c.yes("fever") || c.yes("cough")),
-    r("sputum_cx", "plus", "喘＋有痰", (c) => c.yes("sputum")),
-    r("bcx", "plus", "喘＋發燒", (c) => c.yes("fever")),
-    r("pct", "plus", "喘＋發燒", (c) => c.yes("fever")),
-    r("urine_routine", "plus", "喘：找感染源"),
-    r("sono_sob", "plus", "喘：床邊肺部超音波"),
-    r("sono_cardiac", "plus", "喘：床邊心臟超音波"),
-    r("ct_chest", "ask", "喘：懷疑肺栓塞或肺部病灶，需影像時與 VS 討論"),
+    r("cxr", "core", "喘：口袋書 3-5 類（CXR）"),
+    r(
+      "ddimer",
+      "plus",
+      "喘＋肺栓塞危險因子（Wells：小腿痛／單側腫、久臥、咳血、胸痛）",
+      (c) =>
+        c.yes("calf_pain") ||
+        c.yes("immobil") ||
+        c.yes("hemoptysis") ||
+        c.yes("chest_pain"),
+    ),
+    r(
+      "flu",
+      "plus",
+      "喘＋發燒或咳嗽：流感快篩",
+      (c) => c.yes("fever") || c.yes("cough"),
+    ),
+    r(
+      "covid_ag",
+      "plus",
+      "喘＋發燒或咳嗽：COVID 快篩",
+      (c) => c.yes("fever") || c.yes("cough"),
+    ),
+    r("ct_chest", "ask", "喘：懷疑肺栓塞（Wells ≥ 4）或肺部病灶，需影像時與 VS 討論"),
   ],
 
   palpitation: [
-    ...basic("心悸基本檢查"),
+    ...basic("心悸：所有抽血的人"),
     r("ecg", "core", "心悸：抓心律"),
     r("mg", "core", "心悸：鎂"),
-    r("tsh", "core", "心悸：甲狀腺"),
-    r("ca", "plus", "心悸：鈣"),
-    r("phos", "plus", "心悸：磷"),
-    r("ft4", "plus", "心悸：甲狀腺"),
     r(
-      "trop" as PseudoId,
+      "trop",
       "plus",
-      "心悸：排除缺血",
-      (c) => c.cardiacRisk || c.yes("chest_pain"),
+      "心悸：年長或有心血管病史，排除缺血",
+      (c) => c.older || c.cardiacHistory,
     ),
-    r("cxr" as PseudoId, "plus", "心悸：胸部 X 光"),
+    r("tsh", "plus", "心悸：甲狀腺"),
+    r("cxr", "plus", "心悸＋喘：胸部 X 光", (c) => c.yes("dyspnea")),
     r(
       "digoxin",
       "plus",
@@ -299,29 +325,20 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
     r(
       "ddimer",
       "plus",
-      "心悸＋喘或胸痛",
+      "心悸＋喘或胸痛：肺栓塞",
       (c) => c.yes("dyspnea") || c.yes("chest_pain"),
     ),
-    r("bun", "plus", "心悸：脫水"),
-    r("sono_cardiac", "plus", "心悸：床邊心臟超音波"),
   ],
 
   syncope: [
-    ...basic("暈厥基本檢查"),
-    r("ecg", "core", "暈厥：EKG"),
-    r("trop" as PseudoId, "core", "暈厥：排除心因性"),
-    r("ck", "plus", "暈厥：心肌酵素"),
-    r("bun", "plus", "暈厥：脫水／上消化道出血"),
-    r("mg", "plus", "暈厥：電解質"),
-    r("ca", "plus", "暈厥：電解質"),
-    r("cxr" as PseudoId, "plus", "暈厥：胸部 X 光"),
-    r("urine_routine", "plus", "暈厥：感染／脫水"),
-    r("lactate", "plus", "暈厥：灌流"),
-    r("alt", "plus", "暈厥：肝功能"),
+    ...basic("暈厥：所有抽血的人"),
+    r("ecg", "core", "暈厥：EKG（有危險因子要留觀追 EKG／CK／TnI）"),
+    r("ck", "core", "暈厥：口袋書（追 CK）"),
+    r("trop", "core", "暈厥：口袋書（追 TnI）"),
     r(
       "ddimer",
       "plus",
-      "暈厥＋喘／胸痛／水腫／久臥：排除肺栓塞",
+      "暈厥＋喘／胸痛／水腫／久臥：肺栓塞",
       (c) =>
         c.yes("dyspnea") ||
         c.yes("chest_pain") ||
@@ -340,14 +357,18 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
       "暈厥＋抗凝血藥或可能出血",
       (c) => c.yes("anticoag") || c.yes("melena") || c.yes("hematochezia"),
     ),
+    r(
+      "cxr",
+      "plus",
+      "暈厥＋喘或胸痛：胸部 X 光",
+      (c) => c.yes("dyspnea") || c.yes("chest_pain"),
+    ),
     r("etoh", "plus", "暈厥＋飲酒", (c) => c.yes("alcohol")),
-    r("sono_cardiac", "plus", "暈厥：床邊心臟超音波"),
     r(
       "ct_brain",
       "plus",
-      "暈厥＋年長／抗凝血／頭部外傷／神經症狀",
+      "暈厥＋抗凝血／頭部外傷／神經症狀：排除出血",
       (c) =>
-        c.older ||
         c.yes("anticoag") ||
         c.yes("head_strike") ||
         c.yes("weak_focal") ||
@@ -356,10 +377,9 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
     r(
       "ct_brain",
       "ask",
-      "暈厥：無危險因子時由 VS 決定是否做腦部 CT",
+      "暈厥：無神經症狀時，是否做腦部 CT 由 VS 決定",
       (c) =>
         !(
-          c.older ||
           c.yes("anticoag") ||
           c.yes("head_strike") ||
           c.yes("weak_focal") ||
@@ -369,20 +389,50 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
   ],
 
   cough_uri: [
-    r("flu", "core", "咳嗽／上呼吸道感染：流感快篩"),
+    r("flu", "core", "咳嗽／上呼吸道感染：口袋書 3-5 類（Flu Ag）"),
     r("covid_ag", "core", "咳嗽／上呼吸道感染：COVID 快篩"),
-    r("cxr" as PseudoId, "core", "咳嗽：胸部 X 光"),
-    r("cbc_dc", "plus", "咳嗽／上呼吸道感染"),
-    r("crp", "plus", "咳嗽／上呼吸道感染"),
-    r("sputum_cx", "plus", "咳嗽＋有痰", (c) => c.yes("sputum")),
-    r("bcx", "plus", "咳嗽＋發燒且年長", (c) => c.yes("fever") && c.older),
-    r("crea", "plus", "年長／共病的咳嗽", (c) => c.older || c.vulnerable),
-    r("na", "plus", "年長／共病的咳嗽", (c) => c.older || c.vulnerable),
-    r("k", "plus", "年長／共病的咳嗽", (c) => c.older || c.vulnerable),
+    r("cxr", "core", "咳嗽／上呼吸道感染：口袋書 3-5 類（CXR）"),
+    r(
+      "cbc_dc",
+      "plus",
+      "咳嗽＋發燒、年長或共病：所有抽血的人",
+      (c) => c.yes("fever") || c.older || c.vulnerable,
+    ),
+    r(
+      "na",
+      "plus",
+      "咳嗽＋發燒、年長或共病：所有抽血的人",
+      (c) => c.yes("fever") || c.older || c.vulnerable,
+    ),
+    r(
+      "k",
+      "plus",
+      "咳嗽＋發燒、年長或共病：所有抽血的人",
+      (c) => c.yes("fever") || c.older || c.vulnerable,
+    ),
+    r(
+      "crea",
+      "plus",
+      "咳嗽＋發燒、年長或共病：所有抽血的人",
+      (c) => c.yes("fever") || c.older || c.vulnerable,
+    ),
+    r(
+      "glu",
+      "plus",
+      "咳嗽＋發燒、年長或共病：所有抽血的人",
+      (c) => c.yes("fever") || c.older || c.vulnerable,
+    ),
+    r(
+      "crp",
+      "plus",
+      "咳嗽＋發燒、年長或共病：所有抽血的人",
+      (c) => c.yes("fever") || c.older || c.vulnerable,
+    ),
+    r("alt", "plus", "咳嗽＋發燒：口袋書 3-5 類（ALT）", (c) => c.yes("fever")),
     r(
       "ddimer",
       "plus",
-      "咳嗽＋咳血或久臥",
+      "咳嗽＋咳血或久臥：肺栓塞",
       (c) => c.yes("hemoptysis") || c.yes("immobil"),
     ),
   ],
@@ -392,16 +442,19 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
     r("crp", "plus", "耳鼻喉＋發燒", (c) => c.yes("fever")),
     r("flu", "plus", "喉嚨痛：流感快篩", (c) => c.yes("sore_throat")),
     r("covid_ag", "plus", "喉嚨痛：COVID 快篩", (c) => c.yes("sore_throat")),
+    r("cbc_dc", "plus", "流鼻血：血色素", (c) => c.yes("epistaxis")),
     r("pt", "plus", "流鼻血：凝血", (c) => c.yes("epistaxis")),
     r("aptt", "plus", "流鼻血：凝血", (c) => c.yes("epistaxis")),
-    r("cbc_dc", "plus", "流鼻血：血色素", (c) => c.yes("epistaxis")),
-    r("neck_soft_xr", "plus", "吞嚥困難／異物感：頸部軟組織 X 光", (c) =>
-      c.yes("dysphagia"),
+    r(
+      "neck_soft_xr",
+      "plus",
+      "吞嚥困難／異物感：頸部軟組織 X 光（口袋書：魚刺先照）",
+      (c) => c.yes("dysphagia"),
     ),
     r(
       "ct_neck",
       "ask",
-      "懷疑深頸部感染或異物：與 VS／ENT 討論",
+      "懷疑深頸部感染或深部異物：與 VS／ENT 討論",
       (c) => c.yes("dysphagia") || c.yes("fever"),
     ),
   ],
@@ -409,71 +462,75 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
   eye: [],
 
   abd_pain: [
-    ...basic("腹痛基本檢查"),
-    r("alt", "core", "腹痛：肝功能"),
-    r("lipase", "core", "腹痛：胰臟（上腹痛）"),
-    r("urine_routine", "core", "腹痛：泌尿道"),
-    r("cxr" as PseudoId, "core", "腹痛：胸部 X 光（註明站立，看橫膈下游離氣體）"),
-    r("kub", "core", "腹痛：KUB"),
-    r("bun", "plus", "腹痛：脫水／腎功能"),
-    r("tbil", "plus", "腹痛：肝膽"),
-    r("ggt", "plus", "腹痛：肝膽"),
-    r("lactate", "plus", "腹痛：缺血／敗血症"),
-    r("ecg", "plus", "年長／風險族群的上腹痛：排除心肌梗塞", (c) => c.cardiacRisk),
+    ...basic("腹痛：所有抽血的人"),
+    r("alt", "core", "腹痛：口袋書 3-5 類（ALT）"),
+    r("ggt", "core", "腹痛：口袋書 3-5 類（GGT）"),
+    r("tbil", "core", "腹痛：口袋書 3-5 類（Tbil）"),
+    r("lipase", "core", "腹痛：口袋書 3-5 類（Lipase）"),
+    r("urine_routine", "core", "腹痛：口袋書 3-5 類（U/R）"),
+    r("cxr", "core", "腹痛：口袋書（CXR，單子註明站立，看橫膈下游離氣體）"),
+    r("kub", "core", "腹痛：口袋書 3-5 類（KUB）"),
     r(
-      "trop" as PseudoId,
-      "plus",
-      "年長／風險族群的上腹痛：排除心肌梗塞",
-      (c) => c.cardiacRisk,
+      "ck",
+      "core",
+      "老人／有心血管病史的上腹痛：口袋書（CK＋TnI）",
+      (c) => c.older || c.cardiacHistory,
     ),
-    r("ck", "plus", "年長／風險族群的上腹痛：排除心肌梗塞", (c) => c.midlife),
+    r(
+      "trop",
+      "core",
+      "老人／有心血管病史的上腹痛：口袋書（CK＋TnI）",
+      (c) => c.older || c.cardiacHistory,
+    ),
+    r(
+      "ecg",
+      "plus",
+      "老人／有心血管病史的上腹痛：排除心肌梗塞",
+      (c) => c.older || c.cardiacHistory,
+    ),
     r(
       "pt",
       "plus",
-      "腹痛＋年長／抗凝血／肝硬化",
-      (c) => c.older || c.yes("anticoag") || c.pmh.has("cirrhosis"),
+      "腹痛＋抗凝血藥或肝硬化",
+      (c) => c.yes("anticoag") || c.pmh.has("cirrhosis"),
     ),
     r(
       "aptt",
       "plus",
-      "腹痛＋年長／抗凝血／肝硬化",
-      (c) => c.older || c.yes("anticoag") || c.pmh.has("cirrhosis"),
+      "腹痛＋抗凝血藥或肝硬化",
+      (c) => c.yes("anticoag") || c.pmh.has("cirrhosis"),
     ),
-    r(
-      "urine_cx",
-      "plus",
-      "腹痛＋泌尿症狀／發燒／年長",
-      (c) => c.yes("dysuria") || c.yes("fever") || c.older,
-    ),
-    r("bcx", "plus", "腹痛＋發燒", (c) => c.yes("fever")),
-    r("sono_abd", "plus", "腹痛：床邊腹部超音波"),
-    r("sono_pelvic", "plus", "育齡女性腹痛：子宮外孕／卵巢", (c) => c.fertile),
-    r("sono_aortic_renal", "plus", "年長腹痛：腹主動脈瘤／腎", (c) => c.midlife),
     r("ct_upper_abd", "ask", "腹痛：腹膜徵象、年長或懷疑穿孔／阻塞／缺血 → 與 VS 討論"),
-    r("ct_pelvis", "ask", "腹痛：下腹痛／懷疑闌尾炎 → 與 VS 討論"),
+    r("ct_pelvis", "ask", "腹痛：下腹痛／懷疑闌尾炎或卵巢病變 → 與 VS 討論"),
   ],
 
   nausea_vomiting: [
-    ...basic("噁心嘔吐基本檢查"),
+    ...basic("噁心嘔吐：所有抽血的人"),
     r("alt", "core", "噁心嘔吐：肝功能"),
     r("lipase", "core", "噁心嘔吐：胰臟"),
     r("urine_routine", "core", "噁心嘔吐：酮尿／泌尿道"),
     r("bun", "plus", "噁心嘔吐：脫水"),
-    r("ketone", "plus", "噁心嘔吐：酮體"),
-    r("vbg", "plus", "噁心嘔吐：酸鹼"),
-    r("mg", "plus", "噁心嘔吐：電解質"),
-    r("phos", "plus", "噁心嘔吐：電解質"),
-    r("lactate", "plus", "噁心嘔吐：灌流"),
-    r("kub", "plus", "噁心嘔吐：腸阻塞"),
-    r("ecg", "plus", "噁心嘔吐：排除心肌梗塞（年長／糖尿病）", (c) => c.cardiacRisk),
+    r("ketone", "plus", "噁心嘔吐＋糖尿病：酮體", (c) => c.pmh.has("dm")),
     r(
-      "trop" as PseudoId,
+      "kub",
       "plus",
-      "噁心嘔吐：排除心肌梗塞（年長／糖尿病）",
-      (c) => c.cardiacRisk,
+      "噁心嘔吐＋腹痛／腹脹／無排氣：腸阻塞",
+      (c) => c.yes("abd_pain") || c.yes("bloating") || c.yes("no_flatus"),
+    ),
+    r("cxr", "plus", "噁心嘔吐＋腹痛：橫膈下游離氣體", (c) => c.yes("abd_pain")),
+    r(
+      "ecg",
+      "plus",
+      "噁心嘔吐：老人或有心血管病史，排除心肌梗塞",
+      (c) => c.older || c.cardiacHistory,
+    ),
+    r(
+      "trop",
+      "plus",
+      "噁心嘔吐：老人或有心血管病史，排除心肌梗塞",
+      (c) => c.older || c.cardiacHistory,
     ),
     r("etoh", "plus", "噁心嘔吐＋飲酒", (c) => c.yes("alcohol")),
-    r("sono_abd", "plus", "噁心嘔吐：床邊腹部超音波"),
     r(
       "ct_brain",
       "ask",
@@ -483,40 +540,32 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
   ],
 
   diarrhea: [
-    ...basic("腹瀉基本檢查"),
-    r("bun", "plus", "腹瀉：脫水"),
+    ...basic("腹瀉：所有抽血的人"),
     r("stool_routine", "core", "腹瀉：糞便常規"),
-    r("stool_ob", "plus", "腹瀉：潛血"),
-    r("lactate", "plus", "腹瀉：灌流"),
-    r("mg", "plus", "腹瀉：電解質"),
-    r("phos", "plus", "腹瀉：電解質"),
-    r("urine_routine", "plus", "腹瀉：脫水／感染"),
+    r("bun", "plus", "腹瀉：脫水"),
+    r("stool_ob", "plus", "腹瀉＋血便：潛血", (c) => c.yes("hematochezia")),
+    r("urine_routine", "plus", "腹瀉＋發燒：找其他感染源", (c) => c.yes("fever")),
     r(
-      "c_diff",
-      "plus",
-      "腹瀉＋近期抗生素或發燒",
-      (c) => c.yes("abx_recent") || c.yes("fever"),
+      "kub",
+      "ask",
+      "腹瀉＋腹脹或腹痛：排除阻塞",
+      (c) => c.yes("bloating") || c.yes("abd_pain"),
     ),
-    r(
-      "stool_cx",
-      "plus",
-      "腹瀉＋發燒或血便",
-      (c) => c.yes("fever") || c.yes("hematochezia"),
-    ),
-    r("ecg", "plus", "年長腹瀉：鉀離子影響", (c) => c.older),
-    r("kub", "ask", "腹瀉＋腹脹或腹痛：排除阻塞"),
   ],
 
   constipation_bloating: [
-    ...basic("便秘腹脹基本檢查", "plus"),
+    ...basic("便秘腹脹：所有抽血的人", "plus"),
     r("kub", "core", "便秘／腹脹：KUB"),
     r("alt", "plus", "便秘／腹脹"),
     r("lipase", "plus", "便秘／腹脹"),
     r("ca", "plus", "便秘：高血鈣"),
-    r("lactate", "plus", "無排氣排便：缺血", (c) => c.yes("no_flatus")),
-    r("stool_ob", "plus", "便秘／腹脹：潛血"),
-    r("cxr" as PseudoId, "plus", "腹脹：橫膈下游離氣體"),
-    r("ecg", "plus", "年長：排除心肌梗塞", (c) => c.older),
+    r(
+      "stool_ob",
+      "plus",
+      "便秘／腹脹：潛血",
+      (c) => c.yes("melena") || c.yes("hematochezia"),
+    ),
+    r("cxr", "plus", "腹脹：橫膈下游離氣體", (c) => c.yes("abd_pain")),
     r("ct_upper_abd", "ask", "無排氣排便／懷疑阻塞 → 與 VS 討論", (c) =>
       c.yes("no_flatus"),
     ),
@@ -526,86 +575,86 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
   ],
 
   gi_bleed: [
-    r("cbc_dc", "core", "消化道出血：血色素"),
-    r("pt", "core", "消化道出血：凝血"),
-    r("aptt", "core", "消化道出血：凝血"),
-    r("crea", "core", "消化道出血：腎功能"),
+    ...basic("消化道出血：所有抽血的人"),
+    r("pt", "core", "消化道出血：口袋書 3-5 類（PT/APTT）"),
+    r("aptt", "core", "消化道出血：口袋書 3-5 類（PT/APTT）"),
+    r("stool_ob", "core", "消化道出血：口袋書 3-5 類（S/OB）"),
+    r("cxr", "core", "消化道出血：口袋書 3-5 類（CXR）"),
+    r("kub", "core", "消化道出血：口袋書 3-5 類（KUB）"),
+    r("alt", "core", "消化道出血：口袋書 3-5 類（±ALT）"),
+    r("tbil", "core", "消化道出血：口袋書 3-5 類（±Tbil）"),
     r("bun", "core", "消化道出血：BUN/Cr 比"),
-    r("na", "core", "消化道出血：電解質"),
-    r("k", "core", "消化道出血：電解質"),
-    r("glu", "core", "消化道出血"),
-    r("alt", "core", "消化道出血：肝功能"),
-    r("tbil", "core", "消化道出血：肝功能"),
-    r("cxr" as PseudoId, "core", "消化道出血：胸部 X 光"),
-    r("stool_ob", "core", "消化道出血：潛血"),
-    r("crp", "plus", "消化道出血"),
-    r("alb", "plus", "消化道出血：肝硬化／營養"),
-    r("lactate", "plus", "消化道出血：灌流"),
-    r("stool_routine", "plus", "消化道出血：糞便常規"),
-    r("kub", "plus", "消化道出血：KUB"),
-    r("ecg", "core", "消化道出血：年長或有風險", (c) => c.cardiacRisk),
-    r("ecg", "plus", "消化道出血：貧血相關缺血"),
-    r("trop" as PseudoId, "plus", "消化道出血：貧血相關缺血", (c) => c.cardiacRisk),
-    r("ammonia", "plus", "肝硬化消化道出血：肝腦病變", (c) => c.pmh.has("cirrhosis")),
     r("gastric_ob", "plus", "吐血：胃液潛血", (c) => c.yes("hematemesis")),
+    r(
+      "ecg",
+      "plus",
+      "消化道出血：老人或有心血管病史（貧血相關缺血）",
+      (c) => c.older || c.cardiacHistory,
+    ),
+    r(
+      "trop",
+      "plus",
+      "消化道出血：老人或有心血管病史（貧血相關缺血）",
+      (c) => c.older || c.cardiacHistory,
+    ),
     r("ct_upper_abd", "ask", "血流動力不穩或找不到出血點：CTA → 與 VS 討論"),
   ],
 
   jaundice: [
-    r("cbc_dc", "core", "黃疸"),
+    ...basic("黃疸：所有抽血的人"),
     r("alt", "core", "黃疸：肝功能"),
-    r("ast", "core", "黃疸：肝功能（AST/ALT 比）"),
     r("tbil", "core", "黃疸：膽紅素"),
     r("dbil", "core", "黃疸：直接膽紅素"),
     r("ggt", "core", "黃疸：膽道"),
     r("alp", "core", "黃疸：膽道"),
     r("pt", "core", "黃疸：凝血"),
     r("aptt", "core", "黃疸：凝血"),
-    r("crea", "core", "黃疸：腎功能"),
-    r("na", "core", "黃疸"),
-    r("k", "core", "黃疸"),
-    r("glu", "core", "黃疸"),
-    r("crp", "core", "黃疸：膽管炎"),
     r("lipase", "core", "黃疸：胰臟"),
     r("urine_routine", "core", "黃疸：尿膽紅素"),
-    r("sono_abd", "core", "黃疸：床邊腹部超音波（膽管擴張）"),
-    r("alb", "plus", "黃疸：肝功能"),
-    r("lactate", "plus", "黃疸：灌流"),
-    r("ammonia", "plus", "黃疸＋意識混亂", (c) => c.yes("confusion")),
-    r("bcx", "plus", "黃疸＋發燒：膽管炎", (c) => c.yes("fever")),
+    r("ammonia", "plus", "黃疸＋意識混亂：肝腦病變", (c) => c.yes("confusion")),
     r("ct_upper_abd", "ask", "黃疸：影像確認膽道／腫瘤 → 與 VS 討論"),
   ],
 
   urinary: [
-    r("urine_routine", "core", "泌尿症狀"),
-    r("urine_cx", "core", "泌尿症狀：尿液培養"),
-    r("cbc_dc", "core", "泌尿症狀"),
+    r("urine_routine", "core", "泌尿症狀：U/R"),
+    r(
+      "cbc_dc",
+      "core",
+      "泌尿症狀（發燒／腰痛／血尿／年長）：所有抽血的人",
+      (c) => c.yes("fever") || c.yes("flank_pain") || c.yes("hematuria") || c.older,
+    ),
     r("crea", "core", "泌尿症狀：腎功能"),
     r("bun", "core", "泌尿症狀：腎功能"),
-    r("na", "core", "泌尿症狀"),
-    r("k", "core", "泌尿症狀"),
-    r("crp", "core", "泌尿症狀"),
-    r("glu", "plus", "泌尿症狀"),
     r(
-      "sono_aortic_renal",
-      "core",
-      "腰痛／血尿／解不出尿：腎臟超音波（水腎）",
-      (c) =>
-        c.yes("flank_pain") ||
-        c.yes("hematuria") ||
-        c.yes("retention") ||
-        c.yes("low_urine"),
+      "na",
+      "plus",
+      "泌尿症狀（發燒／腰痛／血尿／年長）：所有抽血的人",
+      (c) => c.yes("fever") || c.yes("flank_pain") || c.yes("hematuria") || c.older,
     ),
-    r("sono_aortic_renal", "plus", "泌尿症狀：腎臟超音波"),
-    r("sono_abd", "plus", "解不出尿：膀胱超音波", (c) => c.yes("retention")),
+    r(
+      "k",
+      "plus",
+      "泌尿症狀（發燒／腰痛／血尿／年長）：所有抽血的人",
+      (c) => c.yes("fever") || c.yes("flank_pain") || c.yes("hematuria") || c.older,
+    ),
+    r(
+      "glu",
+      "plus",
+      "泌尿症狀（發燒／腰痛／血尿／年長）：所有抽血的人",
+      (c) => c.yes("fever") || c.yes("flank_pain") || c.yes("hematuria") || c.older,
+    ),
+    r(
+      "crp",
+      "plus",
+      "泌尿症狀（發燒／腰痛／血尿／年長）：所有抽血的人",
+      (c) => c.yes("fever") || c.yes("flank_pain") || c.yes("hematuria") || c.older,
+    ),
     r(
       "kub",
       "plus",
       "腰痛／血尿：泌尿道結石",
       (c) => c.yes("flank_pain") || c.yes("hematuria"),
     ),
-    r("bcx", "plus", "泌尿症狀＋發燒", (c) => c.yes("fever")),
-    r("lactate", "plus", "泌尿症狀＋發燒", (c) => c.yes("fever")),
     r("ct_upper_abd", "ask", "疑似結石／腎盂腎炎併發症 → 與 VS 討論", (c) =>
       c.yes("flank_pain"),
     ),
@@ -613,62 +662,51 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
   ],
 
   gyn: [
-    r("bhcg", "core", "陰道出血／婦科下腹痛：抽血 β-hCG", (c) => c.fertile),
-    r("cbc_dc", "core", "陰道出血／婦科下腹痛"),
-    r("urine_routine", "core", "陰道出血／婦科下腹痛"),
-    r("sono_pelvic", "core", "陰道出血／婦科下腹痛：骨盆超音波"),
+    r("bhcg", "core", "陰道出血／婦科下腹痛（育齡）：抽血 β-hCG", (c) => c.fertile),
+    r("cbc_dc", "core", "陰道出血／婦科下腹痛：血色素"),
+    r("urine_routine", "core", "陰道出血／婦科下腹痛：U/R"),
     r("pt", "plus", "陰道出血：凝血", (c) => c.yes("vag_bleed")),
     r("aptt", "plus", "陰道出血：凝血", (c) => c.yes("vag_bleed")),
-    r("crea", "plus", "婦科下腹痛"),
-    r("na", "plus", "婦科下腹痛"),
-    r("k", "plus", "婦科下腹痛"),
-    r("crp", "plus", "婦科下腹痛"),
-    r("glu", "plus", "婦科下腹痛"),
-    r("urine_cx", "plus", "婦科下腹痛＋解尿疼痛", (c) => c.yes("dysuria")),
-    r("bcx", "plus", "婦科下腹痛＋發燒", (c) => c.yes("fever")),
+    r("crea", "plus", "婦科下腹痛：腎功能"),
+    r("crp", "plus", "婦科下腹痛＋發燒：發炎指標", (c) => c.yes("fever")),
   ],
 
   dizziness: [
-    ...basic("頭暈基本檢查"),
-    r("ecg", "core", "頭暈：排除心律不整"),
-    r("alt", "plus", "頭暈"),
-    r("ca_free", "plus", "頭暈：離子鈣"),
-    r("ck", "plus", "頭暈"),
-    r("mg", "plus", "頭暈：電解質"),
-    r("urine_routine", "plus", "頭暈：感染／脫水"),
-    r("cxr" as PseudoId, "plus", "頭暈：胸部 X 光"),
-    r("trop" as PseudoId, "plus", "頭暈：年長或有風險，排除缺血", (c) => c.cardiacRisk),
+    ...basic("頭暈：所有抽血的人"),
+    r("alt", "core", "頭暈：口袋書 3-5 類（ALT）"),
+    r("ca", "core", "頭暈：口袋書 3-5 類（Ca）"),
+    r("ck", "core", "頭暈：口袋書 3-5 類（CK）"),
+    r("ecg", "core", "頭暈：口袋書 3-5 類（EKG）"),
+    r("cxr", "core", "頭暈：口袋書 3-5 類（CXR）"),
+    r(
+      "trop",
+      "plus",
+      "頭暈：口袋書 3-5 類（±TnI；年長或有心血管病史）",
+      (c) => c.older || c.cardiacHistory,
+    ),
+    r(
+      "urine_routine",
+      "plus",
+      "頭暈：口袋書 3-5 類（±U/R）",
+      (c) => c.older || c.yes("dysuria"),
+    ),
     r(
       "digoxin",
       "plus",
-      "頭暈＋心房顫動／心衰：藥物濃度",
+      "頭暈＋心房顫動／心衰：藥物濃度（口袋書：心跳慢驗 digoxin）",
       (c) => c.pmh.has("af") || c.pmh.has("chf"),
     ),
     r(
       "ct_brain",
       "plus",
-      "頭暈＋年長／血管風險／神經症狀：排除小腦中風與出血",
-      (c) =>
-        c.older ||
-        ["htn", "dm", "af", "stroke", "cad"].some((id) => c.pmh.has(id)) ||
-        c.yes("weak_focal") ||
-        c.yes("gait") ||
-        c.yes("vision") ||
-        c.yes("headache"),
+      "頭暈＋年長／血管風險／神經症狀：口袋書（有危險因子考慮 Brain CT）",
+      (c) => c.dizzyRisk,
     ),
     r(
       "ct_brain",
       "ask",
-      "頭暈：無危險因子時由 VS 決定是否做腦部 CT",
-      (c) =>
-        !(
-          c.older ||
-          ["htn", "dm", "af", "stroke", "cad"].some((id) => c.pmh.has(id)) ||
-          c.yes("weak_focal") ||
-          c.yes("gait") ||
-          c.yes("vision") ||
-          c.yes("headache")
-        ),
+      "頭暈：沒有危險因子時，口袋書建議觀察；需要時與 VS 討論",
+      (c) => !c.dizzyRisk,
     ),
     r(
       "mri_brain",
@@ -678,31 +716,22 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
   ],
 
   headache: [
-    r("cbc_dc", "plus", "頭痛"),
-    r("crp", "plus", "頭痛"),
-    r("na", "plus", "頭痛"),
-    r("k", "plus", "頭痛"),
-    r("crea", "plus", "頭痛"),
-    r("glu", "plus", "頭痛"),
-    r("ecg", "plus", "年長頭痛", (c) => c.older),
-    r("pt", "plus", "頭痛＋抗凝血藥", (c) => c.yes("anticoag")),
-    r("aptt", "plus", "頭痛＋抗凝血藥", (c) => c.yes("anticoag")),
     r(
-      "bcx",
+      "ct_brain",
       "core",
-      "頭痛＋發燒＋頸僵硬：腦膜炎",
-      (c) => c.yes("fever") && c.yes("neck_stiff_h"),
+      "頭痛紅旗（雷擊樣／頸僵硬／神經症狀／意識／抽搐／抗凝血／年長）：口袋書（Brain CT）",
+      (c) => c.headacheRedFlag,
     ),
     r(
-      "lactate",
-      "core",
-      "頭痛＋發燒＋頸僵硬：腦膜炎",
-      (c) => c.yes("fever") && c.yes("neck_stiff_h"),
+      "ct_brain",
+      "ask",
+      "頭痛：口袋書—先止痛，1 小時後沒改善或有腦膜徵象再做 Brain CT",
+      (c) => !c.headacheRedFlag,
     ),
     r(
       "cbc_dc",
       "core",
-      "頭痛＋發燒＋頸僵硬：腦膜炎",
+      "頭痛＋發燒＋頸僵硬：腦膜炎（培養與 LP 與 VS 討論）",
       (c) => c.yes("fever") && c.yes("neck_stiff_h"),
     ),
     r(
@@ -711,36 +740,8 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
       "頭痛＋發燒＋頸僵硬：腦膜炎",
       (c) => c.yes("fever") && c.yes("neck_stiff_h"),
     ),
-    r(
-      "ct_brain",
-      "core",
-      "頭痛紅旗（雷擊樣／頸僵硬／神經症狀／意識／抽搐／發燒／抗凝血／年長）：排除出血與腫瘤",
-      (c) =>
-        c.yes("headache_worst") ||
-        c.yes("neck_stiff_h") ||
-        c.yes("weak_focal") ||
-        c.yes("confusion") ||
-        c.yes("seizure") ||
-        c.yes("fever") ||
-        c.yes("anticoag") ||
-        c.older,
-    ),
-    r(
-      "ct_brain",
-      "ask",
-      "頭痛：無紅旗時，止痛後仍未改善再與 VS 討論",
-      (c) =>
-        !(
-          c.yes("headache_worst") ||
-          c.yes("neck_stiff_h") ||
-          c.yes("weak_focal") ||
-          c.yes("confusion") ||
-          c.yes("seizure") ||
-          c.yes("fever") ||
-          c.yes("anticoag") ||
-          c.older
-        ),
-    ),
+    r("pt", "plus", "頭痛＋抗凝血藥", (c) => c.yes("anticoag")),
+    r("aptt", "plus", "頭痛＋抗凝血藥", (c) => c.yes("anticoag")),
     r(
       "cta_head_neck",
       "ask",
@@ -750,74 +751,82 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
   ],
 
   focal_neuro: [
+    // 24 小時中風組套（科常用 → 急診醫學 → 急性腦中風組套）＋口袋書：one touch、NH3
     r("cbc_dc", "core", "疑似中風：24 小時中風組套"),
-    r("crea", "core", "疑似中風：中風組套"),
-    r("na", "core", "疑似中風：中風組套"),
-    r("k", "core", "疑似中風：中風組套"),
+    r("crea", "core", "疑似中風：24 小時中風組套"),
+    r("na", "core", "疑似中風：24 小時中風組套"),
+    r("k", "core", "疑似中風：24 小時中風組套"),
+    r("alt", "core", "疑似中風：24 小時中風組套"),
+    r("tbil", "core", "疑似中風：24 小時中風組套"),
+    r("ck", "core", "疑似中風：24 小時中風組套"),
+    r("trop", "core", "疑似中風：24 小時中風組套"),
+    r("crp", "core", "疑似中風：24 小時中風組套／口袋書"),
     r("glu", "core", "疑似中風：先排除低血糖"),
     r("onetouch", "core", "疑似中風：馬上測床邊血糖（護理師）"),
-    r("alt", "core", "疑似中風：中風組套"),
-    r("tbil", "core", "疑似中風：中風組套"),
-    r("ck", "core", "疑似中風：中風組套"),
-    r("trop" as PseudoId, "core", "疑似中風：中風組套"),
-    r("crp", "core", "疑似中風：中風組套"),
     r("pt", "core", "疑似中風：凝血（溶栓／抗凝前）"),
     r("aptt", "core", "疑似中風：凝血（溶栓／抗凝前）"),
-    r("ddimer", "core", "疑似中風：中風組套"),
+    r("ddimer", "core", "疑似中風：24 小時中風組套"),
+    r("ammonia", "core", "疑似中風：口袋書（NH3）"),
     r("ecg", "core", "疑似中風：心房顫動"),
-    r("cxr" as PseudoId, "core", "疑似中風：中風組套"),
+    r("cxr", "core", "疑似中風：24 小時中風組套"),
     r("ct_brain", "core", "疑似中風：先排除出血（切 CT 前先問 VS）"),
-    r("cta_head_neck", "core", "疑似中風：血管評估"),
-    r("ct_perfusion", "plus", "疑似中風：發作 24 小時內，評估可挽救腦組織"),
-    r("bun", "plus", "疑似中風：腎功能（顯影劑）"),
-    r("ammonia", "plus", "疑似中風＋意識改變", (c) => c.yes("confusion")),
+    r("cta_head_neck", "plus", "疑似中風：24 小時中風組套（血管評估）"),
+    r(
+      "ct_perfusion",
+      "ask",
+      "疑似中風：發作 24 小時內，評估可挽救腦組織 → 與 VS／神經科討論",
+    ),
     r("mri_brain", "ask", "CT 陰性仍高度懷疑中風（後循環）→ 與 VS／神經科討論"),
   ],
 
   ams: [
-    r("cbc_dc", "core", "意識改變：基本檢查"),
-    r("bun", "core", "意識改變：尿毒"),
-    r("crea", "core", "意識改變"),
-    r("na", "core", "意識改變：低血鈉"),
-    r("k", "core", "意識改變"),
-    r("ca", "core", "意識改變：高血鈣"),
-    r("mg", "core", "意識改變"),
+    // 口袋書 3-5 類 AMS（不含 VBG、B/C，第一輪不開）
+    r("cbc_dc", "core", "意識改變：所有抽血的人"),
+    r("na", "core", "意識改變：所有抽血的人"),
+    r("k", "core", "意識改變：所有抽血的人"),
+    r("crea", "core", "意識改變：所有抽血的人"),
     r("glu", "core", "意識改變：先排除低血糖"),
+    r("crp", "core", "意識改變：所有抽血的人"),
     r("onetouch", "core", "意識改變：馬上測床邊血糖（護理師）"),
-    r("alt", "core", "意識改變：肝功能"),
-    r("tbil", "core", "意識改變：肝功能"),
-    r("ammonia", "core", "意識改變：肝腦病變"),
-    r("lactate", "core", "意識改變：灌流"),
-    r("pt", "core", "意識改變：凝血"),
-    r("aptt", "core", "意識改變：凝血"),
-    r("vbg", "core", "意識改變：酸鹼／CO2"),
-    r("crp", "core", "意識改變：感染"),
-    r("urine_routine", "core", "意識改變：泌尿道感染"),
-    r("cxr" as PseudoId, "core", "意識改變：肺炎"),
-    r("ecg", "core", "意識改變：心律不整"),
-    r("ct_brain", "core", "意識改變：先排除出血／腦梗塞"),
-    r("kub", "plus", "意識改變：找感染源／阻塞"),
-    r("phos", "plus", "意識改變：電解質"),
-    r("alb", "plus", "意識改變"),
-    r("pct", "plus", "意識改變：感染"),
-    r("urine_cx", "plus", "意識改變：泌尿道感染"),
-    r("bcx", "plus", "意識改變＋發燒", (c) => c.yes("fever")),
-    r("flu", "plus", "意識改變：流感／COVID", (c) => c.yes("fever") || c.yes("cough")),
+    r("bun", "core", "意識改變：口袋書 3-5 類（BUN）"),
+    r("alt", "core", "意識改變：口袋書 3-5 類（ALT）"),
+    r("tbil", "core", "意識改變：口袋書 3-5 類（Tbil）"),
+    r("ammonia", "core", "意識改變：口袋書 3-5 類（NH3）"),
+    r("ca", "core", "意識改變：口袋書 3-5 類（Ca）"),
+    r("mg", "core", "意識改變：口袋書 3-5 類（Mg）"),
+    r("lactate", "core", "意識改變：口袋書 3-5 類（lactate）"),
+    r("pt", "core", "意識改變：口袋書 3-5 類（PT/APTT）"),
+    r("aptt", "core", "意識改變：口袋書 3-5 類（PT/APTT）"),
+    r("cxr", "core", "意識改變：口袋書 3-5 類（CXR）"),
+    r("kub", "core", "意識改變：口袋書 3-5 類（KUB）"),
+    r("urine_routine", "core", "意識改變：口袋書 3-5 類（U/R）"),
+    r("flu", "core", "意識改變：口袋書 3-5 類（COVID/Flu Ag）"),
+    r("covid_ag", "core", "意識改變：口袋書 3-5 類（COVID/Flu Ag）"),
+    r("ct_brain", "core", "意識改變：口袋書 3-5 類（Brain CT）"),
     r(
-      "covid_ag",
+      "ecg",
       "plus",
-      "意識改變：流感／COVID",
-      (c) => c.yes("fever") || c.yes("cough"),
+      "意識改變：老人或有心血管病史，排除心律不整／缺血",
+      (c) => c.older || c.cardiacHistory,
     ),
     r(
-      "trop" as PseudoId,
+      "trop",
       "plus",
-      "意識改變：年長或有風險，排除缺血",
-      (c) => c.cardiacRisk,
+      "意識改變：老人或有心血管病史",
+      (c) => c.older || c.cardiacHistory,
     ),
-    r("etoh", "plus", "意識改變：酒精"),
-    r("urine_drug", "plus", "意識改變：找不到原因，驗尿液毒藥物"),
-    r("tsh", "plus", "意識改變：甲狀腺"),
+    r(
+      "etoh",
+      "plus",
+      "意識改變：酒精（口袋書：原因不明考慮毒藥物）",
+      (c) => c.yes("alcohol") || c.yes("substance"),
+    ),
+    r(
+      "urine_drug",
+      "plus",
+      "意識改變：找不到原因，驗尿液毒藥物（口袋書）",
+      (c) => c.yes("substance") || c.yes("self_harm") || c.yes("si"),
+    ),
     r(
       "apap",
       "core",
@@ -830,40 +839,36 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
       "意識改變＋自傷／過量／物質濫用：水楊酸濃度",
       (c) => c.yes("self_harm") || c.yes("substance") || c.yes("si"),
     ),
-    r(
-      "apap",
-      "ask",
-      "意識改變：原因不明時考慮藥物濃度",
-      (c) => !(c.yes("self_harm") || c.yes("substance") || c.yes("si")),
-    ),
   ],
 
   seizure: [
-    r("cbc_dc", "core", "抽搐：基本檢查"),
-    r("na", "core", "抽搐：低血鈉"),
-    r("k", "core", "抽搐"),
-    r("crea", "core", "抽搐"),
-    r("glu", "core", "抽搐：低血糖"),
+    // 口袋書：第一次發作 CBC/DC、e-、NH3、Glu、Lactate、iCa、Brain CT、藥物濃度（VBG 第一輪不開）
+    r("cbc_dc", "core", "抽搐：口袋書（CBC/DC）"),
+    r("na", "core", "抽搐：口袋書（電解質）"),
+    r("k", "core", "抽搐：口袋書（電解質）"),
+    r("crea", "core", "抽搐：腎功能"),
+    r("glu", "core", "抽搐：口袋書（Glu）"),
     r("onetouch", "core", "抽搐：馬上測床邊血糖（護理師）"),
-    r("ca_free", "core", "抽搐：離子鈣"),
-    r("mg", "core", "抽搐"),
-    r("phos", "plus", "抽搐"),
-    r("ammonia", "core", "抽搐：肝腦病變"),
-    r("lactate", "core", "抽搐：發作後乳酸"),
-    r("vbg", "core", "抽搐：酸鹼"),
-    r("ck", "plus", "抽搐：橫紋肌溶解"),
+    r("ammonia", "core", "抽搐：口袋書（NH3）"),
+    r("lactate", "core", "抽搐：口袋書（Lactate）"),
+    r("ca_free", "core", "抽搐：口袋書（iCa）"),
+    r("mg", "core", "抽搐：電解質"),
     r("ecg", "core", "抽搐：與暈厥鑑別"),
-    r("alt", "plus", "抽搐"),
-    r("urine_routine", "plus", "抽搐"),
-    r("ct_brain", "core", "第一次抽搐：腦部 CT", (c) => !c.pmh.has("epilepsy")),
+    r(
+      "ct_brain",
+      "core",
+      "第一次抽搐：口袋書（Brain CT）",
+      (c) => !c.pmh.has("epilepsy"),
+    ),
     r("ct_brain", "plus", "抽搐：有癲癇病史仍要排除新病灶", (c) =>
       c.pmh.has("epilepsy"),
     ),
-    r("etoh", "plus", "抽搐：酒精"),
-    r("urine_drug", "plus", "抽搐：毒藥物"),
     r("phenytoin", "plus", "癲癇病史：藥物濃度", (c) => c.pmh.has("epilepsy")),
     r("valproate", "plus", "癲癇病史：藥物濃度", (c) => c.pmh.has("epilepsy")),
     r("carbamazepine", "plus", "癲癇病史：藥物濃度", (c) => c.pmh.has("epilepsy")),
+    r("ck", "plus", "抽搐：橫紋肌溶解（發作時間長）"),
+    r("etoh", "plus", "抽搐＋飲酒", (c) => c.yes("alcohol")),
+    r("urine_drug", "plus", "抽搐＋物質濫用", (c) => c.yes("substance")),
   ],
 
   trauma: [
@@ -871,7 +876,6 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
     r("pt", "plus", "外傷＋年長／抗凝血", (c) => c.older || c.yes("anticoag")),
     r("aptt", "plus", "外傷＋年長／抗凝血", (c) => c.older || c.yes("anticoag")),
     r("crea", "plus", "外傷＋年長", (c) => c.older),
-    r("glu", "plus", "外傷＋年長", (c) => c.older),
     r(
       "ecg",
       "core",
@@ -879,7 +883,7 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
       (c) => c.yes("syncope") || c.yes("presyncope"),
     ),
     r("ecg", "plus", "年長跌倒：排除心律不整", (c) => c.older),
-    r("etoh", "plus", "車禍／被打：酒精濃度", (c) =>
+    r("etoh", "plus", "車禍／被打：酒精濃度（口袋書：車禍驗 alcohol）", (c) =>
       ["機車／車禍", "被打／攻擊"].includes(c.sel("mechanism")),
     ),
     r(
@@ -911,12 +915,7 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
       "頸／背痛：高風險機轉或神經症狀 → 與 VS 討論",
       (c) => c.yes("neck_back_pain") && !c.older,
     ),
-    r("cxr" as PseudoId, "plus", "胸部外傷", (c) =>
-      /chest|rib|胸|肋/i.test(c.text("injury_site")),
-    ),
-    r("sono_fast", "plus", "腹部外傷：FAST", (c) =>
-      /abd|belly|腹/i.test(c.text("injury_site")),
-    ),
+    r("cxr", "plus", "胸部外傷", (c) => /chest|rib|胸|肋/i.test(c.text("injury_site"))),
     r("ct_upper_abd", "ask", "腹部外傷：疑腹內出血 → 與 VS 討論", (c) =>
       /abd|belly|腹/i.test(c.text("injury_site")),
     ),
@@ -926,17 +925,9 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
     r("lspine_xr", "plus", "腰背外傷", (c) =>
       /lumbar|back|腰|背/i.test(c.text("injury_site")),
     ),
-    r("skull_xr", "ask", "頭部外傷：顱骨 X 光（通常以 CT 取代）", (c) =>
-      /head|skull|頭/i.test(c.text("injury_site")),
-    ),
-    r("sono_fb", "ask", "傷口異物疑慮：軟組織超音波", (c) => c.yes("wound")),
   ],
 
   back_pain: [
-    r("urine_routine", "plus", "背／腰痛：泌尿道結石或感染"),
-    r("cbc_dc", "plus", "背／腰痛"),
-    r("crp", "plus", "背／腰痛"),
-    r("crea", "plus", "背／腰痛：腎功能"),
     r(
       "cbc_dc",
       "core",
@@ -957,9 +948,30 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
         c.pmh.has("immuno") ||
         c.yes("wt_loss"),
     ),
-    r("sono_aortic_renal", "plus", "年長背痛：腹主動脈瘤破裂／腎", (c) => c.midlife),
-    r("ecg", "plus", "年長背痛：排除心肌梗塞", (c) => c.midlife),
-    r("trop" as PseudoId, "plus", "年長背痛：排除心肌梗塞", (c) => c.midlife),
+    r(
+      "urine_routine",
+      "plus",
+      "腰痛＋泌尿症狀：結石或感染",
+      (c) => c.yes("dysuria") || c.yes("hematuria") || c.yes("flank_pain"),
+    ),
+    r(
+      "crea",
+      "plus",
+      "腰痛＋泌尿症狀：腎功能",
+      (c) => c.yes("hematuria") || c.yes("flank_pain"),
+    ),
+    r(
+      "ecg",
+      "plus",
+      "背痛＋年長或有心血管病史：排除心肌梗塞／主動脈疾病",
+      (c) => c.older || c.cardiacHistory,
+    ),
+    r(
+      "trop",
+      "plus",
+      "背痛＋年長或有心血管病史：排除心肌梗塞",
+      (c) => c.older || c.cardiacHistory,
+    ),
     r(
       "lspine_xr",
       "plus",
@@ -969,24 +981,21 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
     r(
       "ct_lspine",
       "ask",
-      "背痛＋神經缺損／大小便障礙（馬尾症候群）：CT → 會診 NS＋緊急 MRI",
+      "背痛＋神經缺損／大小便障礙（馬尾症候群）：CT → 會診 NS＋緊急 MRI（口袋書）",
       (c) => c.yes("weak_focal") || c.yes("numb") || c.yes("retention"),
     ),
   ],
 
   limb: [
-    r(
-      "sono_dvt",
-      "core",
-      "肢體腫脹或小腿痛：排除深部靜脈栓塞",
-      (c) => c.yes("calf_pain") || c.yes("swelling"),
+    // 口袋書 3-5 類 Edema：albumin、BNP、Tbil、(D-dimer)、U/R、EKG、CXR
+    r("alb", "core", "下肢水腫：口袋書 3-5 類（Edema）", (c) => c.yes("leg_edema")),
+    r("bnp", "core", "下肢水腫：口袋書 3-5 類（Edema）", (c) => c.yes("leg_edema")),
+    r("tbil", "core", "下肢水腫：口袋書 3-5 類（Edema）", (c) => c.yes("leg_edema")),
+    r("urine_routine", "core", "下肢水腫：口袋書 3-5 類（Edema）", (c) =>
+      c.yes("leg_edema"),
     ),
-    r(
-      "ddimer",
-      "plus",
-      "肢體腫脹／小腿痛／久臥：排除 DVT",
-      (c) => c.yes("calf_pain") || c.yes("swelling") || c.yes("immobil"),
-    ),
+    r("ecg", "core", "下肢水腫：口袋書 3-5 類（Edema）", (c) => c.yes("leg_edema")),
+    r("cxr", "core", "下肢水腫：口袋書 3-5 類（Edema）", (c) => c.yes("leg_edema")),
     r(
       "cbc_dc",
       "core",
@@ -999,25 +1008,33 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
       "紅熱腫痛或發燒：蜂窩性組織炎",
       (c) => c.yes("redness") || c.yes("fever"),
     ),
-    r("crea", "plus", "肢體疼痛腫脹：腎功能／橫紋肌"),
+    r(
+      "crea",
+      "plus",
+      "紅熱腫痛或發燒：腎功能",
+      (c) => c.yes("redness") || c.yes("fever"),
+    ),
     r(
       "glu",
       "plus",
-      "肢體紅熱：糖尿病控制",
-      (c) => c.pmh.has("dm") || c.yes("redness"),
+      "肢體紅熱＋糖尿病：血糖控制",
+      (c) => c.yes("redness") && c.pmh.has("dm"),
     ),
-    r("ck", "plus", "肢體疼痛：橫紋肌溶解"),
     r(
-      "lactate",
-      "plus",
-      "紅熱疼痛伴發燒：壞死性筋膜炎",
-      (c) => c.yes("redness") && c.yes("fever"),
+      "ddimer",
+      "core",
+      "懷疑 DVT／PE（單側腫、小腿痛、久臥）：口袋書（D-dimer）",
+      (c) =>
+        c.yes("calf_pain") ||
+        c.yes("immobil") ||
+        (c.yes("swelling") && !c.yes("leg_edema")),
     ),
-    r("bcx", "plus", "紅熱疼痛伴發燒", (c) => c.yes("redness") && c.yes("fever")),
+    r("ck", "plus", "肢體疼痛＋可能橫紋肌溶解：CK", (c) => c.yes("immobil")),
     r(
       "doppler_limbs",
       "ask",
-      "疑急性肢體缺血／DVT：下班時間先問放射科值班 → 與 VS 討論",
+      "疑 DVT／急性肢體缺血：上班時間排 Doppler，下班打放射科值班 → 與 VS 討論",
+      (c) => c.yes("calf_pain") || c.yes("swelling"),
     ),
   ],
 
@@ -1032,12 +1049,7 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
     r("cbc_dc", "core", "出血：血色素／血小板"),
     r("pt", "core", "出血：凝血"),
     r("aptt", "core", "出血：凝血"),
-    r("crea", "plus", "出血：腎功能"),
-    r("alt", "plus", "出血：肝功能"),
-    r("fibrinogen", "plus", "出血：凝血"),
-    r("na", "plus", "出血"),
-    r("k", "plus", "出血"),
-    r("glu", "plus", "出血"),
+    r("crea", "plus", "出血：腎功能", (c) => c.yes("anticoag") || c.older),
     r(
       "stool_ob",
       "plus",
@@ -1047,19 +1059,19 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
   ],
 
   psych: [
-    r("cbc_dc", "core", "精神症狀：排除器質性原因"),
-    r("na", "core", "精神症狀"),
-    r("k", "core", "精神症狀"),
-    r("crea", "core", "精神症狀"),
-    r("glu", "core", "精神症狀：低血糖"),
-    r("alt", "core", "精神症狀"),
-    r("etoh", "core", "精神症狀：酒精"),
-    r("urine_drug", "core", "精神症狀：毒藥物"),
-    r("ecg", "core", "精神症狀：QT 間期"),
-    r("urine_routine", "plus", "精神症狀：泌尿道感染"),
-    r("crp", "plus", "精神症狀"),
-    r("tsh", "plus", "精神症狀：甲狀腺"),
-    r("cxr" as PseudoId, "plus", "精神症狀：常規篩檢"),
+    // 口袋書 3-5 類 PSY：ALT、U/R、CXR、EKG（常客或最近才來過不一定要）
+    ...basic("精神症狀：所有抽血的人（排除器質性原因）"),
+    r("alt", "core", "精神症狀：口袋書 3-5 類（ALT）"),
+    r("urine_routine", "core", "精神症狀：口袋書 3-5 類（U/R）"),
+    r("cxr", "core", "精神症狀：口袋書 3-5 類（CXR）"),
+    r("ecg", "core", "精神症狀：口袋書 3-5 類（EKG）"),
+    r(
+      "etoh",
+      "plus",
+      "精神症狀＋飲酒／物質：酒精濃度",
+      (c) => c.yes("alcohol") || c.yes("substance"),
+    ),
+    r("urine_drug", "plus", "精神症狀＋物質濫用：毒藥物", (c) => c.yes("substance")),
     r("apap", "core", "自傷／過量：乙醯胺酚濃度", (c) => c.yes("self_harm")),
     r("salicylate", "core", "自傷／過量：水楊酸濃度", (c) => c.yes("self_harm")),
     r("apap", "plus", "自殺意念：乙醯胺酚濃度", (c) => c.yes("si")),
@@ -1149,8 +1161,9 @@ export function planOrders(findings: EdFindings, patient: EdPatientContext): Ord
   const ctx = buildContext(findings, patient);
   const problems = selectedProblems(findings);
   const merged = new Map<string, { tier: OrderTier; reasons: string[] }>();
-  const add = (rawId: string, tier: OrderTier, why: string) => {
+  const add = (rawId: string, rawTier: OrderTier, why: string) => {
     const id = resolvePseudo(rawId, ctx);
+    const tier: OrderTier = ctx.child && /^ct/.test(id) ? "ask" : rawTier;
     const current = merged.get(id);
     if (!current) {
       merged.set(id, { tier, reasons: [why] });
@@ -1275,10 +1288,15 @@ function planNotes(
     notes.push("過敏：以藥物處置為主（例如 Dexa＋CTM），多半不需要檢查。");
   if (ctx.fertile && [...picked].some((id) => RADIATION_IDS.has(id)))
     notes.push("育齡女性做輻射檢查前須驗孕，病人拒絕要簽拒絕驗孕同意書。");
-  if (picked.has("bcx") || picked.has("vbg"))
+  notes.push(
+    "第一輪不預設開：血液培養、各種培養、床邊超音波、血氣（VBG/ABG）、備血。需要時再加（B/C、VBG、備血只有護理師抽，打 IV 時一併抽，單子夾板夾、不要給病人）；可到「其他常用檢查」手動加入。",
+  );
+  if (ctx.child)
     notes.push(
-      "血液培養與 VBG 只有護理師抽血：請在第一次打 IV 時一併抽；單子夾板夾，不要給病人。",
+      "未成年：CT 預設不勾，輻射檢查請與 VS／兒科討論；抽血量與血液培養規定也不同。",
     );
+  if (ctx.fertile && ctx.yes("pregnancy_possible"))
+    notes.push("可能懷孕：避免不必要的 CT／X 光，先確認驗孕結果並與 VS 討論。");
   if (picked.has("urine_cx"))
     notes.push(
       "尿液培養（ORDINARY CULTURE-A）加入時會跳出檢體視窗，請選 Urine（導尿檢體選 Urine (catheter)）。",

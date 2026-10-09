@@ -31,7 +31,8 @@ function withProblems(...ids: string[]): Findings {
   return findings;
 }
 
-const yes = (id: string): Findings => ({ [edKey.history(id)]: { on: true } });
+const yes = (...ids: string[]): Findings =>
+  Object.fromEntries(ids.map((id) => [edKey.history(id), { on: true }]));
 
 function ids(findings: Findings, patient = MALE_40) {
   return planOrders(findings, patient).selected.map((order) => order.id);
@@ -158,11 +159,17 @@ describe("planOrders", () => {
     }
   });
 
-  it("adds urine culture for the fever risk groups only", () => {
-    const list = ids({ ...withProblems("fever"), ...yes("dysuria") }, MALE_40);
-    expect(list).toContain("urine_cx");
-    expect(list).toContain("bcx");
-    expect(ids(withProblems("fever"), MALE_40)).not.toContain("urine_cx");
+  it("adds the pocketbook's extra fever work-up only without an obvious URI focus or for high-risk patients", () => {
+    const uri = ids({ ...withProblems("fever"), ...yes("cough") }, MALE_40);
+    expect(uri).toEqual(expect.arrayContaining(["alt", "flu", "cxr_pa"]));
+    expect(uri).not.toContain("ggt");
+    expect(uri).not.toContain("urine_routine");
+    const noFocus = ids(withProblems("fever"), MALE_40);
+    expect(noFocus).toEqual(
+      expect.arrayContaining(["ggt", "tbil", "urine_routine", "covid_ag"]),
+    );
+    const older = ids({ ...withProblems("fever"), ...yes("cough") }, MALE_70);
+    expect(older).toEqual(expect.arrayContaining(["ggt", "tbil", "urine_routine"]));
   });
 
   it("respects the user's overrides, including manual extras", () => {
@@ -190,12 +197,12 @@ describe("planOrders", () => {
     }
   });
 
-  it("reminds about nurse-drawn tubes and the culture specimen dialog", () => {
+  it("tells the doctor what is deliberately not ordered in the first round", () => {
     const notes = planOrders(withProblems("fever", "urinary"), MALE_40).notes.join(
       "\n",
     );
+    expect(notes).toContain("第一輪不預設開");
     expect(notes).toContain("護理師");
-    expect(notes).toContain("ORDINARY CULTURE-A");
   });
 
   it("every problem produces at least one suggestion or a note", () => {
@@ -203,6 +210,174 @@ describe("planOrders", () => {
       const plan = planOrders(withProblems(problem.id), FEMALE_28);
       expect(plan.suggestions.length + plan.notes.length).toBeGreaterThan(0);
     }
+  });
+});
+
+const FIRST_ROUND_EXCLUDED = [
+  "bcx",
+  "urine_cx",
+  "sputum_cx",
+  "c_diff",
+  "stool_cx",
+  "vbg",
+  "sono_cardiac",
+  "sono_sob",
+  "sono_abd",
+  "sono_dvt",
+  "sono_fast",
+  "sono_aortic_renal",
+  "sono_pelvic",
+  "sono_fb",
+];
+
+describe("first-round policy (no cultures, no bedside sono, no blood gas)", () => {
+  it("no rule references an excluded order, so none can ever be suggested", () => {
+    const referenced = referencedOrderIds();
+    for (const id of FIRST_ROUND_EXCLUDED) expect(referenced).not.toContain(id);
+  });
+
+  it("never selects or even suggests one, for any problem and any patient", () => {
+    const patients = [
+      MALE_40,
+      MALE_70,
+      FEMALE_28,
+      { sex: "女 F", age: "70" },
+      { sex: "男 M", age: "8" },
+    ];
+    const extras = [
+      {},
+      yes("fever", "cough", "sputum", "dysuria", "diarrhea", "anticoag", "calf_pain"),
+    ];
+    for (const problem of ED_PROBLEMS) {
+      for (const patient of patients) {
+        for (const extra of extras) {
+          const plan = planOrders({ ...withProblems(problem.id), ...extra }, patient);
+          const suggested = plan.suggestions.map((entry) => entry.order.id);
+          for (const id of FIRST_ROUND_EXCLUDED) expect(suggested).not.toContain(id);
+        }
+      }
+    }
+  });
+
+  it("still lets the doctor add them manually", () => {
+    const findings = { ...withProblems("fever"), [edKey.order("bcx")]: { on: true } };
+    expect(ids(findings)).toContain("bcx");
+  });
+});
+
+describe("pocketbook 3-5 category first-round lists", () => {
+  const BASE = ["cbc_dc", "crea", "na", "k", "glu", "crp"];
+  const cases: [string, Findings, { sex: string; age: string }, string[]][] = [
+    [
+      "chest pain, young",
+      withProblems("chest_pain"),
+      MALE_40,
+      [...BASE, "ck", "hs_tnt", "ecg", "cxr_pa"],
+    ],
+    [
+      "chest pain, older",
+      withProblems("chest_pain"),
+      MALE_70,
+      [...BASE, "ck", "tni", "ecg", "cxr_pa"],
+    ],
+    [
+      "dyspnea",
+      withProblems("dyspnea"),
+      MALE_40,
+      [...BASE, "bnp", "ck", "hs_tnt", "ecg", "cxr_pa"],
+    ],
+    [
+      "abdominal pain",
+      withProblems("abd_pain"),
+      MALE_40,
+      [...BASE, "alt", "ggt", "tbil", "lipase", "urine_routine", "cxr_pa", "kub"],
+    ],
+    [
+      "GI bleeding",
+      withProblems("gi_bleed"),
+      MALE_40,
+      [...BASE, "pt", "aptt", "stool_ob", "cxr_pa", "kub"],
+    ],
+    [
+      "dizziness",
+      withProblems("dizziness"),
+      MALE_40,
+      [...BASE, "alt", "ca", "ck", "ecg", "cxr_pa"],
+    ],
+    [
+      "psychiatric",
+      withProblems("psych"),
+      MALE_40,
+      [...BASE, "alt", "urine_routine", "cxr_pa", "ecg"],
+    ],
+  ];
+  for (const [label, findings, patient, expected] of cases) {
+    it(`${label}: contains the listed items and nothing questionable`, () => {
+      const list = ids(findings, patient);
+      expect(list).toEqual(expect.arrayContaining(expected));
+      for (const id of ["pct", "lactate", "sono_abd", "bcx", "vbg", "ct_chest"]) {
+        if (!expected.includes(id)) expect(list).not.toContain(id);
+      }
+    });
+  }
+});
+
+describe("sex and age", () => {
+  it("pregnancy testing follows the 12–55 female window and treats a blank age as fertile", () => {
+    expect(ids(withProblems("abd_pain"), { sex: "女 F", age: "11" })).not.toContain(
+      "urine_hcg",
+    );
+    expect(ids(withProblems("abd_pain"), { sex: "女 F", age: "12" })).toContain(
+      "urine_hcg",
+    );
+    expect(ids(withProblems("abd_pain"), { sex: "女 F", age: "55" })).toContain(
+      "urine_hcg",
+    );
+    expect(ids(withProblems("abd_pain"), { sex: "女 F", age: "56" })).not.toContain(
+      "urine_hcg",
+    );
+    expect(ids(withProblems("abd_pain"), { sex: "女 F", age: "" })).toContain(
+      "urine_hcg",
+    );
+    expect(ids(withProblems("abd_pain"), { sex: "男 M", age: "28" })).not.toContain(
+      "urine_hcg",
+    );
+    expect(ids(withProblems("gyn"), { sex: "男 M", age: "28" })).not.toContain("bhcg");
+  });
+
+  it("a woman of childbearing age gets a pregnancy test before CT even for a headache", () => {
+    const findings = { ...withProblems("headache"), ...yes("headache_worst") };
+    expect(ids(findings, FEMALE_28)).toContain("urine_hcg");
+    expect(ids(findings, MALE_40)).not.toContain("urine_hcg");
+  });
+
+  it("elderly or cardiac-history patients get the cardiac work-up for abdominal pain, others do not", () => {
+    expect(ids(withProblems("abd_pain"), MALE_70)).toEqual(
+      expect.arrayContaining(["ck", "tni"]),
+    );
+    expect(ids(withProblems("abd_pain"), MALE_40)).not.toContain("tni");
+    const withHistory = {
+      ...withProblems("abd_pain"),
+      [edKey.pmh("cad")]: { on: true },
+    };
+    expect(ids(withHistory, MALE_40)).toEqual(expect.arrayContaining(["ck", "tni"]));
+  });
+
+  it("children never get a CT ticked by default", () => {
+    const findings = { ...withProblems("headache"), ...yes("headache_worst") };
+    const plan = planOrders(findings, { sex: "男 M", age: "10" });
+    const ct = plan.suggestions.find((entry) => entry.order.id === "ct_brain");
+    expect(ct?.tier).toBe("ask");
+    expect(ct?.selected).toBe(false);
+    expect(plan.notes.join("\n")).toContain("未成年");
+  });
+
+  it("warns about imaging when pregnancy is possible", () => {
+    const findings = { ...withProblems("abd_pain"), ...yes("pregnancy_possible") };
+    expect(planOrders(findings, FEMALE_28).notes.join("\n")).toContain("可能懷孕");
+    expect(
+      planOrders(withProblems("abd_pain"), FEMALE_28).notes.join("\n"),
+    ).not.toContain("可能懷孕");
   });
 });
 
