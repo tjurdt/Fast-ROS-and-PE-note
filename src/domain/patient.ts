@@ -161,6 +161,25 @@ export function updatePatientFinding(
   });
 }
 
+/** Applies several finding changes at once so a bulk action is one save, not one per item. */
+export function updatePatientFindings(
+  patient: Patient,
+  patch: Readonly<Record<string, FindingValue>>,
+  now: number,
+): Patient {
+  const parsed = Object.fromEntries(
+    Object.entries(patch).map(([itemId, finding]) => [
+      itemId,
+      FindingValueSchema.parse(finding),
+    ]),
+  );
+  return PatientSchema.parse({
+    ...patient,
+    findings: { ...patient.findings, ...parsed },
+    updatedAt: now,
+  });
+}
+
 export function updatePatientWorkspace(
   patient: Patient,
   patch: Partial<PatientWorkspaceFields>,

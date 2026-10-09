@@ -17,6 +17,7 @@ import {
   deletePatientInDatabase,
   updateBundlesInDatabase,
   updateFindingInDatabase,
+  updateFindingsInDatabase,
   updatePatientInDatabase,
   updateWorkspaceInDatabase,
 } from "../application/patient-workflows";
@@ -38,6 +39,8 @@ import {
 import type { UserBundleTemplate } from "../domain/bundle-templates";
 import { countFindingsByKind } from "../domain/clinical/clinical-rules";
 import { admissionFindingCount } from "../domain/note-workspace";
+import { isEdPatient } from "../domain/specialty";
+import { buildEdNoteTabs } from "../features/ed-note/EdNoteTabs";
 import { AdditionalNotes } from "../features/additional-notes/AdditionalNotes";
 import { BundleWorkspace } from "../features/bundles/BundleWorkspace";
 import { BundleTemplateEditor } from "../features/bundle-template-editor/BundleTemplateEditor";
@@ -346,6 +349,21 @@ export function App({
     persist(result.database);
   }
 
+  function updateActiveFindings(patch: Record<string, FindingValue>) {
+    if (activePatientId === null) return;
+    const patient = databaseRef.current.patients.find(
+      (candidate) => candidate.id === activePatientId,
+    );
+    if (!patient) return;
+    const result = updateFindingsInDatabase(
+      databaseRef.current,
+      patient,
+      patch,
+      factory.now(),
+    );
+    persist(result.database);
+  }
+
   function updateActiveWorkspace(patch: Partial<PatientWorkspaceFields>) {
     if (activePatientId === null) return;
     const patient = databaseRef.current.patients.find(
@@ -433,7 +451,40 @@ export function App({
       onSync={() => void syncNow()}
     />
   ) : null;
-  const patientNoteTabs: PatientNoteTab[] = activePatient
+  const todoTab: PatientNoteTab | null = activePatient
+    ? {
+        key: "todo",
+        label: "待辦與備註",
+        badge: activePatient.todos.filter((todo) => todo.status === "todo").length,
+        content: (
+          <>
+            <TodoList
+              createId={factory.createId}
+              now={factory.now}
+              todos={activePatient.todos}
+              onChange={(todos) => updateActiveWorkspace({ todos })}
+            />
+            <AdditionalNotes
+              value={activePatient.globalNote}
+              onChange={(globalNote) => updateActiveWorkspace({ globalNote })}
+            />
+          </>
+        ),
+      }
+    : null;
+  const edNoteTabs: PatientNoteTab[] =
+    activePatient && isEdPatient(activePatient)
+      ? [
+          ...buildEdNoteTabs({
+            findings: activePatient.findings,
+            patient: { sex: activePatient.sex, age: activePatient.age },
+            onFindingChange: updateActiveFinding,
+            onFindingsChange: updateActiveFindings,
+          }),
+          ...(todoTab ? [todoTab] : []),
+        ]
+      : [];
+  const standardNoteTabs: PatientNoteTab[] = activePatient
     ? [
         {
           key: "history",
@@ -503,27 +554,11 @@ export function App({
             />
           ),
         },
-        {
-          key: "todo",
-          label: "待辦與備註",
-          badge: activePatient.todos.filter((todo) => todo.status === "todo").length,
-          content: (
-            <>
-              <TodoList
-                createId={factory.createId}
-                now={factory.now}
-                todos={activePatient.todos}
-                onChange={(todos) => updateActiveWorkspace({ todos })}
-              />
-              <AdditionalNotes
-                value={activePatient.globalNote}
-                onChange={(globalNote) => updateActiveWorkspace({ globalNote })}
-              />
-            </>
-          ),
-        },
+        ...(todoTab ? [todoTab] : []),
       ]
     : [];
+  const patientNoteTabs =
+    activePatient && isEdPatient(activePatient) ? edNoteTabs : standardNoteTabs;
 
   return (
     <>
@@ -592,6 +627,7 @@ export function App({
           }}
           onChange={updateActivePatient}
           onExport={() => setExportOpen(true)}
+          hideExport={isEdPatient(activePatient)}
         />
       ) : null}
     </>

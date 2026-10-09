@@ -3390,3 +3390,255 @@ textarea:focus-visible {
     break-inside: avoid-page;
   }
 }
+
+/* ───────── 急診問題導向模式 (src/features/ed-note) ───────── */
+
+.ed-panel {
+  display: grid;
+  gap: 10px;
+  margin: 10px 14px;
+  padding: 14px;
+}
+
+.ed-panel h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.ed-panel h3 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--ink-700);
+}
+
+.ed-help {
+  margin: 0;
+  color: var(--ink-500);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.ed-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ed-chip {
+  min-height: 34px;
+  padding: 5px 11px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--ink-700);
+  background: var(--surface);
+  font: inherit;
+  font-size: 13.5px;
+  line-height: 1.2;
+}
+
+.ed-chip.is-active {
+  border-color: var(--brand);
+  color: var(--brand-strong);
+  background: var(--brand-tint);
+  font-weight: 700;
+}
+
+.ed-chip.is-active.is-positive {
+  border-color: var(--positive-border);
+  color: var(--positive-text);
+  background: var(--positive-bg);
+}
+
+.ed-chip.is-active.is-negative {
+  border-color: var(--border);
+  color: var(--ink-700);
+  background: var(--surface-muted);
+}
+
+.ed-chip.is-active.is-warning {
+  border-color: var(--warning-border);
+  color: var(--warning-text);
+  background: var(--warning-bg);
+}
+
+.ed-block {
+  display: grid;
+  gap: 2px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.ed-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--border-subtle);
+}
+
+.ed-row__label {
+  flex: 1 1 150px;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.ed-row__controls,
+.ed-row__detail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.ed-row__detail {
+  flex-basis: 100%;
+}
+
+.ed-row__detail input {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+
+.ed-row__hint {
+  flex-basis: 100%;
+  color: var(--ink-500);
+  font-size: 12px;
+}
+
+.ed-must {
+  margin-right: 4px;
+  color: var(--danger-strong);
+}
+
+.ed-reasons {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  color: var(--accent-text);
+  background: var(--accent-tint);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.ed-more > summary {
+  padding: 8px 0;
+  color: var(--brand-strong);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ed-link {
+  border: 0;
+  color: var(--brand-strong);
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  text-decoration: underline;
+}
+
+.ed-preview {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 8px);
+  background: var(--surface-muted);
+  font-size: 14px;
+}
+
+.ed-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.ed-alert {
+  padding: 10px 12px;
+  border: 1px solid var(--warning-border);
+  border-radius: var(--radius-md, 8px);
+  color: var(--warning-text);
+  background: var(--warning-bg);
+  font-size: 13.5px;
+}
+
+.ed-alert ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.ed-alert small {
+  color: var(--ink-500);
+}
+
+.ed-ok {
+  padding: 8px 12px;
+  border: 1px solid var(--positive-border);
+  border-radius: var(--radius-md, 8px);
+  color: var(--positive-text);
+  background: var(--positive-bg);
+  font-size: 13.5px;
+}
+
+.ed-field {
+  display: grid;
+  gap: 4px;
+}
+
+.ed-field__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-700);
+}
+
+.ed-field__count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--ink-500);
+}
+
+.ed-field.is-over .ed-field__count,
+.ed-field__warn {
+  color: var(--danger-text);
+}
+
+.ed-field.is-over textarea {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+}
+
+.ed-field__warn {
+  font-size: 12.5px;
+}
+
+.ed-icd {
+  display: grid;
+  gap: 4px;
+}
+
+.ed-icd__row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13.5px;
+}
+
+.ed-icd__row input {
+  width: auto;
+  flex: none;
+}
+
+.ed-export {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+}

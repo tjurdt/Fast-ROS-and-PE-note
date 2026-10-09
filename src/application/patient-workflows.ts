@@ -2,6 +2,7 @@ import {
   createPatient,
   updatePatientBundles,
   updatePatientFinding,
+  updatePatientFindings,
   updatePatientDetails,
   updatePatientWorkspace,
   type FindingValue,
@@ -59,6 +60,16 @@ export function updateFindingInDatabase(
   now: number,
 ): CreatePatientResult {
   const updated = updatePatientFinding(patient, itemId, finding, now);
+  return { database: replacePatient(database, updated), patient: updated };
+}
+
+export function updateFindingsInDatabase(
+  database: PatientDatabase,
+  patient: Patient,
+  patch: Readonly<Record<string, FindingValue>>,
+  now: number,
+): CreatePatientResult {
+  const updated = updatePatientFindings(patient, patch, now);
   return { database: replacePatient(database, updated), patient: updated };
 }
 

@@ -18,6 +18,8 @@ interface PatientNoteProps {
   onBack: () => void;
   onChange: (patch: Partial<PatientEditableFields>) => void;
   onExport: () => void;
+  /** 急診模式的輸出在自己的「病歷輸出」分頁，不使用通用的匯出／列印。 */
+  hideExport?: boolean;
   syncPanel?: ReactNode;
   tabs: PatientNoteTab[];
 }
@@ -28,6 +30,7 @@ export function PatientNote({
   onBack,
   onChange,
   onExport,
+  hideExport = false,
   syncPanel,
   tabs,
 }: PatientNoteProps) {
@@ -111,9 +114,11 @@ export function PatientNote({
           <span className="v2-save-state" role="status">
             {saving ? "儲存中…" : "已儲存在本機"}
           </span>
-          <Button data-testid="open-clinical-export" onClick={onExport}>
-            匯出／列印
-          </Button>
+          {hideExport ? null : (
+            <Button data-testid="open-clinical-export" onClick={onExport}>
+              匯出／列印
+            </Button>
+          )}
         </div>
       </header>
 
