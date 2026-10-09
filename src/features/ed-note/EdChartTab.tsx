@@ -11,6 +11,7 @@ import {
   type EdFindings,
   type EdPatientContext,
 } from "../../domain/ed/compose";
+import { planOrders } from "../../domain/ed/order-rules";
 import { PE_FIELD_LABELS } from "../../domain/ed/pe-library";
 import { edKey, type EdFieldKey } from "../../domain/ed/types";
 import { Button } from "../../ui/Button";
@@ -43,7 +44,8 @@ export function EdChartTab({ findings, patient, onChange }: EdChartTabProps) {
   const problems = selectedProblems(findings);
   const chart = composeChart(findings, patient);
   const candidates = icdCandidates(problems, findings);
-  const exportText = serializeChart(chart, patient);
+  const orderPlan = planOrders(findings, patient);
+  const exportText = serializeChart(chart, patient, orderPlan.selected);
   const exportRef = useRef<HTMLTextAreaElement>(null);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "manual">("idle");
 
@@ -103,6 +105,11 @@ export function EdChartTab({ findings, patient, onChange }: EdChartTabProps) {
         {copyState === "manual" ? (
           <span className="ed-help">無法自動複製，請手動複製下方文字。</span>
         ) : null}
+      </div>
+
+      <div className="ed-ok" data-testid="ed-order-summary" role="status">
+        檢查 {orderPlan.selected.length} 項會一併帶到 ERS
+        檢查驗系統（到「檢查」分頁調整）。
       </div>
 
       {FIELD_ORDER.map((key) => {

@@ -171,6 +171,7 @@ export const edKey = {
   ctx: (id: EdContextKey) => `ed.ctx.${id}`,
   tocc: (id: "t" | "o" | "c1" | "c2") => `ed.tocc.${id}`,
   override: (field: EdFieldKey) => `ed.ov.${field}`,
+  order: (id: string) => `ed.ord.${id}`,
   icd: "ed.icd",
 } as const;
 

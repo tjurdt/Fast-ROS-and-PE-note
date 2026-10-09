@@ -112,14 +112,15 @@ export interface Interview {
   more: InterviewBlock[];
 }
 
-function fertile(patient: EdPatientContext): boolean {
+/** 女性且 12–55 歲（年齡空白也算）。 */
+export function isFertilePatient(patient: EdPatientContext): boolean {
   if (patient.sex !== "女 F") return false;
   const age = Number.parseInt(patient.age, 10);
   return Number.isNaN(age) || (age >= 12 && age <= 55);
 }
 
 function itemVisible(item: HistoryItem, patient: EdPatientContext): boolean {
-  return item.gate === "fertile" ? fertile(patient) : true;
+  return item.gate === "fertile" ? isFertilePatient(patient) : true;
 }
 
 function groupBySystem(

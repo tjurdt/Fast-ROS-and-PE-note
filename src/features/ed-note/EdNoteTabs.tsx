@@ -7,9 +7,11 @@ import {
   type EdFindings,
   type EdPatientContext,
 } from "../../domain/ed/compose";
+import { planOrders } from "../../domain/ed/order-rules";
 import { EdBackgroundTab } from "./EdBackgroundTab";
 import { EdChartTab } from "./EdChartTab";
 import { EdInterviewTab } from "./EdInterviewTab";
+import { EdOrdersTab } from "./EdOrdersTab";
 import { EdPhysicalTab } from "./EdPhysicalTab";
 import { EdProblemsTab } from "./EdProblemsTab";
 
@@ -36,7 +38,7 @@ function answeredCount(findings: EdFindings, prefix: string): number {
   ).length;
 }
 
-/** 急診模式的分頁：問題 → 問診 → PE → 病史 → 病歷輸出。 */
+/** 急診模式的分頁：問題 → 問診 → PE → 病史 → 檢查 → 病歷輸出。 */
 export function buildEdNoteTabs({
   findings,
   patient,
@@ -45,6 +47,7 @@ export function buildEdNoteTabs({
 }: EdNoteTabsInput): EdNoteTab[] {
   const problems = selectedProblems(findings);
   const chart = composeChart(findings, patient);
+  const orderCount = planOrders(findings, patient).selected.length;
 
   return [
     {
@@ -86,6 +89,19 @@ export function buildEdNoteTabs({
           findings={findings}
           onBulkChange={onFindingsChange}
           onChange={onFindingChange}
+        />
+      ),
+    },
+    {
+      key: "ed-orders",
+      label: "檢查",
+      badge: orderCount,
+      content: (
+        <EdOrdersTab
+          findings={findings}
+          onBulkChange={onFindingsChange}
+          onChange={onFindingChange}
+          patient={patient}
         />
       ),
     },

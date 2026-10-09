@@ -74,7 +74,7 @@ export function HistoryRow({
     return (
       <div className="ed-row" data-testid={`ed-h-${item.id}`}>
         {heading}
-        <span className="ed-row__controls">
+        <span className="ed-row__controls ed-row__controls--pair">
           <Chip
             active={finding.on === true}
             label={`${item.label}：有`}
@@ -177,7 +177,7 @@ export function PeRow({
         {item.label}
         <ReasonTags reasons={reasons} />
       </span>
-      <span className="ed-row__controls">
+      <span className="ed-row__controls ed-row__controls--pair">
         <Chip
           active={finding.sel === "normal"}
           label={`${item.label}：正常`}

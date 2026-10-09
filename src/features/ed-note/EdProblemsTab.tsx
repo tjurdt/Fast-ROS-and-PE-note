@@ -108,7 +108,7 @@ export function EdProblemsTab({ findings, onChange }: EdProblemsTabProps) {
       {showPain ? (
         <>
           <h3>疼痛 NRS</h3>
-          <div className="ed-chips">
+          <div className="ed-chips ed-chips--tight">
             {NRS_CHIPS.map((chip) => (
               <Chip
                 active={ctx("nrs") === chip}

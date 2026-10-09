@@ -1,5 +1,6 @@
 import { FIELD_ORDER } from "./compose";
 import type { EdChart } from "./compose";
+import { ED_ORDER_FREQ, type EdOrder } from "./orders";
 import type { EdFieldKey } from "./types";
 
 /**
@@ -9,6 +10,13 @@ import type { EdFieldKey } from "./types";
  *   CC: abd pain, N/V for 2 days
  *   PI: ...
  *   ICD: R10.9 Unspecified abdominal pain; R11.2 Nausea with vomiting, unspecified
+ *   ORDERS:
+ *   9071715F|CBC,DC,|LAB0301|Blood|URGENT
+ *   15002010|CHEST PA VIEW|0000000|Patient|URGENT
+ *
+ * ORDERS 一行一項：pfkey|ERS 醫囑名稱|檢體代碼|檢體|頻率。油猴腳本會在 ERS 檢查驗系統
+ * 把這些項目加進「待送出」格子（不會按送出）。ORDERS 放在最後，舊版腳本會把它當成 ICD 的
+ * 續行並因格式不符而忽略，不會出錯。
  *
  * 一個欄位一行 `KEY: 值`；值可以跨行（下一行不是已知 KEY 開頭就接在後面）。
  * 沒有內容的欄位不輸出；油猴腳本不會動到沒有出現的欄位。
@@ -30,7 +38,11 @@ export function patientTag(patient: ChartPatient): string {
   return `${age}${sex}`;
 }
 
-export function serializeChart(chart: EdChart, patient?: ChartPatient): string {
+export function serializeChart(
+  chart: EdChart,
+  patient?: ChartPatient,
+  orders: readonly EdOrder[] = [],
+): string {
   const lines: string[] = [CHART_TEXT_HEADER];
   const tag = patient ? patientTag(patient) : "";
   if (tag) lines.push(`PT: ${tag}`);
@@ -43,7 +55,25 @@ export function serializeChart(chart: EdChart, patient?: ChartPatient): string {
       `ICD: ${chart.icd.map((line) => (line.desc ? `${line.code} ${line.desc}` : line.code)).join("; ")}`,
     );
   }
+  if (orders.length > 0) {
+    lines.push("ORDERS:");
+    for (const order of orders) {
+      lines.push(
+        [order.pfkey, order.name, order.spcnmCode, order.spcnm, ED_ORDER_FREQ].join(
+          "|",
+        ),
+      );
+    }
+  }
   return lines.join("\n");
+}
+
+export interface ParsedOrderLine {
+  pfkey: string;
+  name: string;
+  spcnmCode: string;
+  spcnm: string;
+  freq: string;
 }
 
 export interface ParsedChartText {
@@ -52,19 +82,21 @@ export interface ParsedChartText {
   patient: string;
   fields: Partial<Record<EdFieldKey, string>>;
   icd: { code: string; desc: string }[];
+  orders: ParsedOrderLine[];
 }
 
 const KEY_PATTERN = new RegExp(
-  String.raw`^(${[...CHART_TEXT_KEYS, "ICD", "PT"].join("|")})\s*[:：]\s?(.*)$`,
+  String.raw`^(${[...CHART_TEXT_KEYS, "ICD", "ORDERS", "PT"].join("|")})\s*[:：]\s?(.*)$`,
 );
 
 /** 與油猴腳本相同語意的解析器；這裡用於契約測試。 */
 export function parseChartText(input: string): ParsedChartText {
   const fields: Partial<Record<EdFieldKey, string>> = {};
   let icdRaw = "";
+  let ordersRaw = "";
   let version = 0;
   let patient = "";
-  let current: EdFieldKey | "ICD" | "PT" | null = null;
+  let current: EdFieldKey | "ICD" | "ORDERS" | "PT" | null = null;
   for (const rawLine of input.replace(/\r\n?/g, "\n").split("\n")) {
     const header = /^#ERNOTE\s+v(\d+)\s*$/i.exec(rawLine.trim());
     if (header) {
@@ -73,12 +105,14 @@ export function parseChartText(input: string): ParsedChartText {
     }
     const match = KEY_PATTERN.exec(rawLine);
     if (match) {
-      current = match[1] as EdFieldKey | "ICD" | "PT";
+      current = match[1] as EdFieldKey | "ICD" | "ORDERS" | "PT";
       if (current === "PT") patient = (match[2] ?? "").trim().toUpperCase();
       else if (current === "ICD") icdRaw += `${match[2]}\n`;
+      else if (current === "ORDERS") ordersRaw += `${match[2]}\n`;
       else fields[current] = match[2] ?? "";
     } else if (current && current !== "PT") {
       if (current === "ICD") icdRaw += `${rawLine}\n`;
+      else if (current === "ORDERS") ordersRaw += `${rawLine}\n`;
       else fields[current] = `${fields[current] ?? ""}\n${rawLine}`;
     }
   }
@@ -94,5 +128,21 @@ export function parseChartText(input: string): ParsedChartText {
       return { code: code.toUpperCase(), desc: rest.join(" ") };
     })
     .filter((entry) => /^[A-Z]\d[0-9A-Z]{1,2}(\.[0-9A-Z]{1,4})?$/.test(entry.code));
-  return { version, patient, fields, icd };
+  const orders: ParsedOrderLine[] = [];
+  const seen = new Set<string>();
+  for (const line of ordersRaw.split("\n")) {
+    const [pfkey = "", name = "", spcnmCode = "", spcnm = "", freq = ""] = line
+      .trim()
+      .split("|");
+    if (!/^[0-9A-Z]{8}$/.test(pfkey) || seen.has(pfkey)) continue;
+    seen.add(pfkey);
+    orders.push({
+      pfkey,
+      name: name.trim(),
+      spcnmCode,
+      spcnm,
+      freq: freq || ED_ORDER_FREQ,
+    });
+  }
+  return { version, patient, fields, icd, orders };
 }

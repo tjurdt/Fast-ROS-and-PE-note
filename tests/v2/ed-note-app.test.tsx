@@ -39,6 +39,9 @@ function seededRepository(sex: "女 F" | "男 M" = "男 M", age = "40") {
   return repository;
 }
 
+const isChecked = (label: string) =>
+  (screen.getByLabelText(label) as HTMLInputElement).checked;
+
 async function openPatient(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByTestId("choose-local-v2"));
   await user.click(await screen.findByRole("button", { name: /ED-01/ }));
@@ -51,7 +54,7 @@ describe("ED problem-oriented note", () => {
     await openPatient(user);
 
     const tabs = within(screen.getByRole("navigation", { name: "病人筆記分頁" }));
-    for (const name of ["問題", "問診", "PE", "病史", "病歷輸出"]) {
+    for (const name of ["問題", "問診", "PE", "病史", "檢查", "病歷輸出"]) {
       expect(tabs.getByRole("button", { name: new RegExp(`^${name}`) })).toBeTruthy();
     }
     expect(tabs.queryByRole("button", { name: /^ROS/ })).toBeNull();
@@ -157,4 +160,49 @@ describe("ED problem-oriented note", () => {
     expect(screen.getByTestId("ed-h-pregnancy_possible")).toBeTruthy();
     expect(screen.getByTestId("ed-h-lmp")).toBeTruthy();
   }, 20_000);
+
+  it("suggests de-duplicated ERS orders, lets the doctor untick one, and exports them", async () => {
+    const user = userEvent.setup();
+    render(<App repository={seededRepository("女 F", "28")} />);
+    await openPatient(user);
+
+    await user.click(screen.getByRole("button", { name: "問題" }));
+    await user.click(screen.getByRole("button", { name: "腹痛" }));
+    await user.click(screen.getByRole("button", { name: /噁心／嘔吐/ }));
+    await user.click(screen.getByRole("button", { name: /^檢查/ }));
+
+    // 兩個問題都要求的項目只出現一次。
+    expect(screen.getAllByTestId("ed-order-cbc_dc")).toHaveLength(1);
+    expect(screen.getAllByTestId("ed-order-lipase")).toHaveLength(1);
+    // 育齡女性：驗孕；高輻射的 CT 只列出、不勾選。
+    expect(isChecked("HCG, urine（90727204）")).toBe(true);
+    expect(isChecked("CT/SCAN- UPPER ABDOMEN（15015A60）")).toBe(false);
+
+    const countBefore = Number(
+      /\d+/.exec(screen.getByTestId("ed-order-count").textContent ?? "")?.[0],
+    );
+    await user.click(screen.getByLabelText("KUB- PLAIN（15003010）"));
+    expect(screen.getByTestId("ed-order-count").textContent).toBe(
+      `已選 ${countBefore - 1} 項`,
+    );
+
+    await user.click(screen.getByRole("button", { name: /^病歷輸出/ }));
+    const exported = parseChartText(
+      (screen.getByLabelText("交換文字") as HTMLTextAreaElement).value,
+    );
+    const keys = exported.orders.map((order) => order.pfkey);
+    expect(keys).toHaveLength(countBefore - 1);
+    expect(keys).toContain("9071715F");
+    expect(keys).toContain("90727204");
+    expect(keys).not.toContain("15003010");
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it("asks for a problem before suggesting orders", async () => {
+    const user = userEvent.setup();
+    render(<App repository={seededRepository()} />);
+    await openPatient(user);
+    await user.click(screen.getByRole("button", { name: /^檢查/ }));
+    expect(screen.getByText(/請先到「問題」分頁/)).toBeTruthy();
+  });
 });
