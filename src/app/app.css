@@ -3844,3 +3844,160 @@ textarea:focus-visible {
   width: 100%;
   font-weight: 400;
 }
+
+/* ───────── ED note: 搜尋、已選主訴、問診深度、逐句明細 ───────── */
+.ed-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ed-search input {
+  flex: 1;
+}
+
+.ed-results {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  background: var(--surface-muted);
+}
+
+.ed-custom-add {
+  justify-self: start;
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid var(--brand);
+  border-radius: 8px;
+  color: var(--brand-strong);
+  background: var(--brand-tint);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.ed-selected ul {
+  display: grid;
+  gap: 4px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ed-selected li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.ed-selected li.is-main {
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+}
+
+.ed-selected__label {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.ed-selected__label small {
+  margin-left: 6px;
+  color: var(--ink-500);
+  font-weight: 400;
+}
+
+.ed-selected__main {
+  color: var(--warning-text);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.ed-depth {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 120px));
+  gap: 6px;
+}
+
+.ed-special {
+  display: grid;
+  gap: 8px;
+}
+
+.ed-switch {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-700);
+}
+
+.ed-switch input {
+  width: auto;
+  margin-top: 3px;
+}
+
+.ed-field-wrap {
+  display: grid;
+  gap: 4px;
+}
+
+.ed-fit {
+  padding: 4px 10px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--surface-muted);
+  font-size: 13px;
+}
+
+.ed-fit > summary {
+  padding: 4px 0;
+  color: var(--brand-strong);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ed-fit ul {
+  display: grid;
+  gap: 2px;
+  margin: 4px 0 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.ed-fit label {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  padding: 3px 0;
+}
+
+.ed-fit input {
+  width: auto;
+  flex: none;
+}
+
+.ed-fit li.is-auto .ed-fit__text,
+.ed-fit li.is-user .ed-fit__text {
+  color: var(--ink-500);
+  text-decoration: line-through;
+}
+
+.ed-fit__state {
+  color: var(--warning-text);
+}
+
+.ed-search input {
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 15px;
+}

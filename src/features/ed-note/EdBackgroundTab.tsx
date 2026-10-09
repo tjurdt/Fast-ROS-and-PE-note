@@ -3,6 +3,7 @@ import { composePH, type EdFindings } from "../../domain/ed/compose";
 import { PMH_ITEMS } from "../../domain/ed/history-library";
 import { edKey, type EdContextKey } from "../../domain/ed/types";
 import { Chip, type EdFindingChange } from "./ed-controls";
+import { SpecialPicker } from "./SpecialPicker";
 
 const TOCC: readonly { key: "t" | "o" | "c1" | "c2"; label: string }[] = [
   { key: "t", label: "Travel 旅遊" },
@@ -70,6 +71,9 @@ export function EdBackgroundTab({
         </label>
       ))}
       <p className="ed-help">勾選後會自動追加相關問診題（例如洗腎 → 最後一次透析）。</p>
+
+      <h3>特別情境（寫進 PH）</h3>
+      <SpecialPicker findings={findings} onChange={onChange} target="PH" />
 
       <label>
         目前用藥（抗凝血藥、類固醇、近期新藥等）

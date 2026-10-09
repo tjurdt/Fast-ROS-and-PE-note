@@ -3,10 +3,10 @@ import type { ReactNode } from "react";
 import type { FindingValue } from "../../domain/clinical/finding";
 import {
   composeChart,
-  selectedProblems,
   type EdFindings,
   type EdPatientContext,
 } from "../../domain/ed/compose";
+import { selectedComplaints } from "../../domain/ed/complaints";
 import { planOrders } from "../../domain/ed/order-rules";
 import { EdBackgroundTab } from "./EdBackgroundTab";
 import { EdChartTab } from "./EdChartTab";
@@ -45,7 +45,6 @@ export function buildEdNoteTabs({
   onFindingChange,
   onFindingsChange,
 }: EdNoteTabsInput): EdNoteTab[] {
-  const problems = selectedProblems(findings);
   const chart = composeChart(findings, patient);
   const orderCount = planOrders(findings, patient).selected.length;
 
@@ -53,7 +52,7 @@ export function buildEdNoteTabs({
     {
       key: "ed-problems",
       label: "問題",
-      badge: problems.length,
+      badge: selectedComplaints(findings).length,
       content: <EdProblemsTab findings={findings} onChange={onFindingChange} />,
     },
     {
@@ -110,7 +109,12 @@ export function buildEdNoteTabs({
       label: "病歷輸出",
       badge: chart.missing.length,
       content: (
-        <EdChartTab findings={findings} onChange={onFindingChange} patient={patient} />
+        <EdChartTab
+          findings={findings}
+          onBulkChange={onFindingsChange}
+          onChange={onFindingChange}
+          patient={patient}
+        />
       ),
     },
   ];

@@ -205,4 +205,131 @@ describe("ED problem-oriented note", () => {
     await user.click(screen.getByRole("button", { name: /^檢查/ }));
     expect(screen.getByText(/請先到「問題」分頁/)).toBeTruthy();
   });
+
+  it("searches symptoms, adds a custom complaint and lets the doctor mark the main one", async () => {
+    const user = userEvent.setup();
+    render(<App repository={seededRepository()} />);
+    await openPatient(user);
+    await user.click(screen.getByRole("button", { name: "問題" }));
+
+    await user.type(screen.getByLabelText("搜尋症狀"), "肚子痛");
+    const results = within(screen.getByTestId("ed-search-results"));
+    await user.click(results.getByRole("button", { name: "腹痛" }));
+
+    await user.clear(screen.getByLabelText("搜尋症狀"));
+    await user.type(screen.getByLabelText("搜尋症狀"), "右上腹悶痛");
+    await user.click(screen.getByRole("button", { name: /自訂主訴「右上腹悶痛」/ }));
+    expect(screen.getByTestId("ed-cc-preview").textContent).toBe(
+      "abd pain, 右上腹悶痛",
+    );
+
+    await user.click(screen.getByRole("button", { name: "設為主訴：右上腹悶痛" }));
+    expect(screen.getByTestId("ed-cc-preview").textContent).toBe(
+      "右上腹悶痛, abd pain",
+    );
+    const selected = within(screen.getByTestId("ed-selected"));
+    expect(selected.getAllByRole("listitem")[0]?.textContent).toContain("★");
+
+    await user.click(screen.getByRole("button", { name: "移除：右上腹悶痛" }));
+    expect(screen.getByTestId("ed-cc-preview").textContent).toBe("abd pain");
+  });
+
+  it("groups symptoms sensibly: common first, ENT and eye in their own group", async () => {
+    const user = userEvent.setup();
+    render(<App repository={seededRepository()} />);
+    await openPatient(user);
+    await user.click(screen.getByRole("button", { name: "問題" }));
+    const headings = screen
+      .getAllByRole("heading", { level: 3 })
+      .map((h) => h.textContent);
+    expect(headings.indexOf("常用")).toBeLessThan(headings.indexOf("心肺"));
+    expect(headings).toContain("五官");
+    expect(headings).toContain("精神");
+    expect(headings).not.toContain("其他");
+  });
+
+  it("starts the interview lean and remembers the doctor's depth choice", async () => {
+    const user = userEvent.setup();
+    window.localStorage.removeItem("pe_note_ed_depth");
+    render(<App repository={seededRepository()} />);
+    await openPatient(user);
+    await user.click(screen.getByRole("button", { name: "問題" }));
+    await user.click(screen.getByRole("button", { name: "腹痛" }));
+    await user.click(screen.getByRole("button", { name: /^問診/ }));
+
+    expect(
+      screen.getByRole("button", { name: "精簡" }).getAttribute("aria-pressed"),
+    ).toBe("true");
+    // 必問（發燒）直接顯示；非必問（便秘）收進「其他題目」。
+    const other = screen.getByTestId("ed-other-summary").closest("details");
+    expect(
+      within(screen.getByTestId("ed-h-fever")).getByLabelText("發燒：有"),
+    ).toBeTruthy();
+    expect(other?.contains(screen.getByTestId("ed-h-constipation"))).toBe(true);
+    expect(other?.open).toBe(false);
+
+    await user.click(screen.getByRole("button", { name: "完整" }));
+    expect(window.localStorage.getItem("pe_note_ed_depth")).toBe("full");
+    expect(screen.getByTestId("ed-other-summary").closest("details")?.open).toBe(true);
+    window.localStorage.removeItem("pe_note_ed_depth");
+  });
+
+  it("accepts free-text interview and exam findings and special situations", async () => {
+    const user = userEvent.setup();
+    render(<App repository={seededRepository("女 F", "30")} />);
+    await openPatient(user);
+    await user.click(screen.getByRole("button", { name: "問題" }));
+    await user.click(screen.getByRole("button", { name: "發燒" }));
+
+    await user.click(screen.getByRole("button", { name: /^問診/ }));
+    await user.type(screen.getByLabelText("問診補充"), "家人也有類似症狀");
+    await user.click(screen.getByRole("button", { name: "酒醉／疑似物質影響" }));
+    await user.type(screen.getByLabelText("酒醉／疑似物質影響 細節"), "alcohol");
+
+    await user.click(screen.getByRole("button", { name: /^PE/ }));
+    await user.type(
+      screen.getByLabelText("EXTREMITIES 補充（自由輸入）"),
+      "L leg erythema 2x3 cm",
+    );
+
+    await user.click(screen.getByRole("button", { name: /^病史/ }));
+    await user.click(screen.getByRole("button", { name: "懷孕中" }));
+    await user.type(screen.getByLabelText("懷孕中 細節"), "GA 20w");
+    expect(screen.getByTestId("ed-ph-preview").textContent).toBe(
+      "Situation: pregnant (GA 20w)",
+    );
+
+    await user.click(screen.getByRole("button", { name: /^病歷輸出/ }));
+    const pi = (screen.getByLabelText("PRESENT ILLNESS") as HTMLTextAreaElement).value;
+    expect(pi).toContain("intoxicated (alcohol)");
+    expect(pi).toContain("家人也有類似症狀");
+    const ext = (screen.getByLabelText(/EXTREMITIES/) as HTMLTextAreaElement).value;
+    expect(ext).toBe("L leg erythema 2x3 cm");
+  });
+
+  it("lets the doctor leave one sentence out through the per-field detail list", async () => {
+    const user = userEvent.setup();
+    render(<App repository={seededRepository()} />);
+    await openPatient(user);
+    await user.click(screen.getByRole("button", { name: "問題" }));
+    await user.click(screen.getByRole("button", { name: "發燒" }));
+    await user.click(screen.getByRole("button", { name: /^問診/ }));
+    await user.click(screen.getByLabelText("頭痛：無"));
+    await user.click(screen.getByLabelText("喘／呼吸困難：無"));
+    await user.click(screen.getByRole("button", { name: /^病歷輸出/ }));
+
+    const pi = () =>
+      (screen.getByLabelText("PRESENT ILLNESS") as HTMLTextAreaElement).value;
+    expect(pi()).toContain("headache");
+    const details = within(screen.getByTestId("ed-fit-PI"));
+    expect(details.getByText(/逐句明細/).textContent).toMatch(/寫入 2／2 句/);
+    await user.click(details.getByLabelText("PI：headache"));
+    expect(pi()).not.toContain("headache");
+    expect(pi()).toContain("dyspnea");
+    expect(
+      within(screen.getByTestId("ed-fit-PI")).getByText(/你指定不寫入/),
+    ).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "還原本欄的手動設定" }));
+    expect(pi()).toContain("headache");
+  });
 });

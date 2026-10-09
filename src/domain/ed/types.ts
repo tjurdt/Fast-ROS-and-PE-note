@@ -128,7 +128,7 @@ export interface IcdChoice {
 }
 
 export type EdProblemGroup =
-  "全身" | "心肺" | "消化" | "泌尿婦產" | "神經" | "外傷皮膚骨科" | "其他";
+  "全身代謝" | "心肺" | "消化" | "泌尿婦產" | "神經" | "五官" | "外傷皮膚骨科" | "精神";
 
 export interface EdProblem {
   id: string;
@@ -172,9 +172,28 @@ export const edKey = {
   tocc: (id: "t" | "o" | "c1" | "c2") => `ed.tocc.${id}`,
   override: (field: EdFieldKey) => `ed.ov.${field}`,
   order: (id: string) => `ed.ord.${id}`,
+  /** 自訂主訴：fu = { 症狀文字: 選取順序 }。 */
+  custom: "ed.custom",
+  /** 指定的主要主訴：sel = 問題 id 或 `custom:<症狀文字>`。 */
+  main: "ed.main",
+  /** 特別情境：on = 勾選，text = 細節。 */
+  special: (id: string) => `ed.sp.${id}`,
+  /** 各 PE 欄位的自由補充文字。 */
+  peExtra: (field: EdPeField) => `ed.pex.${field}`,
+  /** 每一句的寫入設定：sel = "omit"（不寫入）或 "keep"（一定寫入）。 */
+  omit: (clauseId: string) => `ed.omit.${clauseId}`,
   icd: "ed.icd",
 } as const;
 
 /** 主訴、背景相關的單欄文字。 */
 export type EdContextKey =
-  "duration" | "nrs" | "allergy" | "meds" | "referral" | "ccExtra";
+  | "duration"
+  | "nrs"
+  | "allergy"
+  | "meds"
+  | "referral"
+  | "ccExtra"
+  /** 問診補充（自由輸入，寫進 PI 結尾）。 */
+  | "piExtra"
+  /** "off" = 關閉超過字數時的自動精簡。 */
+  | "autoFit";

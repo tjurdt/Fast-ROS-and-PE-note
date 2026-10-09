@@ -11,11 +11,15 @@ import {
   type EdFindings,
   type EdPatientContext,
 } from "../../domain/ed/compose";
+import { selectedComplaints } from "../../domain/ed/complaints";
+import { autoFitEnabled } from "../../domain/ed/condense";
+import type { FindingValue } from "../../domain/clinical/finding";
 import { planOrders } from "../../domain/ed/order-rules";
 import { PE_FIELD_LABELS } from "../../domain/ed/pe-library";
 import { edKey, type EdFieldKey } from "../../domain/ed/types";
 import { Button } from "../../ui/Button";
 import type { EdFindingChange } from "./ed-controls";
+import { EdFitDetails } from "./EdFitDetails";
 
 const FIELD_TITLES: Record<EdFieldKey, string> = {
   CC: "CHIEF COMPLAINT",
@@ -38,9 +42,15 @@ interface EdChartTabProps {
   findings: EdFindings;
   patient: EdPatientContext;
   onChange: EdFindingChange;
+  onBulkChange: (patch: Record<string, FindingValue>) => void;
 }
 
-export function EdChartTab({ findings, patient, onChange }: EdChartTabProps) {
+export function EdChartTab({
+  findings,
+  patient,
+  onChange,
+  onBulkChange,
+}: EdChartTabProps) {
   const problems = selectedProblems(findings);
   const chart = composeChart(findings, patient);
   const candidates = icdCandidates(problems, findings);
@@ -49,7 +59,7 @@ export function EdChartTab({ findings, patient, onChange }: EdChartTabProps) {
   const exportRef = useRef<HTMLTextAreaElement>(null);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "manual">("idle");
 
-  if (problems.length === 0) {
+  if (selectedComplaints(findings).length === 0) {
     return (
       <section className="v2-card ed-panel">
         <p className="v2-empty">請先到「問題」分頁選擇病人的主訴。</p>
@@ -107,6 +117,18 @@ export function EdChartTab({ findings, patient, onChange }: EdChartTabProps) {
         ) : null}
       </div>
 
+      <label className="ed-switch">
+        <input
+          aria-label="超過字數時自動精簡"
+          checked={autoFitEnabled(findings)}
+          onChange={(event) =>
+            onChange(edKey.ctx("autoFit"), { text: event.target.checked ? "" : "off" })
+          }
+          type="checkbox"
+        />
+        超過字數上限時自動精簡（依重要性略過；每欄的「逐句明細」可逐句決定）
+      </label>
+
       <div className="ed-ok" data-testid="ed-order-summary" role="status">
         檢查 {orderPlan.selected.length} 項會一併帶到 ERS
         檢查驗系統（到「檢查」分頁調整）。
@@ -116,35 +138,46 @@ export function EdChartTab({ findings, patient, onChange }: EdChartTabProps) {
         const value = chart.fields[key];
         const limit = FIELD_LIMITS[key];
         const over = value.length > limit;
+        const detail = chart.detail[key];
         return (
-          <label className={`ed-field ${over ? "is-over" : ""}`} key={key}>
-            <span className="ed-field__head">
-              <span>{FIELD_TITLES[key]}</span>
-              <span className="ed-field__count" data-testid={`ed-count-${key}`}>
-                {value.length}/{limit}
+          <div className="ed-field-wrap" key={key}>
+            <label className={`ed-field ${over ? "is-over" : ""}`}>
+              <span className="ed-field__head">
+                <span>{FIELD_TITLES[key]}</span>
+                <span className="ed-field__count" data-testid={`ed-count-${key}`}>
+                  {value.length}/{limit}
+                </span>
               </span>
-            </span>
-            <textarea
-              aria-label={FIELD_TITLES[key]}
-              onChange={(event) =>
-                onChange(edKey.override(key), { on: true, text: event.target.value })
-              }
-              rows={key === "PI" || key === "PH" || key === "CC" ? 3 : 2}
-              value={value}
-            />
-            {overrides.has(key) ? (
-              <button
-                className="ed-link"
-                onClick={() => onChange(edKey.override(key), {})}
-                type="button"
-              >
-                已手動修改・還原自動產生
-              </button>
+              <textarea
+                aria-label={FIELD_TITLES[key]}
+                onChange={(event) =>
+                  onChange(edKey.override(key), { on: true, text: event.target.value })
+                }
+                rows={key === "PI" || key === "PH" || key === "CC" ? 3 : 2}
+                value={value}
+              />
+              {overrides.has(key) ? (
+                <button
+                  className="ed-link"
+                  onClick={() => onChange(edKey.override(key), {})}
+                  type="button"
+                >
+                  已手動修改・還原自動產生
+                </button>
+              ) : null}
+              {over ? (
+                <span className="ed-field__warn">超過表單上限，請刪減。</span>
+              ) : null}
+            </label>
+            {detail ? (
+              <EdFitDetails
+                detail={detail}
+                onBulkChange={onBulkChange}
+                onChange={onChange}
+                title={key}
+              />
             ) : null}
-            {over ? (
-              <span className="ed-field__warn">超過表單上限，請刪減。</span>
-            ) : null}
-          </label>
+          </div>
         );
       })}
       <p className="ed-help">沒有內容的欄位，帶入 ERS 時不會動到表單上原有的內容。</p>

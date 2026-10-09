@@ -1,4 +1,12 @@
 import type { FindingValue } from "../clinical/finding";
+import { maxComplaintSeq, selectedComplaints } from "./complaints";
+import {
+  autoFitEnabled,
+  clauseOverride,
+  fitClauses,
+  type Clause,
+  type FieldDetail,
+} from "./condense";
 import { HISTORY_ITEMS, PMH_ITEMS, SYSTEM_ORDER, historyItem } from "./history-library";
 import {
   PE_COLLAPSED_NORMAL,
@@ -8,6 +16,7 @@ import {
   peItem,
 } from "./pe-library";
 import { ED_PROBLEMS } from "./problems";
+import { SPECIAL_ITEMS, specialPhrase } from "./special";
 import {
   edKey,
   type EdContextKey,
@@ -60,17 +69,13 @@ const text = (finding: FindingValue | undefined) => (finding?.text ?? "").trim()
 
 // ───────────── 問題選擇 ─────────────
 
-/** 已選問題，依選取順序排列（第一個 = 主要問題）。 */
+/** 已選標準問題：指定的主訴排第一，其餘依選取順序。自訂主訴不在這裡（沒有題庫）。 */
 export function selectedProblems(findings: EdFindings): EdProblem[] {
-  const picked: { problem: EdProblem; seq: number }[] = [];
-  for (const problem of ED_PROBLEMS) {
-    const finding = findings[edKey.problem(problem.id)];
-    if (finding?.on) {
-      const seq = Number(finding.note);
-      picked.push({ problem, seq: Number.isFinite(seq) ? seq : 0 });
-    }
-  }
-  return picked.sort((a, b) => a.seq - b.seq).map((entry) => entry.problem);
+  const byId = new Map(ED_PROBLEMS.map((problem) => [problem.id, problem]));
+  return selectedComplaints(findings)
+    .filter((entry) => entry.kind === "problem")
+    .map((entry) => byId.get(entry.id))
+    .filter((problem): problem is EdProblem => problem !== undefined);
 }
 
 export function toggleProblemFinding(
@@ -79,10 +84,7 @@ export function toggleProblemFinding(
 ): FindingValue {
   const current = findings[edKey.problem(problemId)];
   if (current?.on) return { on: false };
-  const used = ED_PROBLEMS.map((problem) => findings[edKey.problem(problem.id)])
-    .filter((finding) => finding?.on)
-    .map((finding) => Number(finding?.note) || 0);
-  return { on: true, note: String(Math.max(0, ...used) + 1) };
+  return { on: true, note: String(maxComplaintSeq(findings) + 1) };
 }
 
 // ───────────── 問診題排版 ─────────────
@@ -307,46 +309,87 @@ function pickOption(item: HistoryItem, finding: FindingValue | undefined) {
   return item.options.find((option) => option.label === finding?.sel);
 }
 
-function historyPhrases(
-  ids: readonly string[],
+interface HistoryClause extends Clause {
+  kind: "lead" | "pos" | "neg" | "extra";
+}
+
+/** 一題問診 → 一句：陽性寫進正文，陰性併入「no …」。 */
+function historyClause(
+  id: string,
   findings: EdFindings,
-): { positives: string[]; negatives: string[] } {
-  const positives: string[] = [];
-  const negatives: string[] = [];
-  for (const id of ids) {
-    const item = historyItem(id);
-    if (!item) continue;
-    const finding = findings[edKey.history(id)];
-    if (item.type === "pick") {
-      const option = pickOption(item, finding);
-      if (option) positives.push(option.text);
-    } else if (item.type === "text") {
-      const value = text(finding);
-      if (value) positives.push(item.template.replace("{v}", value));
-    } else if (finding?.on === true) {
-      const detail = text(finding);
-      positives.push(detail ? `${item.pos} (${detail})` : item.pos);
-    } else if (finding?.on === false) {
-      if (item.negPhrase) positives.push(item.negPhrase);
-      else negatives.push(item.neg ?? item.pos);
-    }
+  must: boolean,
+): HistoryClause | null {
+  const item = historyItem(id);
+  if (!item) return null;
+  const finding = findings[edKey.history(id)];
+  const clauseId = `h.${id}`;
+  if (item.type === "pick") {
+    const option = pickOption(item, finding);
+    return option
+      ? { id: clauseId, kind: "pos", text: option.text, score: must ? 80 : 60 }
+      : null;
   }
-  return { positives, negatives };
+  if (item.type === "text") {
+    const value = text(finding);
+    return value
+      ? {
+          id: clauseId,
+          kind: "pos",
+          text: item.template.replace("{v}", value),
+          score: must ? 80 : 60,
+        }
+      : null;
+  }
+  if (finding?.on === true) {
+    const detail = text(finding);
+    return {
+      id: clauseId,
+      kind: "pos",
+      text: detail ? `${item.pos} (${detail})` : item.pos,
+      score: must ? 80 : detail ? 60 : 50,
+    };
+  }
+  if (finding?.on === false) {
+    if (item.negPhrase) {
+      return { id: clauseId, kind: "pos", text: item.negPhrase, score: must ? 80 : 50 };
+    }
+    return {
+      id: clauseId,
+      kind: "neg",
+      text: item.neg ?? item.pos,
+      score: must ? 40 : 10,
+    };
+  }
+  return null;
 }
 
 export function composeCC(
   problems: readonly EdProblem[],
   findings: EdFindings,
 ): string {
-  const phrases = problems.map((problem) => {
-    if (!problem.ccFrom) return problem.cc;
+  const byId = new Map(problems.map((problem) => [problem.id, problem]));
+  const phrases: string[] = [];
+  for (const entry of selectedComplaints(findings)) {
+    if (entry.kind === "custom") {
+      phrases.push(entry.label);
+      continue;
+    }
+    const problem = byId.get(entry.id);
+    if (!problem) continue;
+    if (!problem.ccFrom) {
+      phrases.push(problem.cc);
+      continue;
+    }
     const item = historyItem(problem.ccFrom);
     const option = item
       ? pickOption(item, findings[edKey.history(problem.ccFrom)])
       : undefined;
-    if (!option?.cc) return problem.cc;
-    return problem.ccMode === "replace" ? option.cc : `${option.cc} ${problem.cc}`;
-  });
+    if (!option?.cc) phrases.push(problem.cc);
+    else
+      phrases.push(
+        problem.ccMode === "replace" ? option.cc : `${option.cc} ${problem.cc}`,
+      );
+  }
   const unique = [...new Set(phrases)];
   const duration = text(findings[edKey.ctx("duration")]);
   const extra = text(findings[edKey.ctx("ccExtra")]);
@@ -359,21 +402,89 @@ export function composeNRS(findings: EdFindings): string {
   return text(findings[edKey.ctx("nrs")]);
 }
 
+/** 目前勾選的特別情境（依目錄順序）。 */
+function specialClauses(findings: EdFindings, target: "PI" | "PH"): Clause[] {
+  return SPECIAL_ITEMS.filter(
+    (item) => item.target === target && findings[edKey.special(item.id)]?.on === true,
+  ).map((item) => ({
+    id: `sp.${item.id}`,
+    text: specialPhrase(item, text(findings[edKey.special(item.id)])),
+    score: target === "PI" ? 85 : 75,
+  }));
+}
+
+export function composePIDetail(
+  problems: readonly EdProblem[],
+  findings: EdFindings,
+  patient: EdPatientContext,
+): FieldDetail {
+  const interview = buildInterview(problems, findings, patient);
+  const mustIds = new Set<string>();
+  for (const block of [
+    ...interview.characterize,
+    ...interview.core,
+    ...(interview.conditional ? [interview.conditional] : []),
+    ...interview.more,
+  ]) {
+    for (const item of block.items) if (item.must) mustIds.add(item.id);
+  }
+  const clauses: HistoryClause[] = [];
+  const referral = text(findings[edKey.ctx("referral")]);
+  if (referral) {
+    clauses.push({
+      id: "lead.referral",
+      kind: "lead",
+      text: `referred from ${referral}`,
+      score: 95,
+    });
+  }
+  for (const clause of specialClauses(findings, "PI")) {
+    clauses.push({ ...clause, kind: "pos" });
+  }
+  for (const id of interviewItemIds(interview)) {
+    const clause = historyClause(id, findings, mustIds.has(id));
+    if (clause) clauses.push(clause);
+  }
+  const extra = text(findings[edKey.ctx("piExtra")]);
+  if (extra) {
+    clauses.push({
+      id: "pi.extra",
+      kind: "extra",
+      text: extra,
+      score: 100,
+      locked: true,
+    });
+  }
+
+  const render = (kept: readonly HistoryClause[]) => {
+    const positives = kept
+      .filter((clause) => clause.kind === "lead" || clause.kind === "pos")
+      .map((clause) => clause.text);
+    const negatives = kept
+      .filter((clause) => clause.kind === "neg")
+      .map((clause) => clause.text);
+    const extras = kept
+      .filter((clause) => clause.kind === "extra")
+      .map((clause) => clause.text);
+    const positiveText = positives.join(", ");
+    const negativeText = negatives.length > 0 ? `no ${negatives.join(", ")}` : "";
+    return [positiveText, negativeText, ...extras].filter(Boolean).join(". ");
+  };
+  return fitClauses(
+    clauses,
+    render,
+    FIELD_LIMITS.PI,
+    (id) => clauseOverride(findings, id),
+    autoFitEnabled(findings),
+  );
+}
+
 export function composePI(
   problems: readonly EdProblem[],
   findings: EdFindings,
   patient: EdPatientContext,
 ): string {
-  const interview = buildInterview(problems, findings, patient);
-  const { positives, negatives } = historyPhrases(
-    interviewItemIds(interview),
-    findings,
-  );
-  const referral = text(findings[edKey.ctx("referral")]);
-  const lead = referral ? [`referred from ${referral}`] : [];
-  const positiveText = [...lead, ...positives].join(", ");
-  const negativeText = negatives.length > 0 ? `no ${negatives.join(", ")}` : "";
-  return [positiveText, negativeText].filter(Boolean).join(". ");
+  return composePIDetail(problems, findings, patient).text;
 }
 
 const TOCC_LETTERS: readonly ["t" | "o" | "c1" | "c2", string][] = [
@@ -396,23 +507,63 @@ export function composeTOCC(findings: EdFindings): string {
   }).join(" ");
 }
 
-export function composePH(findings: EdFindings): string {
-  const parts: string[] = [];
-  const history = PMH_ITEMS.filter((item) => findings[edKey.pmh(item.id)]?.on).map(
-    (item) => {
-      const detail = text(findings[edKey.pmh(item.id)]);
-      const base = item.text ?? item.label;
-      return detail ? `${base} (${detail})` : base;
-    },
-  );
-  if (history.length > 0) parts.push(`HX: ${history.join(", ")}`);
+interface PhClause extends Clause {
+  kind: "hx" | "med" | "situation" | "tocc" | "allergy";
+}
+
+export function composePHDetail(findings: EdFindings): FieldDetail {
+  const clauses: PhClause[] = [];
+  for (const item of PMH_ITEMS) {
+    if (findings[edKey.pmh(item.id)]?.on !== true) continue;
+    const detail = text(findings[edKey.pmh(item.id)]);
+    const base = item.text ?? item.label;
+    clauses.push({
+      id: `pmh.${item.id}`,
+      kind: "hx",
+      text: detail ? `${base} (${detail})` : base,
+      score: 70,
+    });
+  }
   const meds = text(findings[edKey.ctx("meds")]);
-  if (meds) parts.push(`Med: ${meds}`);
+  if (meds) clauses.push({ id: "ph.meds", kind: "med", text: meds, score: 80 });
+  for (const clause of specialClauses(findings, "PH")) {
+    clauses.push({ ...clause, kind: "situation" });
+  }
   const tocc = composeTOCC(findings);
-  if (tocc) parts.push(tocc);
+  if (tocc) clauses.push({ id: "ph.tocc", kind: "tocc", text: tocc, score: 60 });
   const allergy = text(findings[edKey.ctx("allergy")]);
-  if (allergy) parts.push(`Drug allergy: ${allergy}`);
-  return parts.join("; ");
+  if (allergy)
+    clauses.push({ id: "ph.allergy", kind: "allergy", text: allergy, score: 90 });
+
+  const render = (kept: readonly PhClause[]) => {
+    const parts: string[] = [];
+    const hx = kept
+      .filter((clause) => clause.kind === "hx")
+      .map((clause) => clause.text);
+    if (hx.length > 0) parts.push(`HX: ${hx.join(", ")}`);
+    const med = kept.find((clause) => clause.kind === "med");
+    if (med) parts.push(`Med: ${med.text}`);
+    const situation = kept
+      .filter((clause) => clause.kind === "situation")
+      .map((clause) => clause.text);
+    if (situation.length > 0) parts.push(`Situation: ${situation.join(", ")}`);
+    const toccClause = kept.find((clause) => clause.kind === "tocc");
+    if (toccClause) parts.push(toccClause.text);
+    const allergyClause = kept.find((clause) => clause.kind === "allergy");
+    if (allergyClause) parts.push(`Drug allergy: ${allergyClause.text}`);
+    return parts.join("; ");
+  };
+  return fitClauses(
+    clauses,
+    render,
+    FIELD_LIMITS.PH,
+    (id) => clauseOverride(findings, id),
+    autoFitEnabled(findings),
+  );
+}
+
+export function composePH(findings: EdFindings): string {
+  return composePHDetail(findings).text;
 }
 
 function peClause(
@@ -435,37 +586,73 @@ function peClause(
   return [body, note].filter(Boolean).join(", ");
 }
 
+export function composePeFieldDetail(
+  field: EdPeField,
+  itemIds: readonly string[],
+  findings: EdFindings,
+): FieldDetail {
+  const all = itemIds
+    .map((id) => peItem(id))
+    .filter((item): item is PeItem => item !== undefined && item.field === field);
+  const limit = FIELD_LIMITS[field];
+  const omitted = new Set(
+    all
+      .filter((item) => clauseOverride(findings, `pe.${item.id}`) === "omit")
+      .map((item) => item.id),
+  );
+  const items = all.filter((item) => !omitted.has(item.id));
+  const extra = text(findings[edKey.peExtra(field)]);
+  const render = (compact: boolean, list: readonly PeItem[]) =>
+    [...list.map((item) => peClause(item, findings[edKey.pe(item.id)], compact)), extra]
+      .filter(Boolean)
+      .join(", ");
+  const auto = autoFitEnabled(findings);
+
+  let textOut = render(false, items);
+  let collapsedNormals = new Set<string>();
+  if (auto && textOut.length > limit) {
+    textOut = render(true, items);
+    if (textOut.length > limit) {
+      // 最後手段：異常照寫，其餘正常項目合併成一句。
+      const abnormal = items
+        .filter((item) => findings[edKey.pe(item.id)]?.sel === "abn")
+        .map((item) => peClause(item, findings[edKey.pe(item.id)], true))
+        .filter(Boolean);
+      const normals = items.filter(
+        (item) => findings[edKey.pe(item.id)]?.sel === "normal",
+      );
+      collapsedNormals = new Set(normals.map((item) => item.id));
+      if (normals.length > 0) {
+        abnormal.push(
+          abnormal.length > 0 ? "others normal" : PE_COLLAPSED_NORMAL[field],
+        );
+      }
+      if (extra) abnormal.push(extra);
+      textOut = abnormal.join(", ");
+    }
+  }
+
+  const clauses = all
+    .map((item) => {
+      const clause = peClause(item, findings[edKey.pe(item.id)], false);
+      if (!clause) return null;
+      const state = omitted.has(item.id)
+        ? ("user" as const)
+        : collapsedNormals.has(item.id)
+          ? ("auto" as const)
+          : ("in" as const);
+      return { id: `pe.${item.id}`, text: clause, state };
+    })
+    .filter((view): view is NonNullable<typeof view> => view !== null);
+  return { text: textOut, clauses, limit, over: textOut.length > limit };
+}
+
 export function composePeField(
   field: EdPeField,
   itemIds: readonly string[],
   findings: EdFindings,
 ): string {
-  const items = itemIds
-    .map((id) => peItem(id))
-    .filter((item): item is PeItem => item !== undefined && item.field === field);
-  const limit = FIELD_LIMITS[field];
-  const render = (compact: boolean) =>
-    items
-      .map((item) => peClause(item, findings[edKey.pe(item.id)], compact))
-      .filter(Boolean)
-      .join(", ");
-  const full = render(false);
-  if (full.length <= limit) return full;
-  const compact = render(true);
-  if (compact.length <= limit) return compact;
-
-  // 最後手段：異常照寫，其餘正常項目合併成一句。
-  const abnormal = items
-    .filter((item) => findings[edKey.pe(item.id)]?.sel === "abn")
-    .map((item) => peClause(item, findings[edKey.pe(item.id)], true))
-    .filter(Boolean);
-  const normalCount = items.filter(
-    (item) => findings[edKey.pe(item.id)]?.sel === "normal",
-  ).length;
-  if (normalCount > 0) {
-    abnormal.push(abnormal.length > 0 ? "others normal" : PE_COLLAPSED_NORMAL[field]);
-  }
-  return abnormal.join(", ");
+  return composePeFieldDetail(field, itemIds, findings).text;
 }
 
 // ───────────── ICD ─────────────
@@ -564,6 +751,8 @@ export interface EdChart {
   /** ICD 超過表單可容納的 5 筆時，被捨去的代碼。 */
   icdDropped: IcdLine[];
   missing: MissingItem[];
+  /** 各欄位的逐句明細（哪些寫入、哪些因字數被略過／被你指定不寫入）。 */
+  detail: Partial<Record<EdFieldKey, FieldDetail>>;
 }
 
 function answeredHistory(id: string, findings: EdFindings): boolean {
@@ -589,13 +778,24 @@ export function composeChart(findings: EdFindings, patient: EdPatientContext): E
     EdFieldKey,
     string
   >;
+  const detail: Partial<Record<EdFieldKey, FieldDetail>> = {};
   fields.CC = composeCC(problems, findings);
   fields.NRS = composeNRS(findings);
-  fields.PI = composePI(problems, findings, patient);
-  fields.PH = composePH(findings);
+  detail.PI = composePIDetail(problems, findings, patient);
+  fields.PI = detail.PI.text;
+  detail.PH = composePHDetail(findings);
+  fields.PH = detail.PH.text;
+  const peFields = new Set<EdPeField>(physical.map((section) => section.field));
   for (const section of physical) {
     const ids = [...section.core, ...section.more].map((item) => item.id);
-    fields[section.field] = composePeField(section.field, ids, findings);
+    detail[section.field] = composePeFieldDetail(section.field, ids, findings);
+    fields[section.field] = detail[section.field]?.text ?? "";
+  }
+  // 沒有勾任何 PE 題、但使用者在該欄位打了補充：直接輸出補充文字。
+  for (const field of PE_FIELD_ORDER) {
+    if (peFields.has(field)) continue;
+    const extra = text(findings[edKey.peExtra(field)]);
+    if (extra) fields[field] = extra;
   }
 
   const overridden: EdFieldKey[] = [];
@@ -644,6 +844,7 @@ export function composeChart(findings: EdFindings, patient: EdPatientContext): E
     icd: allIcd.slice(0, MAX_ICD),
     icdDropped: allIcd.slice(MAX_ICD),
     missing,
+    detail,
   };
 }
 

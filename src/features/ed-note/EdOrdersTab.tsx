@@ -1,5 +1,6 @@
 import type { FindingValue } from "../../domain/clinical/finding";
 import type { EdFindings, EdPatientContext } from "../../domain/ed/compose";
+import { selectedComplaints } from "../../domain/ed/complaints";
 import { selectedProblems } from "../../domain/ed/compose";
 import {
   planOrders,
@@ -84,7 +85,7 @@ export function EdOrdersTab({
   onBulkChange,
 }: EdOrdersTabProps) {
   const problems = selectedProblems(findings);
-  if (problems.length === 0) {
+  if (selectedComplaints(findings).length === 0) {
     return (
       <section className="v2-card ed-panel">
         <p className="v2-empty">請先到「問題」分頁選擇病人的主訴，才能建議檢查。</p>

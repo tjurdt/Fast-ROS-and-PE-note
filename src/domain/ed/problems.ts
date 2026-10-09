@@ -44,7 +44,7 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
     id: "fever",
     label: "發燒",
     cc: "fever",
-    group: "全身",
+    group: "全身代謝",
     characterize: ["fever", "onset"],
     ask: [
       "chills",
@@ -105,7 +105,7 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
     id: "weakness",
     label: "全身無力／倦怠",
     cc: "general weakness",
-    group: "全身",
+    group: "全身代謝",
     characterize: ["malaise", "onset"],
     ask: [
       "fever",
@@ -165,7 +165,7 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
     cc: "abnormal BP",
     ccFrom: "bp_type",
     ccMode: "replace",
-    group: "全身",
+    group: "全身代謝",
     characterize: ["bp_type", "bp_home", "bp_meds_issue"],
     ask: [
       "headache",
@@ -213,7 +213,7 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
     cc: "abnormal glucose",
     ccFrom: "glu_type",
     ccMode: "replace",
-    group: "全身",
+    group: "全身代謝",
     characterize: ["glu_type", "glucose_home", "dm_meds_issue"],
     ask: [
       "polyuria",
@@ -261,7 +261,7 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
     id: "lab_referral",
     label: "檢驗異常／門診轉入",
     cc: "referred for abnormal lab",
-    group: "全身",
+    group: "全身代謝",
     characterize: ["onset"],
     ask: [
       "fever",
@@ -543,7 +543,7 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
     cc: "ENT symptom",
     ccFrom: "ent_type",
     ccMode: "replace",
-    group: "心肺",
+    group: "五官",
     characterize: ["ent_type", "onset"],
     ask: [
       "fever",
@@ -589,7 +589,7 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
     cc: "eye symptom",
     ccFrom: "eye_type",
     ccMode: "replace",
-    group: "心肺",
+    group: "五官",
     characterize: ["eye_type", "onset"],
     ask: [
       "headache",
@@ -1488,7 +1488,7 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
     cc: "psychiatric symptom",
     ccFrom: "psych_type",
     ccMode: "replace",
-    group: "其他",
+    group: "精神",
     characterize: ["psych_type", "onset"],
     ask: [
       "si",
@@ -1531,11 +1531,12 @@ export function edProblem(id: string): EdProblem | undefined {
 }
 
 export const PROBLEM_GROUP_ORDER: readonly EdProblemGroup[] = [
-  "全身",
+  "全身代謝",
   "心肺",
   "消化",
   "泌尿婦產",
   "神經",
+  "五官",
   "外傷皮膚骨科",
-  "其他",
+  "精神",
 ];
