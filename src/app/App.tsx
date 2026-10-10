@@ -70,7 +70,20 @@ interface AppProps {
   googleRepository?: SyncCapablePatientRepository;
   cloudConnector?: CloudRepositoryConnector;
   patientFactory?: PatientFactoryDependencies;
+  /** 編輯後多久自動同步（毫秒）；測試可調短。 */
+  autoSyncDelayMs?: number;
 }
+
+/** 停止輸入幾秒後自動同步，避免每打一個字就呼叫 Drive。 */
+const AUTO_SYNC_DELAY_MS = 4_000;
+/** 畫面開著時，定期拉一次其他裝置的變更。 */
+const AUTO_PULL_INTERVAL_MS = 3 * 60_000;
+/** 同步後仍有待同步變更（例如遠端剛更新）時，最多自動重試幾次。 */
+const AUTO_SYNC_RETRIES = 3;
+/** 這些狀態下自動同步沒有用（需要使用者重新登入）。 */
+const NO_AUTO_SYNC: ReadonlySet<PatientSyncState["status"]> = new Set([
+  "auth-required",
+]);
 
 const DEFAULT_PATIENT_FACTORY: PatientFactoryDependencies = {
   createId: () => crypto.randomUUID(),
@@ -86,6 +99,7 @@ export function App({
   googleRepository,
   cloudConnector: suppliedCloudConnector,
   patientFactory,
+  autoSyncDelayMs = AUTO_SYNC_DELAY_MS,
 }: AppProps) {
   const localRepository = useMemo(
     () => suppliedRepository ?? new LocalPatientRepository(),
@@ -125,6 +139,8 @@ export function App({
   } | null>(null);
   const saveQueue = useRef<Promise<void>>(Promise.resolve());
   const saveRevision = useRef(0);
+  const autoSyncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoSyncRetries = useRef(0);
 
   useEffect(() => {
     if (!isSyncCapablePatientRepository(repository)) {
@@ -137,6 +153,59 @@ export function App({
   useEffect(() => {
     setCachedCloudAccount(cloudConnector.getCachedAccount());
   }, [cloudConnector]);
+
+  // 手機瀏覽器只允許「點擊當下」開登入視窗；先把 Google 登入元件載好，
+  // 按下登入／重新連線時才不會因為還在下載而被擋。
+  const needsSignIn = view === "landing" || syncState?.status === "auth-required";
+  useEffect(() => {
+    if (needsSignIn && googleAvailability.available) cloudConnector.prepare?.();
+  }, [needsSignIn, googleAvailability.available, cloudConnector]);
+
+  // 自動同步：回到畫面、恢復網路時，以及畫面開著時定期拉一次。
+  useEffect(() => {
+    if (!isSyncCapablePatientRepository(repository)) return;
+    const pull = () => {
+      if (document.visibilityState === "visible") scheduleAutoSync(0);
+    };
+    const online = () => scheduleAutoSync(0);
+    document.addEventListener("visibilitychange", pull);
+    window.addEventListener("online", online);
+    const interval = setInterval(pull, AUTO_PULL_INTERVAL_MS);
+    return () => {
+      document.removeEventListener("visibilitychange", pull);
+      window.removeEventListener("online", online);
+      clearInterval(interval);
+      if (autoSyncTimer.current !== null) clearTimeout(autoSyncTimer.current);
+      autoSyncTimer.current = null;
+    };
+    // scheduleAutoSync 只讀 ref，換 repository 時重新掛即可。
+  }, [repository]);
+
+  /** 排一次自動同步；連續編輯時只會在停下來之後同步一次。 */
+  function scheduleAutoSync(delay: number = autoSyncDelayMs) {
+    const target = repositoryRef.current;
+    if (!isSyncCapablePatientRepository(target)) return;
+    if (NO_AUTO_SYNC.has(target.getSyncState().status)) return;
+    if (autoSyncTimer.current !== null) clearTimeout(autoSyncTimer.current);
+    autoSyncTimer.current = setTimeout(() => {
+      autoSyncTimer.current = null;
+      if (repositoryRef.current !== target) return;
+      void (async () => {
+        await saveQueue.current;
+        await syncRepository(target);
+        const state = target.getSyncState();
+        if (
+          state.dirty &&
+          !NO_AUTO_SYNC.has(state.status) &&
+          state.status !== "offline" &&
+          autoSyncRetries.current < AUTO_SYNC_RETRIES
+        ) {
+          autoSyncRetries.current += 1;
+          scheduleAutoSync();
+        }
+      })();
+    }, delay);
+  }
 
   function adoptDatabase(next: PatientDatabase) {
     databaseRef.current = next;
@@ -155,6 +224,8 @@ export function App({
       .finally(() => {
         if (saveRevision.current === revision) setSaving(false);
       });
+    autoSyncRetries.current = 0;
+    scheduleAutoSync();
   }
 
   async function openRepository(nextRepository: PatientRepository): Promise<boolean> {

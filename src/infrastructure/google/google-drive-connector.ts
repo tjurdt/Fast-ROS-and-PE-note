@@ -23,6 +23,7 @@ export const V2_GOOGLE_LAST_ACCOUNT_KEY = "pe_note_v2_google_last_account";
 interface InteractiveGoogleTokenProvider extends GoogleAccessTokenProvider {
   authorize(): Promise<string>;
   disconnect(): void;
+  prepare?(): void;
 }
 
 interface GoogleDriveConnectorDependencies {
@@ -113,6 +114,10 @@ export class GoogleDriveConnector implements CloudRepositoryConnector {
         locationProtocol: this.#protocol,
         now: this.#now,
       });
+  }
+
+  prepare(): void {
+    if (this.getAvailability().available) this.#tokenProvider.prepare?.();
   }
 
   getAvailability(): CloudConnectorAvailability {
