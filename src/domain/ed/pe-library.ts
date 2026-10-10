@@ -13,11 +13,14 @@ function pe(
     : { id, field, label, normal, abnormal, abnormalTemplate };
 }
 
+/** 腹部九宮格順序（右上→左下），最後一格是全腹；畫面依此排成 3×3。 */
 const SITES = [
   "RUQ",
   "epigastric",
   "LUQ",
+  "R flank",
   "periumbilical",
+  "L flank",
   "RLQ",
   "suprapubic",
   "LLQ",
@@ -159,7 +162,10 @@ export const PE_ITEMS: readonly PeItem[] = [
     "absent BS",
     "tinkling BS",
   ]),
-  pe("abd_tender", "ABD", "壓痛", "tenderness(-)", SITES, "tenderness(+) at {v}"),
+  {
+    ...pe("abd_tender", "ABD", "壓痛", "tenderness(-)", SITES, "tenderness(+) at {v}"),
+    layout: "grid9",
+  },
   pe("abd_guard", "ABD", "肌肉僵硬", "muscle guarding(-)", [
     "muscle guarding(+)",
     "rigidity(+)",

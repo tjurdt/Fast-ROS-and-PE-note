@@ -76,6 +76,12 @@ export interface HistoryYesNo extends HistoryBase {
 export interface HistoryPick extends HistoryBase {
   type: "pick";
   options: EdPickOption[];
+  /** 可複選（例如腹痛部位可以同時右上腹＋上腹）。 */
+  multi?: boolean;
+  /** 複選時寫進 PI 的樣板：{v} = 各選項 cc（或 text）以 "/" 串接，例如 "{v} pain"。 */
+  joinTemplate?: string;
+  /** grid9 = 腹部九宮格排列（前九個選項依右上→左下，之後的選項接在旁邊）。 */
+  layout?: "grid9";
 }
 
 /** 自由文字（例如 LMP、最後正常時間）；有填才輸出。 */
@@ -101,6 +107,8 @@ export interface PeItem {
    * （例如 "tenderness(+) at {v}"）；缺省則各自成為獨立片語。
    */
   abnormalTemplate?: string;
+  /** grid9 = 異常快選用腹部九宮格排列。 */
+  layout?: "grid9";
 }
 
 /** 病史快選（寫進 PH 的 HX:）。 */
@@ -143,7 +151,10 @@ export type EdProblemGroup =
 
 export interface EdProblem {
   id: string;
+  /** 畫面上的短名（四個字以內）。 */
   label: string;
+  /** 較完整的說明（舊的長標籤），給搜尋與滑鼠提示用。 */
+  hint?: string;
   /** 主訴片語（英文，精簡）。 */
   cc: string;
   /** 以某個 pick 題的選項修飾主訴（例如腹痛部位 → "RLQ abd pain"）。 */
@@ -153,6 +164,8 @@ export interface EdProblem {
    * replace：選項的 cc 取代整個主訴片語（"melena" 取代 "GI bleeding"）。
    */
   ccMode?: "prefix" | "replace";
+  /** 主訴依「有」的題目決定（例如神經缺損：單側無力／麻木／口齒不清／臉歪），多個以逗號串接。 */
+  ccFromYes?: { item: string; cc: string }[];
   group: EdProblemGroup;
   /** 此問題專屬的特徵題（起病、性質、部位…），畫面放在問題標題下。 */
   characterize: string[];

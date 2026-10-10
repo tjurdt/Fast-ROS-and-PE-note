@@ -1,7 +1,13 @@
 import { useState } from "react";
 
+import type { FindingValue } from "../../domain/clinical/finding";
 import {
-  COMMON_PROBLEM_IDS,
+  CHIP_SECTIONS,
+  chipActive,
+  toggleChip,
+  type ChipSection,
+} from "../../domain/ed/complaint-chips";
+import {
   CUSTOM_MAIN_PREFIX,
   addCustomComplaint,
   mainComplaintId,
@@ -22,7 +28,6 @@ import {
   durationCode,
   setCustomDuration,
 } from "../../domain/ed/duration";
-import { ED_PROBLEMS, PROBLEM_GROUP_ORDER } from "../../domain/ed/problems";
 import { edKey, type EdContextKey, type EdProblem } from "../../domain/ed/types";
 import { Chip, type EdFindingChange } from "./ed-controls";
 
@@ -31,9 +36,14 @@ const NRS_CHIPS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
 interface EdProblemsTabProps {
   findings: EdFindings;
   onChange: EdFindingChange;
+  onBulkChange: (patch: Record<string, FindingValue>) => void;
 }
 
-export function EdProblemsTab({ findings, onChange }: EdProblemsTabProps) {
+export function EdProblemsTab({
+  findings,
+  onChange,
+  onBulkChange,
+}: EdProblemsTabProps) {
   const [query, setQuery] = useState("");
   const complaints = selectedComplaints(findings);
   const selected = selectedProblems(findings);
@@ -41,10 +51,6 @@ export function EdProblemsTab({ findings, onChange }: EdProblemsTabProps) {
   const setCtx = (key: EdContextKey, value: string) =>
     onChange(edKey.ctx(key), { text: value });
   const showPain = selected.some((problem) => problem.pain);
-  const common = COMMON_PROBLEM_IDS.map((id) =>
-    ED_PROBLEMS.find((problem) => problem.id === id),
-  ).filter((problem): problem is EdProblem => problem !== undefined);
-  const commonIds = new Set(common.map((problem) => problem.id));
   const results = searchProblems(query);
   const trimmed = query.trim();
   const isSelected = (problem: EdProblem) =>
@@ -58,10 +64,32 @@ export function EdProblemsTab({ findings, onChange }: EdProblemsTabProps) {
       active={isSelected(problem)}
       key={problem.id}
       onClick={() => toggle(problem)}
+      title={problem.hint}
       tone="warning"
     >
       {problem.label}
     </Chip>
+  );
+
+  // 每一類一列（類名佔第一格），一顆按鈕一個症狀；小科收在三角形裡。
+  const section = (entry: ChipSection) => (
+    <div
+      className="ed-grid ed-group"
+      data-testid={`ed-chips-${entry.key}`}
+      key={entry.key}
+    >
+      {entry.minor ? null : <span className="ed-grid__label">{entry.title}</span>}
+      {entry.chips.map((chip) => (
+        <Chip
+          active={chipActive(findings, chip)}
+          key={chip.key}
+          onClick={() => onBulkChange(toggleChip(findings, chip))}
+          tone="warning"
+        >
+          {chip.label}
+        </Chip>
+      ))}
+    </div>
   );
 
   const addCustom = () => {
@@ -201,22 +229,17 @@ export function EdProblemsTab({ findings, onChange }: EdProblemsTabProps) {
         </div>
       ) : null}
 
-      <div className="ed-grid ed-group">
-        <span className="ed-grid__label">常用</span>
-        {common.map(problemChip)}
-      </div>
-      {PROBLEM_GROUP_ORDER.map((group) => {
-        const members = ED_PROBLEMS.filter(
-          (problem) => problem.group === group && !commonIds.has(problem.id),
-        );
-        if (members.length === 0) return null;
-        return (
-          <div className="ed-grid ed-group" key={group}>
-            <span className="ed-grid__label">{group}</span>
-            {members.map(problemChip)}
-          </div>
-        );
-      })}
+      {CHIP_SECTIONS.filter((entry) => !entry.minor).map(section)}
+      {CHIP_SECTIONS.filter((entry) => entry.minor).map((entry) => (
+        <details
+          className="ed-tri"
+          key={entry.key}
+          open={entry.chips.some((chip) => chipActive(findings, chip))}
+        >
+          <summary>{entry.title}（婦科、耳鼻喉、眼、皮膚、出血、精神）</summary>
+          {section(entry)}
+        </details>
+      ))}
 
       <label className="ed-line">
         <span>CC補充</span>

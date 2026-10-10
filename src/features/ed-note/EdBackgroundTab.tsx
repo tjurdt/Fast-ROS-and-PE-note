@@ -4,6 +4,7 @@ import { PMH_ITEMS } from "../../domain/ed/history-library";
 import { SPECIAL_ITEMS, appendSituation } from "../../domain/ed/special";
 import { edKey, type EdContextKey } from "../../domain/ed/types";
 import { Chip, CycleChip, type EdFindingChange } from "./ed-controls";
+import { PMH_SHORT } from "./short-labels";
 
 const TOCC: readonly { key: "t" | "o" | "c1" | "c2"; letter: string; label: string }[] =
   [
@@ -49,9 +50,11 @@ export function EdBackgroundTab({
               onClick={() =>
                 onChange(edKey.pmh(item.id), finding.on ? {} : { ...finding, on: true })
               }
+              title={item.label}
               tone="warning"
+              {...(PMH_SHORT[item.id] ? { label: item.label } : {})}
             >
-              {item.label}
+              {PMH_SHORT[item.id] ?? item.label}
             </Chip>
           );
         })}

@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import type { FindingValue } from "../../domain/clinical/finding";
 import {
   buildPhysical,
@@ -35,6 +37,7 @@ export function EdPhysicalTab({
   onChange,
   onBulkChange,
 }: EdPhysicalTabProps) {
+  const [confirmClear, setConfirmClear] = useState(false);
   const problems = selectedProblems(findings);
   if (selectedComplaints(findings).length === 0) {
     return (
@@ -70,6 +73,21 @@ export function EdPhysicalTab({
     if (Object.keys(patch).length > 0) onBulkChange(patch);
   };
   const allCore = sections.flatMap((section) => section.core);
+  // 一鍵清空：所有 PE 回到未查、各欄補充與逐句設定清掉（點兩下確認，避免誤觸）。
+  const clearAll = () => {
+    const patch: Record<string, FindingValue> = {};
+    for (const key of Object.keys(findings)) {
+      if (
+        key.startsWith("ed.pe.") ||
+        key.startsWith("ed.pex.") ||
+        key.startsWith("ed.omit.pe.")
+      ) {
+        patch[key] = {};
+      }
+    }
+    setConfirmClear(false);
+    if (Object.keys(patch).length > 0) onBulkChange(patch);
+  };
 
   // 欄位名佔一格；點欄位名＝此欄未查的全部標正常。
   const fieldLabel = (field: EdPeField, items: readonly PhysicalItem[]) => (
@@ -110,6 +128,17 @@ export function EdPhysicalTab({
         <span className="ed-hint">點一下＝正常，再點＝異常</span>
         <button className="ed-cycle" onClick={() => markNormal(allCore)} type="button">
           未查全正常
+        </button>
+        <button
+          className={`ed-cycle ${confirmClear ? "is-danger" : "is-quiet"}`}
+          onClick={() => {
+            if (confirmClear) clearAll();
+            else setConfirmClear(true);
+          }}
+          onBlur={() => setConfirmClear(false)}
+          type="button"
+        >
+          {confirmClear ? "確定清空？" : "一鍵清空"}
         </button>
       </div>
       <div className="ed-sec" data-testid="ed-pe-core">

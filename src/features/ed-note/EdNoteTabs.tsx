@@ -34,7 +34,10 @@ function answeredCount(findings: EdFindings, prefix: string): number {
   return Object.entries(findings).filter(
     ([key, value]) =>
       key.startsWith(prefix) &&
-      (value?.on !== undefined || Boolean(value?.sel) || Boolean(value?.text)),
+      (value?.on !== undefined ||
+        Boolean(value?.sel) ||
+        Object.values(value?.fu ?? {}).includes("1") ||
+        Boolean(value?.text)),
   ).length;
 }
 
@@ -53,7 +56,13 @@ export function buildEdNoteTabs({
       key: "ed-problems",
       label: "問題",
       badge: selectedComplaints(findings).length,
-      content: <EdProblemsTab findings={findings} onChange={onFindingChange} />,
+      content: (
+        <EdProblemsTab
+          findings={findings}
+          onBulkChange={onFindingsChange}
+          onChange={onFindingChange}
+        />
+      ),
     },
     {
       key: "ed-interview",
@@ -106,7 +115,7 @@ export function buildEdNoteTabs({
     },
     {
       key: "ed-chart",
-      label: "病歷輸出",
+      label: "病歷",
       badge: chart.missing.length,
       content: (
         <EdChartTab

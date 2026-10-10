@@ -168,7 +168,7 @@ describe("shared interview across problems", () => {
       .flatMap((block) => block.items)
       .find((item) => item.id === "vomiting");
     expect(vomiting?.reasons).toEqual(
-      expect.arrayContaining(["發燒", "腹痛", "噁心／嘔吐"]),
+      expect.arrayContaining(["發燒", "腹痛", "噁心嘔吐"]),
     );
     expect(vomiting?.must).toBe(true);
   });
@@ -222,9 +222,10 @@ describe("chart composition", () => {
     expect(composeCC(selectedProblems(findings), findings)).toBe(
       "RLQ abd pain for 1 day",
     );
-    expect(
-      composeChart(findings, PATIENT).fields.PI.startsWith("N/V for 6 hours"),
-    ).toBe(true);
+    // 主訴的描述在前，其他症狀（含各自時間）接在後面，不同症狀以分號隔開。
+    expect(composeChart(findings, PATIENT).fields.PI).toContain(
+      "RLQ pain; N/V for 6 hours",
+    );
   });
 
   it("still reads the old single complaint time when the main complaint has none", () => {
@@ -255,7 +256,7 @@ describe("chart composition", () => {
     });
     const chart = composeChart(findings, PATIENT);
     expect(chart.fields.PI).toBe(
-      "RLQ pain, gradual onset, nausea, vomiting (x3). no fever, diarrhea, melena",
+      "RLQ pain, gradual onset; nausea; vomiting (x3). no fever, diarrhea, melena",
     );
   });
 

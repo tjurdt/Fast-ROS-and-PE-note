@@ -552,7 +552,6 @@ export function App({
             onFindingChange: updateActiveFinding,
             onFindingsChange: updateActiveFindings,
           }),
-          ...(todoTab ? [todoTab] : []),
         ]
       : [];
   const standardNoteTabs: PatientNoteTab[] = activePatient
@@ -699,6 +698,7 @@ export function App({
           onChange={updateActivePatient}
           onExport={() => setExportOpen(true)}
           hideExport={isEdPatient(activePatient)}
+          {...(isEdPatient(activePatient) ? { basicLabel: "基本" } : {})}
         />
       ) : null}
     </>

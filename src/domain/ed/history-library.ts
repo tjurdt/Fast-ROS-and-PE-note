@@ -22,8 +22,9 @@ function pick(
   system: EdSystemKey,
   label: string,
   options: HistoryPick["options"],
+  extra: Partial<Pick<HistoryPick, "multi" | "joinTemplate" | "layout">> = {},
 ): HistoryPick {
-  return { type: "pick", id, system, label, options };
+  return { type: "pick", id, system, label, options, ...extra };
 }
 
 function text(
@@ -119,16 +120,25 @@ export const HISTORY_ITEMS: readonly HistoryItem[] = [
   ),
 
   // ── 消化 ────────────────────────────────────────────────
-  pick("abd_site", "gi", "腹痛部位", [
-    opt("上腹／心窩", "epigastric pain", "epigastric"),
-    opt("右上腹", "RUQ pain", "RUQ"),
-    opt("左上腹", "LUQ pain", "LUQ"),
-    opt("臍周", "periumbilical pain", "periumbilical"),
-    opt("右下腹", "RLQ pain", "RLQ"),
-    opt("左下腹", "LLQ pain", "LLQ"),
-    opt("下腹／恥骨上", "lower abdominal pain", "lower"),
-    opt("全腹", "diffuse abdominal pain", "diffuse"),
-  ]),
+  // 九宮格：右上 上腹 左上／右側 臍周 左側／右下 下腹 左下，旁邊再一格全腹；可複選。
+  pick(
+    "abd_site",
+    "gi",
+    "腹痛部位",
+    [
+      opt("右上腹", "RUQ pain", "RUQ"),
+      opt("上腹／心窩", "epigastric pain", "epigastric"),
+      opt("左上腹", "LUQ pain", "LUQ"),
+      opt("右腰側", "R flank pain", "R flank"),
+      opt("臍周", "periumbilical pain", "periumbilical"),
+      opt("左腰側", "L flank pain", "L flank"),
+      opt("右下腹", "RLQ pain", "RLQ"),
+      opt("下腹／恥骨上", "suprapubic pain", "suprapubic"),
+      opt("左下腹", "LLQ pain", "LLQ"),
+      opt("全腹", "diffuse abdominal pain", "diffuse"),
+    ],
+    { multi: true, joinTemplate: "{v} pain", layout: "grid9" },
+  ),
   pick("abd_quality", "gi", "腹痛性質", [
     opt("絞痛", "colicky"),
     opt("悶痛", "dull"),
@@ -322,11 +332,17 @@ export const HISTORY_ITEMS: readonly HistoryItem[] = [
   }),
 
   // ── 問題專屬特徵（主訴修飾／分型）──────────────────────
-  pick("dysp_trigger", "resp", "喘的情境", [
-    opt("休息時也喘", "dyspnea at rest"),
-    opt("活動時喘", "exertional dyspnea"),
-    opt("平躺加重", "worse when lying flat"),
-  ]),
+  pick(
+    "dysp_trigger",
+    "resp",
+    "喘的情境",
+    [
+      opt("休息時也喘", "dyspnea at rest"),
+      opt("活動時喘", "exertional dyspnea"),
+      opt("平躺加重", "worse when lying flat"),
+    ],
+    { multi: true },
+  ),
   pick("palp_pattern", "cv", "心悸型態", [
     opt("規則快速", "regular rapid"),
     opt("不規則", "irregular"),
@@ -339,51 +355,87 @@ export const HISTORY_ITEMS: readonly HistoryItem[] = [
     opt("休息或平躺", "at rest/supine"),
     opt("無明顯誘因", "no trigger"),
   ]),
-  pick("gib_type", "gi", "出血型態", [
-    opt("黑便", "melena", "melena"),
-    opt("血便", "hematochezia", "hematochezia"),
-    opt("吐血", "hematemesis", "hematemesis"),
-    opt("咖啡渣", "coffee-ground vomitus", "coffee-ground vomitus"),
-  ]),
+  pick(
+    "gib_type",
+    "gi",
+    "出血型態",
+    [
+      opt("黑便", "melena", "melena"),
+      opt("血便", "hematochezia", "hematochezia"),
+      opt("吐血", "hematemesis", "hematemesis"),
+      opt("咖啡渣", "coffee-ground vomitus", "coffee-ground vomitus"),
+    ],
+    { multi: true },
+  ),
   yn("abx_recent", "gi", "近期使用抗生素", "recent antibiotic use", {
     neg: "recent antibiotic use",
   }),
-  pick("ent_type", "resp", "耳鼻喉症狀", [
-    opt("喉嚨痛", "sore throat", "sore throat"),
-    opt("耳痛", "ear pain", "ear pain"),
-    opt("流鼻血", "epistaxis", "epistaxis"),
-    opt("吞嚥困難／梗到", "dysphagia/foreign body sensation", "dysphagia"),
-    opt("聲音沙啞", "hoarseness", "hoarseness"),
-    opt("頸部腫塊", "neck mass", "neck mass"),
-    opt("牙痛", "toothache", "toothache"),
-  ]),
-  pick("eye_type", "neuro", "眼睛症狀", [
-    opt("視力模糊", "blurred vision", "blurred vision"),
-    opt("眼痛", "eye pain", "eye pain"),
-    opt("紅眼", "red eye", "red eye"),
-    opt("複視", "diplopia", "diplopia"),
-    opt("視野缺損／閃光", "visual field loss/flashes", "visual field loss"),
-    opt("異物感", "foreign body sensation", "eye foreign body sensation"),
-  ]),
-  pick("uri_type", "gu", "泌尿症狀", [
-    opt("解尿疼痛", "dysuria", "dysuria"),
-    opt("頻尿", "frequency", "frequency"),
-    opt("血尿", "hematuria", "hematuria"),
-    opt("解不出來", "urinary retention", "urinary retention"),
-    opt("腰／側腹痛", "flank pain", "flank pain"),
-    opt("尿量減少", "oliguria", "oliguria"),
-  ]),
-  pick("limb_site", "msk", "哪一肢", [
-    opt("右上肢", "involving R upper limb", "R arm pain/swelling"),
-    opt("左上肢", "involving L upper limb", "L arm pain/swelling"),
-    opt("右下肢", "involving R lower limb", "R leg pain/swelling"),
-    opt("左下肢", "involving L lower limb", "L leg pain/swelling"),
-  ]),
-  pick("back_site", "msk", "疼痛部位", [
-    opt("頸", "neck pain", "neck pain"),
-    opt("上背／胸背", "upper back pain", "upper back pain"),
-    opt("下背／腰", "low back pain", "low back pain"),
-  ]),
+  pick(
+    "ent_type",
+    "resp",
+    "耳鼻喉症狀",
+    [
+      opt("喉嚨痛", "sore throat", "sore throat"),
+      opt("耳痛", "ear pain", "ear pain"),
+      opt("流鼻血", "epistaxis", "epistaxis"),
+      opt("吞嚥困難／梗到", "dysphagia/foreign body sensation", "dysphagia"),
+      opt("聲音沙啞", "hoarseness", "hoarseness"),
+      opt("頸部腫塊", "neck mass", "neck mass"),
+      opt("牙痛", "toothache", "toothache"),
+    ],
+    { multi: true },
+  ),
+  pick(
+    "eye_type",
+    "neuro",
+    "眼睛症狀",
+    [
+      opt("視力模糊", "blurred vision", "blurred vision"),
+      opt("眼痛", "eye pain", "eye pain"),
+      opt("紅眼", "red eye", "red eye"),
+      opt("複視", "diplopia", "diplopia"),
+      opt("視野缺損／閃光", "visual field loss/flashes", "visual field loss"),
+      opt("異物感", "foreign body sensation", "eye foreign body sensation"),
+    ],
+    { multi: true },
+  ),
+  pick(
+    "uri_type",
+    "gu",
+    "泌尿症狀",
+    [
+      opt("解尿疼痛", "dysuria", "dysuria"),
+      opt("頻尿", "frequency", "frequency"),
+      opt("血尿", "hematuria", "hematuria"),
+      opt("解不出來", "urinary retention", "urinary retention"),
+      opt("腰／側腹痛", "flank pain", "flank pain"),
+      opt("尿量減少", "oliguria", "oliguria"),
+    ],
+    { multi: true },
+  ),
+  pick(
+    "limb_site",
+    "msk",
+    "哪一肢",
+    [
+      opt("右上肢", "involving R upper limb", "R arm pain/swelling"),
+      opt("左上肢", "involving L upper limb", "L arm pain/swelling"),
+      opt("右下肢", "involving R lower limb", "R leg pain/swelling"),
+      opt("左下肢", "involving L lower limb", "L leg pain/swelling"),
+    ],
+    { multi: true },
+  ),
+  pick(
+    "back_site",
+    "msk",
+    "疼痛部位",
+    [
+      opt("頸", "neck pain", "neck pain"),
+      opt("上背／胸背", "upper back pain", "upper back pain"),
+      opt("下背／腰", "low back pain", "low back pain"),
+    ],
+    { multi: true },
+  ),
   yn("back_radiate", "msk", "往下肢放射", "radiating to leg", {
     neg: "leg radiation",
     detail: { chips: ["R", "L", "bil"] },
@@ -396,14 +448,20 @@ export const HISTORY_ITEMS: readonly HistoryItem[] = [
     opt("偏高", "hyperglycemia", "hyperglycemia"),
     opt("偏低", "hypoglycemia", "hypoglycemia"),
   ]),
-  pick("psych_type", "psych", "精神症狀", [
-    opt("焦慮／恐慌", "anxiety/panic", "anxiety"),
-    opt("自殺意念", "suicidal ideation", "suicidal ideation"),
-    opt("自傷／服藥過量", "self-harm/overdose", "self-harm"),
-    opt("躁動", "agitation", "agitation"),
-    opt("失眠", "insomnia", "insomnia"),
-    opt("幻覺", "hallucination", "hallucination"),
-  ]),
+  pick(
+    "psych_type",
+    "psych",
+    "精神症狀",
+    [
+      opt("焦慮／恐慌", "anxiety/panic", "anxiety"),
+      opt("自殺意念", "suicidal ideation", "suicidal ideation"),
+      opt("自傷／服藥過量", "self-harm/overdose", "self-harm"),
+      opt("躁動", "agitation", "agitation"),
+      opt("失眠", "insomnia", "insomnia"),
+      opt("幻覺", "hallucination", "hallucination"),
+    ],
+    { multi: true },
+  ),
 
   // ── 背景條件追加題 ──────────────────────────────────────
   text("last_hd", "meta", "最後一次洗腎", "last HD {v}", {

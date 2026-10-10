@@ -1,29 +1,54 @@
-import { Fragment, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import type { FindingValue } from "../../domain/clinical/finding";
-import type { HistoryItem, PeItem } from "../../domain/ed/types";
+import { pickedOptions, togglePick } from "../../domain/ed/picks";
+import {
+  edKey,
+  type HistoryItem,
+  type HistoryPick,
+  type PeItem,
+} from "../../domain/ed/types";
+import {
+  HISTORY_SHORT,
+  OPTION_SHORT,
+  PE_SHORT_LABEL,
+  SITE_SHORT,
+  cellSpan,
+  spanStyle,
+} from "./short-labels";
 
 export type EdFindingChange = (key: string, finding: FindingValue) => void;
 
+/**
+ * 選取型按鈕。文字超過約四個中文字時自動佔兩到三格（不在格子裡換行）；
+ * span 可以手動指定（例如九宮格固定一格）。
+ */
 export function Chip({
   active,
   tone = "default",
   onClick,
   children,
   label,
+  span,
+  title,
 }: {
   active: boolean;
   tone?: "default" | "positive" | "negative" | "warning";
   onClick: () => void;
   children: ReactNode;
   label?: string;
+  span?: number | undefined;
+  title?: string | undefined;
 }) {
+  const width = span ?? (typeof children === "string" ? cellSpan(children) : 1);
   return (
     <button
       aria-label={label}
       aria-pressed={active}
       className={`ed-chip ${active ? `is-active is-${tone}` : ""}`.trim()}
       onClick={onClick}
+      style={spanStyle(width)}
+      title={title}
       type="button"
     >
       {children}
@@ -36,10 +61,11 @@ type CycleTone = "" | "neg" | "pos" | "ok";
 
 /**
  * 循環按鈕：一個格子點一下換一個狀態，比「有／無」兩顆按鈕省一半空間。
- * 文字後面的小標記顯示目前狀態；aria-label 帶狀態，方便輔助工具與測試。
+ * 顯示短字；aria-label 用完整標籤＋狀態（方便輔助工具與測試）。
  */
 export function CycleChip({
   label,
+  display,
   mark,
   tone,
   must,
@@ -49,6 +75,7 @@ export function CycleChip({
   onClick,
 }: {
   label: string;
+  display?: string;
   mark: string;
   tone: CycleTone;
   must?: boolean;
@@ -57,6 +84,7 @@ export function CycleChip({
   testId?: string;
   onClick: () => void;
 }) {
+  const shown = display ?? label;
   return (
     <button
       aria-label={`${label}：${stateLabel}`}
@@ -64,11 +92,12 @@ export function CycleChip({
       data-state={stateLabel}
       data-testid={testId}
       onClick={onClick}
-      title={title}
+      style={spanStyle(cellSpan(shown))}
+      title={title ?? (shown === label ? undefined : label)}
       type="button"
     >
       {must ? <span className="ed-must">★</span> : null}
-      {label}
+      {shown}
       {mark ? <span className="ed-c__mark">{mark}</span> : null}
     </button>
   );
@@ -92,8 +121,8 @@ export interface GridEntry {
 }
 
 /**
- * 同一個格子裡的一段：段名（系統或 PE 欄位）佔第一格，後面接該段的按鈕。
- * 多段接在同一個格子裡流動排列，不必每段各佔一行標題。
+ * 一段：段名（問題、系統或 PE 欄位）佔第一格，後面接該段的按鈕。
+ * 不同段各自換行，不接在一起。
  */
 export interface FlowGroup {
   key: string;
@@ -106,17 +135,34 @@ function labelCell(group: FlowGroup): ReactNode {
   if (group.label === undefined) return null;
   if (typeof group.label === "string") {
     return (
-      <span className="ed-grid__label ed-grid__label--group" key={`l-${group.key}`}>
+      <span
+        className="ed-grid__label ed-grid__label--group"
+        style={spanStyle(cellSpan(group.label))}
+      >
         {group.label}
       </span>
     );
   }
-  return <Fragment key={`l-${group.key}`}>{group.label}</Fragment>;
+  return group.label;
+}
+
+export const historyShort = (item: HistoryItem) => HISTORY_SHORT[item.id] ?? item.label;
+const optionShort = (item: HistoryPick, option: string) =>
+  OPTION_SHORT[`${item.id}:${option}`] ?? option;
+
+/** 腹部九宮格：3×3 按鈕，第十個以後（全腹）接在右邊。 */
+function Grid9({ children, extra }: { children: ReactNode[]; extra: ReactNode[] }) {
+  return (
+    <>
+      <span className="ed-grid9">{children.slice(0, 9)}</span>
+      {extra.length > 0 ? <span className="ed-grid9__extra">{extra}</span> : null}
+    </>
+  );
 }
 
 /**
- * 一組問診題：有／無題排成循環按鈕格子；單選題是一列（題目＋選項）；文字題是一行輸入。
- * 陽性且有細節快選的題目，細節放在格子下方一行。
+ * 一組問診題：每個題組一列（題組名＋有／無循環按鈕）；單選／複選題一列（題目＋選項）；
+ * 文字題一行輸入。陽性且有細節快選的題目，細節放在下方一行。
  */
 export function HistoryGrid({
   groups,
@@ -130,7 +176,6 @@ export function HistoryGrid({
   onChange: (id: string, next: FindingValue) => void;
 }) {
   const yesNo: { entry: GridEntry; item: HistoryItem }[] = [];
-  const cells: ReactNode[] = [];
   const rows: ReactNode[] = [];
 
   const chip = (entry: GridEntry, definition: HistoryItem) => {
@@ -138,6 +183,7 @@ export function HistoryGrid({
     const state = current.on === true ? "有" : current.on === false ? "無" : "未答";
     return (
       <CycleChip
+        display={historyShort(definition)}
         key={entry.id}
         label={definition.label}
         mark={current.on === true ? "+" : current.on === false ? "−" : ""}
@@ -151,50 +197,62 @@ export function HistoryGrid({
     );
   };
 
-  const otherRow = (entry: GridEntry, definition: HistoryItem): ReactNode => {
+  const pickRow = (entry: GridEntry, definition: HistoryPick): ReactNode => {
     const current = finding(entry.id);
-    if (definition.type === "pick") {
-      return (
-        <div className="ed-grid" data-testid={`ed-h-${entry.id}`} key={entry.id}>
-          <span className="ed-grid__label">
-            {entry.must ? <span className="ed-must">★</span> : null}
-            {definition.label}
-          </span>
-          {definition.options.map((option) => (
-            <Chip
-              active={current.sel === option.label}
-              key={option.label}
-              label={`${definition.label}：${option.label}`}
-              onClick={() =>
-                onChange(
-                  entry.id,
-                  current.sel === option.label ? {} : { sel: option.label },
-                )
-              }
-              tone="warning"
-            >
-              {option.label}
-            </Chip>
-          ))}
-        </div>
-      );
-    }
+    const chosen = new Set(
+      pickedOptions({ [edKey.history(entry.id)]: current }, entry.id),
+    );
+    const options = definition.options.map((option) => (
+      <Chip
+        active={chosen.has(option.label)}
+        key={option.label}
+        label={`${definition.label}：${option.label}`}
+        onClick={() =>
+          onChange(entry.id, togglePick(definition, current, option.label))
+        }
+        span={definition.layout === "grid9" ? 1 : undefined}
+        title={option.label}
+        tone="warning"
+      >
+        {optionShort(definition, option.label)}
+      </Chip>
+    ));
+    const short = historyShort(definition);
     return (
-      <label className="ed-line" data-testid={`ed-h-${entry.id}`} key={entry.id}>
-        <span>
+      <div className="ed-grid" data-testid={`ed-h-${entry.id}`} key={entry.id}>
+        <span
+          className="ed-grid__label"
+          style={spanStyle(cellSpan(short, entry.must ? 0.7 : 0))}
+        >
           {entry.must ? <span className="ed-must">★</span> : null}
-          {definition.label}
+          {short}
+          {definition.multi ? <small className="ed-multi">複選</small> : null}
         </span>
-        <input
-          aria-label={definition.label}
-          onChange={(event) => onChange(entry.id, { text: event.target.value })}
-          placeholder={definition.type === "text" ? (definition.placeholder ?? "") : ""}
-          value={current.text ?? ""}
-        />
-      </label>
+        {definition.layout === "grid9" ? (
+          <Grid9 extra={options.slice(9)}>{options}</Grid9>
+        ) : (
+          options
+        )}
+      </div>
     );
   };
 
+  const textRow = (entry: GridEntry, definition: HistoryItem): ReactNode => (
+    <label className="ed-line" data-testid={`ed-h-${entry.id}`} key={entry.id}>
+      <span>
+        {entry.must ? <span className="ed-must">★</span> : null}
+        {historyShort(definition)}
+      </span>
+      <input
+        aria-label={definition.label}
+        onChange={(event) => onChange(entry.id, { text: event.target.value })}
+        placeholder={definition.type === "text" ? (definition.placeholder ?? "") : ""}
+        value={finding(entry.id).text ?? ""}
+      />
+    </label>
+  );
+
+  const groupRows: ReactNode[] = [];
   for (const group of groups) {
     const groupChips: ReactNode[] = [];
     for (const entry of group.entries) {
@@ -203,11 +261,20 @@ export function HistoryGrid({
       if (definition.type === "yn") {
         yesNo.push({ entry, item: definition });
         groupChips.push(chip(entry, definition));
+      } else if (definition.type === "pick") {
+        rows.push(pickRow(entry, definition));
       } else {
-        rows.push(otherRow(entry, definition));
+        rows.push(textRow(entry, definition));
       }
     }
-    if (groupChips.length > 0) cells.push(labelCell(group), ...groupChips);
+    if (groupChips.length > 0) {
+      groupRows.push(
+        <div className="ed-grid" key={`g-${group.key}`}>
+          {labelCell(group)}
+          {groupChips}
+        </div>,
+      );
+    }
   }
 
   const details = yesNo.filter(
@@ -220,7 +287,7 @@ export function HistoryGrid({
   return (
     <>
       {rows}
-      {cells.length > 0 ? <div className="ed-grid">{cells}</div> : null}
+      {groupRows}
       {details.map(({ entry, item: definition }) => {
         if (definition.type !== "yn" || !definition.detail) return null;
         const current = finding(entry.id);
@@ -230,19 +297,19 @@ export function HistoryGrid({
             data-testid={`ed-h-detail-${entry.id}`}
             key={`d-${entry.id}`}
           >
-            <span className="ed-grid__label">{definition.label}</span>
-            {(definition.detail.chips ?? []).map((chip) => (
+            <span className="ed-grid__label">{historyShort(definition)}</span>
+            {(definition.detail.chips ?? []).map((chipText) => (
               <Chip
-                active={current.text === chip}
-                key={chip}
+                active={current.text === chipText}
+                key={chipText}
                 onClick={() =>
                   onChange(entry.id, {
                     ...current,
-                    text: current.text === chip ? "" : chip,
+                    text: current.text === chipText ? "" : chipText,
                   })
                 }
               >
-                {chip}
+                {chipText}
               </Chip>
             ))}
             <input
@@ -268,7 +335,9 @@ export function nextPe(finding: FindingValue): FindingValue {
   return { sel: "normal" };
 }
 
-/** 一組 PE：循環按鈕格子；異常的項目，快選與補充放在格子下方。 */
+export const peShort = (item: PeItem) => PE_SHORT_LABEL[item.id] ?? item.label;
+
+/** PE：每個欄位一列（欄位名＋循環按鈕）；異常的項目，快選（可複選）與補充放在下方。 */
 export function PeGrid({
   groups,
   item,
@@ -296,6 +365,7 @@ export function PeGrid({
       current.sel === "normal" ? "正常" : current.sel === "abn" ? "異常" : "未查";
     return (
       <CycleChip
+        display={peShort(definition)}
         key={entry.id}
         label={definition.label}
         mark={current.sel === "normal" ? "✓" : current.sel === "abn" ? "!" : ""}
@@ -311,44 +381,51 @@ export function PeGrid({
     );
   };
 
-  const cells: ReactNode[] = [];
-  for (const group of groups) {
-    const rows = resolve(group.entries);
-    if (rows.length === 0) continue;
-    cells.push(
-      labelCell(group),
-      ...rows.map(({ entry, item: definition }) => chip(entry, definition)),
-    );
-  }
-
   return (
     <>
-      <div className="ed-grid">{cells}</div>
+      {groups.map((group) => {
+        const rows = resolve(group.entries);
+        if (rows.length === 0) return null;
+        return (
+          <div className="ed-grid" key={group.key}>
+            {labelCell(group)}
+            {rows.map(({ entry, item: definition }) => chip(entry, definition))}
+          </div>
+        );
+      })}
       {abnormal.map(({ entry, item: definition }) => {
         const current = finding(entry.id);
         const chosen = current.fu ?? {};
+        const phrases = definition.abnormal.map((phrase) => (
+          <Chip
+            active={chosen[phrase] === "1"}
+            key={phrase}
+            label={phrase}
+            onClick={() =>
+              onChange(entry.id, {
+                ...current,
+                fu: { ...chosen, [phrase]: chosen[phrase] === "1" ? "0" : "1" },
+              })
+            }
+            span={definition.layout === "grid9" ? 1 : undefined}
+            title={phrase}
+            tone="warning"
+          >
+            {definition.layout === "grid9" ? (SITE_SHORT[phrase] ?? phrase) : phrase}
+          </Chip>
+        ));
         return (
           <div
             className="ed-grid ed-grid--detail"
             data-testid={`ed-pe-detail-${entry.id}`}
             key={`d-${entry.id}`}
           >
-            <span className="ed-grid__label">{definition.label}</span>
-            {definition.abnormal.map((phrase) => (
-              <Chip
-                active={chosen[phrase] === "1"}
-                key={phrase}
-                onClick={() =>
-                  onChange(entry.id, {
-                    ...current,
-                    fu: { ...chosen, [phrase]: chosen[phrase] === "1" ? "0" : "1" },
-                  })
-                }
-                tone="warning"
-              >
-                {phrase}
-              </Chip>
-            ))}
+            <span className="ed-grid__label">{peShort(definition)}</span>
+            {definition.layout === "grid9" ? (
+              <Grid9 extra={phrases.slice(9)}>{phrases}</Grid9>
+            ) : (
+              phrases
+            )}
             <input
               aria-label={`${definition.label} 補充`}
               className="ed-grid__input"

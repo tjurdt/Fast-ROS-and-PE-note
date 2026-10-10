@@ -103,7 +103,8 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
   }),
   problem({
     id: "weakness",
-    label: "全身無力／倦怠",
+    label: "無力倦怠",
+    hint: "全身無力／倦怠",
     cc: "general weakness",
     group: "全身代謝",
     characterize: ["malaise", "onset"],
@@ -259,7 +260,8 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
   }),
   problem({
     id: "lab_referral",
-    label: "檢驗異常／門診轉入",
+    label: "檢驗異常",
+    hint: "檢驗異常／門診轉入",
     cc: "referred for abnormal lab",
     group: "全身代謝",
     characterize: ["onset"],
@@ -284,7 +286,8 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
   // ───────────── 心肺 ─────────────
   problem({
     id: "chest_pain",
-    label: "胸痛／胸悶",
+    label: "胸痛胸悶",
+    hint: "胸痛／胸悶",
     cc: "chest pain",
     ccFrom: "chest_quality",
     ccMode: "replace",
@@ -359,7 +362,8 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
   }),
   problem({
     id: "dyspnea",
-    label: "喘／呼吸困難",
+    label: "喘",
+    hint: "喘／呼吸困難",
     cc: "dyspnea",
     group: "心肺",
     characterize: ["dysp_trigger", "onset"],
@@ -517,7 +521,8 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
   }),
   problem({
     id: "cough_uri",
-    label: "咳嗽／上呼吸道感染",
+    label: "咳嗽",
+    hint: "咳嗽／上呼吸道感染",
     cc: "cough",
     group: "心肺",
     characterize: ["onset", "cough", "sputum"],
@@ -560,7 +565,8 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
   }),
   problem({
     id: "ent",
-    label: "耳鼻喉（喉痛、耳痛、鼻血、吞嚥）",
+    label: "耳鼻喉",
+    hint: "耳鼻喉（喉痛、耳痛、鼻血、吞嚥）",
     cc: "ENT symptom",
     ccFrom: "ent_type",
     ccMode: "replace",
@@ -620,7 +626,8 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
   }),
   problem({
     id: "eye",
-    label: "眼睛（視力、眼痛、紅眼）",
+    label: "眼睛",
+    hint: "眼睛（視力、眼痛、紅眼）",
     cc: "eye symptom",
     ccFrom: "eye_type",
     ccMode: "replace",
@@ -747,7 +754,8 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
   }),
   problem({
     id: "nausea_vomiting",
-    label: "噁心／嘔吐",
+    label: "噁心嘔吐",
+    hint: "噁心／嘔吐",
     cc: "N/V",
     group: "消化",
     characterize: ["onset", "vomiting", "nausea"],
@@ -842,7 +850,8 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
   }),
   problem({
     id: "constipation_bloating",
-    label: "便秘／腹脹",
+    label: "便秘腹脹",
+    hint: "便秘／腹脹",
     cc: "constipation/abd distension",
     group: "消化",
     characterize: ["onset", "constipation", "bloating"],
@@ -870,7 +879,8 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
   }),
   problem({
     id: "gi_bleed",
-    label: "吐血／黑便／血便",
+    label: "腸胃出血",
+    hint: "吐血／黑便／血便",
     cc: "GI bleeding",
     ccFrom: "gib_type",
     ccMode: "replace",
@@ -945,7 +955,8 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
   // ───────────── 泌尿婦產 ─────────────
   problem({
     id: "urinary",
-    label: "泌尿症狀（解尿痛、血尿、解不出）",
+    label: "泌尿症狀",
+    hint: "泌尿症狀（解尿痛、血尿、解不出）",
     cc: "urinary symptom",
     ccFrom: "uri_type",
     ccMode: "replace",
@@ -991,7 +1002,8 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
   }),
   problem({
     id: "gyn",
-    label: "陰道出血／婦科下腹痛",
+    label: "婦科出血",
+    hint: "陰道出血／婦科下腹痛",
     cc: "vaginal bleeding",
     group: "泌尿婦產",
     pain: true,
@@ -1153,8 +1165,15 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
   }),
   problem({
     id: "focal_neuro",
-    label: "單側無力／麻／言語障礙／臉歪",
+    label: "神經缺損",
+    hint: "單側無力／麻／言語障礙／臉歪",
     cc: "focal weakness",
+    ccFromYes: [
+      { item: "weak_focal", cc: "focal weakness" },
+      { item: "numb", cc: "numbness" },
+      { item: "slurred", cc: "slurred speech" },
+      { item: "facial_droop", cc: "facial droop" },
+    ],
     group: "神經",
     characterize: [
       "lkw",
@@ -1315,7 +1334,8 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
   // ───────────── 外傷・皮膚・骨科 ─────────────
   problem({
     id: "trauma",
-    label: "外傷／跌倒",
+    label: "外傷跌倒",
+    hint: "外傷／跌倒",
     cc: "trauma",
     ccFrom: "mechanism",
     ccMode: "replace",
@@ -1389,7 +1409,8 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
   }),
   problem({
     id: "back_pain",
-    label: "背痛／腰痛／頸痛",
+    label: "背頸腰痛",
+    hint: "背痛／腰痛／頸痛",
     cc: "back pain",
     ccFrom: "back_site",
     ccMode: "replace",
@@ -1440,7 +1461,8 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
   }),
   problem({
     id: "limb",
-    label: "肢體疼痛／腫脹／紅熱",
+    label: "肢體腫痛",
+    hint: "肢體疼痛／腫脹／紅熱",
     cc: "limb pain/swelling",
     group: "外傷皮膚骨科",
     pain: true,
@@ -1491,7 +1513,8 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
   }),
   problem({
     id: "skin_allergy",
-    label: "皮疹／癢／過敏",
+    label: "皮疹過敏",
+    hint: "皮疹／癢／過敏",
     cc: "rash/itching",
     group: "外傷皮膚骨科",
     characterize: ["onset", "rash", "itch"],
@@ -1523,7 +1546,8 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
   }),
   problem({
     id: "bleeding",
-    label: "出血（鼻、牙齦、瘀青、傷口不止血）",
+    label: "出血傾向",
+    hint: "出血（鼻、牙齦、瘀青、傷口不止血）",
     cc: "bleeding",
     group: "外傷皮膚骨科",
     characterize: ["onset"],
@@ -1557,7 +1581,8 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
   // ───────────── 其他 ─────────────
   problem({
     id: "psych",
-    label: "精神（焦慮、自傷、躁動、失眠）",
+    label: "精神",
+    hint: "精神（焦慮、自傷、躁動、失眠）",
     cc: "psychiatric symptom",
     ccFrom: "psych_type",
     ccMode: "replace",

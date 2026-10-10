@@ -69,7 +69,7 @@ describe("ED problem-oriented note", { timeout: 20_000 }, () => {
     await openPatient(user);
 
     const tabs = within(screen.getByRole("navigation", { name: "病人筆記分頁" }));
-    for (const name of ["問題", "問診", "PE", "病史", "檢查", "病歷輸出"]) {
+    for (const name of ["基本", "問題", "問診", "PE", "病史", "檢查", "病歷"]) {
       expect(tabs.getByRole("button", { name: new RegExp(`^${name}`) })).toBeTruthy();
     }
     expect(tabs.queryByRole("button", { name: /^ROS/ })).toBeNull();
@@ -85,11 +85,11 @@ describe("ED problem-oriented note", { timeout: 20_000 }, () => {
 
     await user.click(screen.getByRole("button", { name: "問題" }));
     await user.click(screen.getByRole("button", { name: "腹痛" }));
-    await user.click(screen.getByRole("button", { name: /噁心／嘔吐/ }));
+    await user.click(screen.getByRole("button", { name: "噁心嘔吐" }));
     // 每個主訴各自的時間：循環按鈕 TODAY → 2HOUR → …
     await user.click(screen.getByRole("button", { name: "時間：腹痛" }));
-    await user.click(screen.getByRole("button", { name: "時間：噁心／嘔吐" }));
-    await user.click(screen.getByRole("button", { name: "時間：噁心／嘔吐" }));
+    await user.click(screen.getByRole("button", { name: "時間：噁心嘔吐" }));
+    await user.click(screen.getByRole("button", { name: "時間：噁心嘔吐" }));
     // CC 只寫主訴一個。
     expect(screen.getByTestId("ed-cc-preview").textContent).toBe("abd pain today");
 
@@ -111,13 +111,13 @@ describe("ED problem-oriented note", { timeout: 20_000 }, () => {
       }),
     );
 
-    await user.click(screen.getByRole("button", { name: /^病歷輸出/ }));
+    await user.click(screen.getByRole("button", { name: /^病歷/ }));
     expect(
       (screen.getByLabelText("CHIEF COMPLAINT") as HTMLTextAreaElement).value,
     ).toBe("RLQ abd pain today");
     expect(
       (screen.getByLabelText("PRESENT ILLNESS") as HTMLTextAreaElement).value,
-    ).toBe("N/V for 2 hours, RLQ pain, vomiting. no fever");
+    ).toBe("RLQ pain; N/V for 2 hours, vomiting. no fever");
     expect((screen.getByLabelText("ABDOMEN") as HTMLTextAreaElement).value).toBe(
       "Soft, flat, tenderness(+) at RLQ",
     );
@@ -156,7 +156,7 @@ describe("ED problem-oriented note", { timeout: 20_000 }, () => {
     await openPatient(user);
     await user.click(screen.getByRole("button", { name: "問題" }));
     await user.click(screen.getByRole("button", { name: "發燒" }));
-    await user.click(screen.getByRole("button", { name: /^病歷輸出/ }));
+    await user.click(screen.getByRole("button", { name: /^病歷/ }));
 
     const cc = screen.getByLabelText("CHIEF COMPLAINT") as HTMLTextAreaElement;
     expect(cc.value).toBe("fever");
@@ -190,7 +190,7 @@ describe("ED problem-oriented note", { timeout: 20_000 }, () => {
 
     await user.click(screen.getByRole("button", { name: "問題" }));
     await user.click(screen.getByRole("button", { name: "腹痛" }));
-    await user.click(screen.getByRole("button", { name: /噁心／嘔吐/ }));
+    await user.click(screen.getByRole("button", { name: "噁心嘔吐" }));
     await user.click(screen.getByRole("button", { name: /^檢查/ }));
 
     // 兩個問題都要求的項目只出現一次。
@@ -200,23 +200,32 @@ describe("ED problem-oriented note", { timeout: 20_000 }, () => {
     expect(isChecked("HCG, urine（90727204）")).toBe(true);
     expect(isChecked("CT/SCAN- UPPER ABDOMEN（15015A60）")).toBe(false);
 
+    // 育齡女性未排除懷孕：KUB 先不勾，醫師確認後自己勾。
+    expect(isChecked("KUB- PLAIN（15003010）")).toBe(false);
     const countBefore = Number(
       /\d+/.exec(screen.getByTestId("ed-order-count").textContent ?? "")?.[0],
     );
-    await user.click(screen.getByLabelText("KUB- PLAIN（15003010）"));
+    await user.click(screen.getByLabelText("CBC,DC,（9071715F）"));
     expect(screen.getByTestId("ed-order-count").textContent).toBe(
       `已選 ${countBefore - 1} 項`,
     );
+    await user.click(screen.getByLabelText("KUB- PLAIN（15003010）"));
+    expect(screen.getByTestId("ed-order-count").textContent).toBe(
+      `已選 ${countBefore} 項`,
+    );
 
-    await user.click(screen.getByRole("button", { name: /^病歷輸出/ }));
+    await user.click(screen.getByRole("button", { name: /^病歷/ }));
     const exported = parseChartText(
       (screen.getByLabelText("交換文字") as HTMLTextAreaElement).value,
     );
     const keys = exported.orders.map((order) => order.pfkey);
-    expect(keys).toHaveLength(countBefore - 1);
-    expect(keys).toContain("9071715F");
+    expect(keys).toHaveLength(countBefore);
+    expect(keys).not.toContain("9071715F");
     expect(keys).toContain("90727204");
-    expect(keys).not.toContain("15003010");
+    expect(keys).toContain("15003010");
+    // KUB 帶著「請輸入說明」的兩段文字。
+    const kub = exported.orders.find((order) => order.pfkey === "15003010");
+    expect(kub?.memoPurpose).toContain("r/o ileus");
     expect(new Set(keys).size).toBe(keys.length);
   });
 
@@ -225,18 +234,49 @@ describe("ED problem-oriented note", { timeout: 20_000 }, () => {
     render(<App repository={seededRepository()} />);
     await openPatient(user);
     await user.click(screen.getByRole("button", { name: "問題" }));
-    await user.click(screen.getByRole("button", { name: "喘／呼吸困難" }));
+    await user.click(screen.getByRole("button", { name: "喘" }));
     await user.click(screen.getByRole("button", { name: /^檢查/ }));
     expect(screen.getByTestId("ed-order-memo-cxr_pa").textContent).toContain(
       "r/o pneumonia",
     );
-    await user.click(screen.getByRole("button", { name: /^病歷輸出/ }));
+    await user.click(screen.getByRole("button", { name: /^病歷/ }));
     const exported = parseChartText(
       (screen.getByLabelText("交換文字") as HTMLTextAreaElement).value,
     );
     const cxr = exported.orders.find((order) => order.pfkey === "15002010");
     expect(cxr?.memoDx).toBe("dyspnea");
     expect(cxr?.memoPurpose).toContain("pulmonary edema");
+  });
+
+  it("clears every PE finding with one (confirmed) tap", async () => {
+    const user = userEvent.setup();
+    render(<App repository={seededRepository()} />);
+    await openPatient(user);
+    await user.click(screen.getByRole("button", { name: "問題" }));
+    await user.click(screen.getByRole("button", { name: "腹痛" }));
+    await user.click(screen.getByRole("button", { name: /^PE/ }));
+    await user.click(screen.getByRole("button", { name: "未查全正常" }));
+    expect(screen.getByTestId("ed-pe-abd_tender").getAttribute("data-state")).toBe(
+      "正常",
+    );
+    await user.click(screen.getByRole("button", { name: "一鍵清空" }));
+    expect(screen.getByTestId("ed-pe-abd_tender").getAttribute("data-state")).toBe(
+      "正常",
+    );
+    await user.click(screen.getByRole("button", { name: "確定清空？" }));
+    expect(screen.getByTestId("ed-pe-abd_tender").getAttribute("data-state")).toBe(
+      "未查",
+    );
+  });
+
+  it("uses short tab names and no 待辦 tab in ED mode", async () => {
+    const user = userEvent.setup();
+    render(<App repository={seededRepository()} />);
+    await openPatient(user);
+    const tabs = within(screen.getByRole("navigation", { name: "病人筆記分頁" }));
+    expect(
+      tabs.getAllByRole("button").map((b) => b.textContent?.replace(/\d+$/, "")),
+    ).toEqual(["基本", "問題", "問診", "PE", "病史", "檢查", "病歷"]);
   });
 
   it("asks for a problem before suggesting orders", async () => {
@@ -284,7 +324,7 @@ describe("ED problem-oriented note", { timeout: 20_000 }, () => {
     expect(screen.getByTestId("ed-cc-preview").textContent).toBe("abd pain");
   }, 20_000);
 
-  it("groups symptoms sensibly: common first, ENT and eye in their own group", async () => {
+  it("lists one short chip per symptom by category, with minor specialties folded away", async () => {
     const user = userEvent.setup();
     render(<App repository={seededRepository()} />);
     await openPatient(user);
@@ -292,10 +332,20 @@ describe("ED problem-oriented note", { timeout: 20_000 }, () => {
     const headings = [...document.querySelectorAll(".ed-group .ed-grid__label")].map(
       (label) => label.textContent,
     );
-    expect(headings.indexOf("常用")).toBeLessThan(headings.indexOf("心肺"));
-    expect(headings).toContain("五官");
-    expect(headings).toContain("精神");
-    expect(headings).not.toContain("其他");
+    expect(headings).toEqual(["全身", "心肺", "消化", "泌尿", "神經", "外傷骨科"]);
+    const minor = screen.getByTestId("ed-chips-minor").closest("details");
+    expect(minor?.open).toBe(false);
+    // 耳鼻喉拆成一個個症狀；點「耳痛」就選了耳鼻喉、分型是耳痛。
+    await user.click(screen.getByText(/小科/));
+    await user.click(
+      within(screen.getByTestId("ed-chips-minor")).getByRole("button", {
+        name: "耳痛",
+      }),
+    );
+    expect(screen.getByTestId("ed-cc-preview").textContent).toBe("ear pain");
+    for (const chip of document.querySelectorAll(".ed-group .ed-chip")) {
+      expect([...(chip.textContent ?? "")].length).toBeLessThanOrEqual(4);
+    }
   });
 
   it("starts the interview lean and remembers the doctor's depth choice", async () => {
@@ -355,7 +405,7 @@ describe("ED problem-oriented note", { timeout: 20_000 }, () => {
       "Situation: pregnant (GA 20w); T(+: Japan) O(-) C(-) C(-)",
     );
 
-    await user.click(screen.getByRole("button", { name: /^病歷輸出/ }));
+    await user.click(screen.getByRole("button", { name: /^病歷/ }));
     const pi = (screen.getByLabelText("PRESENT ILLNESS") as HTMLTextAreaElement).value;
     expect(pi).toContain("家人也有類似症狀");
     const ext = (screen.getByLabelText(/EXTREMITIES/) as HTMLTextAreaElement).value;
@@ -371,7 +421,7 @@ describe("ED problem-oriented note", { timeout: 20_000 }, () => {
     await user.click(screen.getByRole("button", { name: /^問診/ }));
     await cycleTo(user, "頭痛", "無");
     await cycleTo(user, "喘／呼吸困難", "無");
-    await user.click(screen.getByRole("button", { name: /^病歷輸出/ }));
+    await user.click(screen.getByRole("button", { name: /^病歷/ }));
 
     const pi = () =>
       (screen.getByLabelText("PRESENT ILLNESS") as HTMLTextAreaElement).value;

@@ -67,15 +67,27 @@ export function EdChartTab({
     );
   }
 
+  // 一鍵複製：先用 Clipboard API；被瀏覽器擋（例如舊版 iOS、非 HTTPS）時退回選取＋execCommand。
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(exportText);
       setCopyState("copied");
+      return;
     } catch {
-      exportRef.current?.focus();
-      exportRef.current?.select();
-      setCopyState("manual");
+      /* 退回下面的作法 */
     }
+    const area = exportRef.current;
+    area?.focus();
+    area?.select();
+    area?.setSelectionRange(0, exportText.length);
+    let copied = false;
+    try {
+      copied =
+        typeof document.execCommand === "function" && document.execCommand("copy");
+    } catch {
+      copied = false;
+    }
+    setCopyState(copied ? "copied" : "manual");
   };
 
   const overrides = new Set(chart.overridden);
@@ -263,13 +275,25 @@ export function EdChartTab({
         </div>
       ) : null}
 
-      <h3 className="ed-h">交換文字（給油猴工具；空白欄位不會動到 ERS 原有內容）</h3>
+      <h3 className="ed-h">
+        交換文字（貼到油猴；空白欄位不會動到 ERS 原有內容）
+        <button
+          className="ed-cycle"
+          data-testid="ed-copy-bottom"
+          onClick={() => void copy()}
+          type="button"
+        >
+          {copyState === "copied" ? "已複製 ✓" : "一鍵複製"}
+        </button>
+      </h3>
       <textarea
         aria-label="交換文字"
         className="ed-export"
+        onClick={() => void copy()}
         readOnly
         ref={exportRef}
         rows={8}
+        title="點一下就複製"
         value={exportText}
       />
     </section>

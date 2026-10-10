@@ -8,6 +8,7 @@ import {
   type FieldDetail,
 } from "./condense";
 import { durationPhrase, isAcuteDuration } from "./duration";
+import { pickedOptions } from "./picks";
 import { HISTORY_ITEMS, PMH_ITEMS, SYSTEM_ORDER, historyItem } from "./history-library";
 import {
   PE_COLLAPSED_NORMAL,
@@ -24,6 +25,7 @@ import {
   type EdFieldKey,
   type EdPeField,
   type EdProblem,
+  type EdPickOption,
   type EdSystemKey,
   type HistoryItem,
   type IcdChoice,
@@ -305,13 +307,17 @@ export function buildPhysical(problems: readonly EdProblem[]): PhysicalSection[]
 
 // ───────────── 文字產生 ─────────────
 
-function pickOption(item: HistoryItem, finding: FindingValue | undefined) {
-  if (item.type !== "pick") return undefined;
-  return item.options.find((option) => option.label === finding?.sel);
+/** 已選的選項（單選或複選），依題目的選項順序。 */
+function chosenOptions(item: HistoryItem, findings: EdFindings): EdPickOption[] {
+  if (item.type !== "pick") return [];
+  const picked = new Set(pickedOptions(findings, item.id));
+  return item.options.filter((option) => picked.has(option.label));
 }
 
 interface HistoryClause extends Clause {
   kind: "lead" | "pos" | "neg" | "extra";
+  /** 同一個症狀的描述共用一組，組內用逗號、組與組之間用分號。 */
+  group?: string;
 }
 
 /** 一題問診 → 一句：陽性寫進正文，陰性併入「no …」。 */
@@ -325,10 +331,16 @@ function historyClause(
   const finding = findings[edKey.history(id)];
   const clauseId = `h.${id}`;
   if (item.type === "pick") {
-    const option = pickOption(item, finding);
-    return option
-      ? { id: clauseId, kind: "pos", text: option.text, score: must ? 80 : 60 }
-      : null;
+    const options = chosenOptions(item, findings);
+    if (options.length === 0) return null;
+    const textOut =
+      item.joinTemplate && options.length > 0
+        ? item.joinTemplate.replace(
+            "{v}",
+            options.map((option) => option.cc ?? option.text).join("/"),
+          )
+        : options.map((option) => option.text).join(", ");
+    return { id: clauseId, kind: "pos", text: textOut, score: must ? 80 : 60 };
   }
   if (item.type === "text") {
     const value = text(finding);
@@ -373,13 +385,21 @@ function complaintPhrase(
   if (entry.kind === "custom") return entry.label;
   const problem = byId.get(entry.id);
   if (!problem) return "";
+  if (problem.ccFromYes) {
+    const yes = problem.ccFromYes
+      .filter((entry) => findings[edKey.history(entry.item)]?.on === true)
+      .map((entry) => entry.cc);
+    if (yes.length > 0) return yes.join(", ");
+  }
   if (!problem.ccFrom) return problem.cc;
   const item = historyItem(problem.ccFrom);
-  const option = item
-    ? pickOption(item, findings[edKey.history(problem.ccFrom)])
-    : undefined;
-  if (!option?.cc) return problem.cc;
-  return problem.ccMode === "replace" ? option.cc : `${option.cc} ${problem.cc}`;
+  const parts = (item ? chosenOptions(item, findings) : [])
+    .map((option) => option.cc)
+    .filter((cc): cc is string => Boolean(cc));
+  if (parts.length === 0) return problem.cc;
+  return problem.ccMode === "replace"
+    ? parts.join(", ")
+    : `${parts.join("/")} ${problem.cc}`;
 }
 
 /** 主訴片語＋該主訴自己的時間，例如 "RUQ abd pain for 2 days"。 */
@@ -471,26 +491,37 @@ export function composePIDetail(
       score: 95,
     });
   }
-  // 其他已選症狀寫在 PI 開頭；同名的問診題（例如「發燒」）不再重複寫，細節併進來。
-  const secondary = secondaryComplaints(problems, findings);
-  const secondaryIds = new Set(secondary.map((entry) => entry.id));
-  for (const entry of secondary) {
-    const detail =
-      historyItem(entry.id)?.type === "yn"
-        ? text(findings[edKey.history(entry.id)])
-        : "";
-    clauses.push({
-      id: `cc2.${entry.id}`,
-      kind: "lead",
-      text: detail ? `${entry.text} (${detail})` : entry.text,
-      score: 90,
-    });
-  }
-  for (const id of interviewItemIds(interview)) {
-    if (secondaryIds.has(id)) continue;
+  // 依主訴順序：每個症狀先寫它自己（主訴以外的才寫，主訴已在 CC），再接它的特徵題；
+  // 同名的問診題（例如「發燒」）不再重複寫，細節併進來。其餘問診題各自一組。
+  const secondary = new Map(
+    secondaryComplaints(problems, findings).map((entry) => [entry.id, entry.text]),
+  );
+  const emitted = new Set<string>(secondary.keys());
+  const pushHistory = (id: string, group: string) => {
+    if (emitted.has(id)) return;
+    emitted.add(id);
     const clause = historyClause(id, findings, mustIds.has(id));
-    if (clause) clauses.push(clause);
+    if (clause) clauses.push({ ...clause, group });
+  };
+  for (const entry of selectedComplaints(findings)) {
+    const phrase = secondary.get(entry.id);
+    if (phrase) {
+      const detail =
+        historyItem(entry.id)?.type === "yn"
+          ? text(findings[edKey.history(entry.id)])
+          : "";
+      clauses.push({
+        id: `cc2.${entry.id}`,
+        kind: "lead",
+        text: detail ? `${phrase} (${detail})` : phrase,
+        score: 90,
+        group: entry.id,
+      });
+    }
+    const block = interview.characterize.find((b) => b.key === `char.${entry.id}`);
+    for (const item of block?.items ?? []) pushHistory(item.id, entry.id);
   }
+  for (const id of interviewItemIds(interview)) pushHistory(id, `h.${id}`);
   const extra = text(findings[edKey.ctx("piExtra")]);
   if (extra) {
     clauses.push({
@@ -503,16 +534,27 @@ export function composePIDetail(
   }
 
   const render = (kept: readonly HistoryClause[]) => {
-    const positives = kept
-      .filter((clause) => clause.kind === "lead" || clause.kind === "pos")
-      .map((clause) => clause.text);
+    const positiveClauses = kept.filter(
+      (clause) => clause.kind === "lead" || clause.kind === "pos",
+    );
     const negatives = kept
       .filter((clause) => clause.kind === "neg")
       .map((clause) => clause.text);
     const extras = kept
       .filter((clause) => clause.kind === "extra")
       .map((clause) => clause.text);
-    const positiveText = positives.join(", ");
+    // 同一症狀的描述用逗號，不同症狀之間用分號。
+    let positiveText = "";
+    positiveClauses.forEach((clause, index) => {
+      const previous = positiveClauses[index - 1];
+      if (index > 0) {
+        positiveText +=
+          previous?.group !== undefined && previous.group === clause.group
+            ? ", "
+            : "; ";
+      }
+      positiveText += clause.text;
+    });
     const negativeText = negatives.length > 0 ? `no ${negatives.join(", ")}` : "";
     return [positiveText, negativeText, ...extras].filter(Boolean).join(". ");
   };
@@ -732,13 +774,17 @@ function icdDefault(
   }
   const matched =
     (choice.whenPick !== undefined &&
-      history(choice.whenPick.item)?.sel === choice.whenPick.option) ||
+      pickedOptions(findings, choice.whenPick.item).includes(choice.whenPick.option)) ||
     (choice.whenNo !== undefined && history(choice.whenNo)?.on === false);
   if (matched) return true;
   if (!choice.defaultOn) return false;
   if (choice.offWhenPicked) {
-    const picked = history(choice.offWhenPicked)?.sel;
-    if (picked && (!choice.offWhenOptions || choice.offWhenOptions.includes(picked))) {
+    const picked = pickedOptions(findings, choice.offWhenPicked);
+    const offOptions = choice.offWhenOptions;
+    if (
+      picked.length > 0 &&
+      (!offOptions || picked.some((option) => offOptions.includes(option)))
+    ) {
       return false;
     }
   }
@@ -822,7 +868,7 @@ function answeredHistory(id: string, findings: EdFindings): boolean {
   const finding = findings[edKey.history(id)];
   if (!item) return true;
   if (item.type === "yn") return finding?.on === true || finding?.on === false;
-  if (item.type === "pick") return Boolean(finding?.sel);
+  if (item.type === "pick") return pickedOptions(findings, id).length > 0;
   return text(finding).length > 0;
 }
 

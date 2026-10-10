@@ -56,7 +56,10 @@ function blockTitle(block: InterviewBlock): string {
 
 function answered(finding: FindingValue | undefined): boolean {
   return (
-    finding?.on !== undefined || Boolean(finding?.sel) || Boolean(finding?.text?.trim())
+    finding?.on !== undefined ||
+    Boolean(finding?.sel) ||
+    Object.values(finding?.fu ?? {}).includes("1") ||
+    Boolean(finding?.text?.trim())
   );
 }
 

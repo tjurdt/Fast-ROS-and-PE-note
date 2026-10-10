@@ -22,6 +22,8 @@ interface PatientNoteProps {
   hideExport?: boolean;
   syncPanel?: ReactNode;
   tabs: PatientNoteTab[];
+  /** 第一個分頁的名稱（急診模式用較短的「基本」）。 */
+  basicLabel?: string;
 }
 
 export function PatientNote({
@@ -33,10 +35,11 @@ export function PatientNote({
   hideExport = false,
   syncPanel,
   tabs,
+  basicLabel = "基本資料",
 }: PatientNoteProps) {
   const basicInfoTab: PatientNoteTab = {
     key: "basic",
-    label: "基本資料",
+    label: basicLabel,
     content: (
       <section className="v2-card v2-note" aria-labelledby="v2-note-title">
         <span className="v2-eyebrow">v2 typed patient shell</span>

@@ -254,11 +254,13 @@ export function searchProblems(query: string): EdProblem[] {
   const scored: { problem: EdProblem; score: number }[] = [];
   for (const problem of ED_PROBLEMS) {
     const label = normalize(problem.label);
+    const hint = normalize(problem.hint ?? "");
     const cc = normalize(problem.cc);
     const words = (KEYWORDS[problem.id] ?? []).map(normalize);
     let score = 0;
     if (label === needle || words.includes(needle)) score = 100;
-    else if (label.includes(needle) || cc.includes(needle)) score = 60;
+    else if (label.includes(needle) || cc.includes(needle) || hint.includes(needle))
+      score = 60;
     else if (words.some((word) => word.includes(needle) || needle.includes(word)))
       score = 40;
     if (score > 0) scored.push({ problem, score });

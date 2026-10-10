@@ -6,6 +6,7 @@ import {
   type EdPatientContext,
 } from "./compose";
 import { ED_ORDERS, ED_ORDER_GROUP_ORDER, edOrder, type EdOrder } from "./orders";
+import { pickedOptions } from "./picks";
 import { edKey } from "./types";
 
 /**
@@ -60,6 +61,10 @@ interface Ctx {
   dizzyRisk: boolean;
   /** 頭痛紅旗：雷擊樣、頸僵硬、神經症狀、意識改變、抽搐、抗凝血、年長。 */
   headacheRedFlag: boolean;
+  /** 懷疑肝膽：右上腹／上腹痛、黃疸／茶色尿、Murphy sign 陽性。 */
+  hepatobiliary: boolean;
+  /** 育齡女性且未明確否認懷孕：輻射 X 光先不勾，驗孕後再開。 */
+  pregnancyNotExcluded: boolean;
   yes: (id: string) => boolean;
   sel: (id: string) => string;
   text: (id: string) => string;
@@ -91,6 +96,7 @@ function buildContext(findings: EdFindings, patient: EdPatientContext): Ctx {
     "esrd",
   ];
   const yes = (id: string) => findings[edKey.history(id)]?.on === true;
+  const abdSites = new Set(pickedOptions(findings, "abd_site"));
   const older = age !== null && age >= 65;
   const hasCardiacHistory = cardiacHistory.some((id) => pmh.has(id));
   return {
@@ -115,6 +121,14 @@ function buildContext(findings: EdFindings, patient: EdPatientContext): Ctx {
       yes("confusion") ||
       yes("seizure") ||
       yes("anticoag"),
+    hepatobiliary:
+      abdSites.has("右上腹") ||
+      abdSites.has("上腹／心窩") ||
+      yes("jaundice") ||
+      findings[edKey.pe("abd_murphy")]?.sel === "abn",
+    pregnancyNotExcluded:
+      isFertilePatient(patient) &&
+      findings[edKey.history("pregnancy_possible")]?.on !== false,
     female: patient.sex === "女 F",
     fertile: isFertilePatient(patient),
     older,
@@ -470,6 +484,13 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
     r("cxr", "core", "腹痛：口袋書（CXR，單子註明站立，看橫膈下游離氣體）"),
     r("kub", "core", "腹痛：口袋書 3-5 類（KUB）"),
     r(
+      "dbil",
+      "core",
+      "懷疑肝膽：右上腹／上腹痛、黃疸或 Murphy",
+      (c) => c.hepatobiliary,
+    ),
+    r("alp", "core", "懷疑肝膽：右上腹／上腹痛、黃疸或 Murphy", (c) => c.hepatobiliary),
+    r(
       "ck",
       "core",
       "老人／有心血管病史的上腹痛：口袋書（CK＋TnI）",
@@ -510,12 +531,7 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
     r("urine_routine", "core", "噁心嘔吐：酮尿／泌尿道"),
     r("bun", "plus", "噁心嘔吐：脫水"),
     r("ketone", "plus", "噁心嘔吐＋糖尿病：酮體", (c) => c.pmh.has("dm")),
-    r(
-      "kub",
-      "plus",
-      "噁心嘔吐＋腹痛／腹脹／無排氣：腸阻塞",
-      (c) => c.yes("abd_pain") || c.yes("bloating") || c.yes("no_flatus"),
-    ),
+    r("kub", "core", "噁心嘔吐：肚子問題一律 KUB（腸阻塞）"),
     r("cxr", "plus", "噁心嘔吐＋腹痛：橫膈下游離氣體", (c) => c.yes("abd_pain")),
     r(
       "ecg",
@@ -544,12 +560,7 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
     r("bun", "plus", "腹瀉：脫水"),
     r("stool_ob", "plus", "腹瀉＋血便：潛血", (c) => c.yes("hematochezia")),
     r("urine_routine", "plus", "腹瀉＋發燒：找其他感染源", (c) => c.yes("fever")),
-    r(
-      "kub",
-      "ask",
-      "腹瀉＋腹脹或腹痛：排除阻塞",
-      (c) => c.yes("bloating") || c.yes("abd_pain"),
-    ),
+    r("kub", "plus", "腹瀉：肚子問題一律 KUB（排除阻塞）"),
   ],
 
   constipation_bloating: [
@@ -1157,9 +1168,14 @@ export function planOrders(findings: EdFindings, patient: EdPatientContext): Ord
   const ctx = buildContext(findings, patient);
   const problems = selectedProblems(findings);
   const merged = new Map<string, { tier: OrderTier; reasons: string[] }>();
-  const add = (rawId: string, rawTier: OrderTier, why: string) => {
+  const add = (rawId: string, rawTier: OrderTier, reason: string) => {
+    let why = reason;
     const id = resolvePseudo(rawId, ctx);
-    const tier: OrderTier = ctx.child && /^ct/.test(id) ? "ask" : rawTier;
+    // 育齡女性未排除懷孕：輻射檢查一律先不勾（驗孕排除後再開），理由會寫在項目上。
+    const holdForPregnancy = ctx.pregnancyNotExcluded && RADIATION_IDS.has(id);
+    const tier: OrderTier =
+      (ctx.child && /^ct/.test(id)) || holdForPregnancy ? "ask" : rawTier;
+    if (holdForPregnancy) why = `${why}（育齡女性：先驗孕排除懷孕再開）`;
     const current = merged.get(id);
     if (!current) {
       merged.set(id, { tier, reasons: [why] });
@@ -1179,7 +1195,8 @@ export function planOrders(findings: EdFindings, patient: EdPatientContext): Ord
   if (ctx.fertile && problems.length > 0 && !merged.has("bhcg")) {
     const relevantProblem = problems.some((problem) => HCG_PROBLEMS.has(problem.id));
     const hasRadiation = [...merged].some(
-      ([id, entry]) => RADIATION_IDS.has(id) && entry.tier !== "ask",
+      ([id, entry]) =>
+        RADIATION_IDS.has(id) && (entry.tier !== "ask" || ctx.pregnancyNotExcluded),
     );
     if (relevantProblem || hasRadiation) {
       add("urine_hcg", "core", "育齡女性：檢查／影像前排除懷孕");
