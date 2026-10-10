@@ -24,7 +24,7 @@ import {
 import { fitClauses, type Clause } from "../../src/domain/ed/condense";
 import { historyItem } from "../../src/domain/ed/history-library";
 import { ED_PROBLEMS, PROBLEM_GROUP_ORDER } from "../../src/domain/ed/problems";
-import { SPECIAL_ITEMS } from "../../src/domain/ed/special";
+import { SPECIAL_ITEMS, appendSituation } from "../../src/domain/ed/special";
 import { edKey } from "../../src/domain/ed/types";
 import type { FindingValue } from "../../src/domain/clinical/finding";
 
@@ -111,7 +111,10 @@ describe("custom and main complaints", () => {
 
   it("writes custom complaints into CC without bringing in a question bank", () => {
     let findings = addCustom({}, "RUQ dull pain");
-    findings = { ...findings, [edKey.ctx("duration")]: { text: "for 3 days" } };
+    findings = {
+      ...findings,
+      [edKey.duration]: { fu: { "custom:RUQ dull pain": "3D" } },
+    };
     expect(selectedProblems(findings)).toEqual([]);
     expect(composeCC([], findings)).toBe("RUQ dull pain for 3 days");
     expect(composeChart(findings, PATIENT).fields.CC).toBe("RUQ dull pain for 3 days");
@@ -228,26 +231,32 @@ describe("PI / PH / PE condensing", () => {
     ).toBe("user");
   });
 
-  it("writes special situations into PI or PH with their detail", () => {
+  it("writes the free-text situation into PH, and still prints old ticked ones", () => {
     const findings: Findings = {
       ...withProblems("fever"),
-      [edKey.special("intoxicated")]: { on: true, text: "alcohol" },
       [edKey.special("pregnant")]: { on: true, text: "GA 20w" },
-      [edKey.special("anticoag")]: { on: true },
+      [edKey.ctx("situation")]: { text: "on chemotherapy, from nursing home" },
       [edKey.pmh("htn")]: { on: true },
     };
-    const problems = selectedProblems(findings);
-    expect(composePI(problems, findings, PATIENT)).toContain("intoxicated (alcohol)");
-    const ph = composePH(findings);
-    expect(ph).toBe(
-      "HX: HTN; Situation: pregnant (GA 20w), on anticoagulant/antiplatelet",
+    expect(composePH(findings)).toBe(
+      "HX: HTN; Situation: pregnant (GA 20w), on chemotherapy, from nursing home; T(-) O(-) C(-) C(-)",
     );
   });
 
-  it("every special situation has a unique id and a known target", () => {
+  it("inserts a common situation into the free text without duplicating it", () => {
+    expect(appendSituation("", "DNR")).toBe("DNR");
+    expect(appendSituation("bedridden", "DNR")).toBe("bedridden, DNR");
+    expect(appendSituation("bedridden, DNR", "DNR")).toBe("bedridden, DNR");
+    expect(appendSituation("bedridden,", "DNR")).toBe("bedridden, DNR");
+  });
+
+  it("no longer offers the visit-related (PI) situations", () => {
     const ids = SPECIAL_ITEMS.map((item) => item.id);
     expect(new Set(ids).size).toBe(ids.length);
-    for (const item of SPECIAL_ITEMS) expect(["PI", "PH"]).toContain(item.target);
+    for (const id of ["ems", "intoxicated", "comm_barrier", "unaccompanied", "ohca"]) {
+      expect(ids).not.toContain(id);
+    }
+    for (const item of SPECIAL_ITEMS) expect(item.target).toBe("PH");
   });
 
   it("appends free-text PE findings and supports omitting one exam item", () => {

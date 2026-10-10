@@ -1,44 +1,21 @@
 /**
- * 特別情境：題庫沒涵蓋、但會影響評估或病歷的狀況（懷孕、化療、抗凝血、酒醉、溝通困難…）。
- * 勾選後寫進病歷，可附細節；另有完全自由輸入的補充欄。
+ * 特別情境：題庫沒涵蓋、但會影響評估或病歷的長期背景（懷孕、化療、抗凝血、管路…）。
+ * 畫面上是自由輸入框（`ed.ctx.situation`，寫進 PH 的「Situation」），下方的下拉選單
+ * 只負責把這些常用片語插入輸入框。舊版是逐項勾選（`ed.sp.*`），舊資料仍會照樣輸出。
  *
- * - target = PI：與這次來院有關的情境，寫在 PI（現病史）。
- * - target = PH：長期背景，寫在 PH（過去病史）的「Situation」。
+ * 「本次相關情境」（救護車、酒醉、溝通困難…）已依使用者要求移除。
  */
 export interface SpecialItem {
   id: string;
   label: string;
   /** 寫進病歷的英文片語。 */
   text: string;
-  target: "PI" | "PH";
+  target: "PH";
   /** 細節輸入框的提示；有值才會出現輸入框。 */
   detail?: string;
 }
 
 export const SPECIAL_ITEMS: readonly SpecialItem[] = [
-  { id: "ems", label: "救護車送達", text: "arrived by EMS", target: "PI" },
-  {
-    id: "intoxicated",
-    label: "酒醉／疑似物質影響",
-    text: "intoxicated",
-    target: "PI",
-    detail: "例 alcohol, 氣味(+)",
-  },
-  {
-    id: "comm_barrier",
-    label: "溝通困難（失智／語言／聽力）",
-    text: "history limited by communication barrier",
-    target: "PI",
-    detail: "例 dementia / 外籍 / 聾",
-  },
-  { id: "unaccompanied", label: "無家屬陪同", text: "unaccompanied", target: "PI" },
-  {
-    id: "ohca",
-    label: "到院前心跳停止（OHCA）",
-    text: "OHCA with ROSC",
-    target: "PI",
-    detail: "例 ROSC 後 / 無 ROSC",
-  },
   {
     id: "pregnant",
     label: "懷孕中",
@@ -104,6 +81,14 @@ export const SPECIAL_ITEMS: readonly SpecialItem[] = [
 
 export function specialItem(id: string): SpecialItem | undefined {
   return SPECIAL_ITEMS.find((item) => item.id === id);
+}
+
+/** 插入到自由輸入框：接在原有文字後面，以逗號分隔；已存在就不重複。 */
+export function appendSituation(current: string, phrase: string): string {
+  const trimmed = current.trim().replace(/[,，]\s*$/, "");
+  if (!trimmed) return phrase;
+  if (trimmed.split(/[,，]\s*/).includes(phrase)) return trimmed;
+  return `${trimmed}, ${phrase}`;
 }
 
 /** 病歷用的片語：片語＋（細節）。 */

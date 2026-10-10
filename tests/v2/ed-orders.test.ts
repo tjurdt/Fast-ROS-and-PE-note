@@ -153,7 +153,6 @@ describe("planOrders", () => {
       "ecg",
       "tni",
       "ddimer",
-      "onetouch",
     ]) {
       expect(list).toContain(id);
     }
@@ -228,9 +227,11 @@ const FIRST_ROUND_EXCLUDED = [
   "sono_aortic_renal",
   "sono_pelvic",
   "sono_fb",
+  // 使用者指定：不開 One touch（床邊血糖由護理師處理）。
+  "onetouch",
 ];
 
-describe("first-round policy (no cultures, no bedside sono, no blood gas)", () => {
+describe("first-round policy (no cultures, no bedside sono, no blood gas, no One touch)", () => {
   it("no rule references an excluded order, so none can ever be suggested", () => {
     const referenced = referencedOrderIds();
     for (const id of FIRST_ROUND_EXCLUDED) expect(referenced).not.toContain(id);
@@ -257,6 +258,12 @@ describe("first-round policy (no cultures, no bedside sono, no blood gas)", () =
         }
       }
     }
+  });
+
+  it("orders CRP with the 9068010F item, not the POCT CRP(ER)", () => {
+    expect(edOrder("crp")?.pfkey).toBe("9068010F");
+    expect(edOrder("crp")?.name).toBe("CRP,");
+    expect(ids(withProblems("fever"))).toContain("crp");
   });
 
   it("still lets the doctor add them manually", () => {

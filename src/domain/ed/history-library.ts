@@ -373,6 +373,12 @@ export const HISTORY_ITEMS: readonly HistoryItem[] = [
     opt("腰／側腹痛", "flank pain", "flank pain"),
     opt("尿量減少", "oliguria", "oliguria"),
   ]),
+  pick("limb_site", "msk", "哪一肢", [
+    opt("右上肢", "involving R upper limb", "R arm pain/swelling"),
+    opt("左上肢", "involving L upper limb", "L arm pain/swelling"),
+    opt("右下肢", "involving R lower limb", "R leg pain/swelling"),
+    opt("左下肢", "involving L lower limb", "L leg pain/swelling"),
+  ]),
   pick("back_site", "msk", "疼痛部位", [
     opt("頸", "neck pain", "neck pain"),
     opt("上背／胸背", "upper back pain", "upper back pain"),

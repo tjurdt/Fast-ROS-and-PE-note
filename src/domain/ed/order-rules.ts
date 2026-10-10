@@ -219,7 +219,6 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
 
   glucose: [
     r("glu", "core", "血糖異常"),
-    r("onetouch", "core", "血糖異常：床邊血糖（護理師）"),
     r("na", "core", "血糖異常：電解質"),
     r("k", "core", "血糖異常：電解質"),
     r("crea", "core", "血糖異常：腎功能"),
@@ -762,7 +761,6 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
     r("trop", "core", "疑似中風：24 小時中風組套"),
     r("crp", "core", "疑似中風：24 小時中風組套／口袋書"),
     r("glu", "core", "疑似中風：先排除低血糖"),
-    r("onetouch", "core", "疑似中風：馬上測床邊血糖（護理師）"),
     r("pt", "core", "疑似中風：凝血（溶栓／抗凝前）"),
     r("aptt", "core", "疑似中風：凝血（溶栓／抗凝前）"),
     r("ddimer", "core", "疑似中風：24 小時中風組套"),
@@ -787,7 +785,6 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
     r("crea", "core", "意識改變：所有抽血的人"),
     r("glu", "core", "意識改變：先排除低血糖"),
     r("crp", "core", "意識改變：所有抽血的人"),
-    r("onetouch", "core", "意識改變：馬上測床邊血糖（護理師）"),
     r("bun", "core", "意識改變：口袋書 3-5 類（BUN）"),
     r("alt", "core", "意識改變：口袋書 3-5 類（ALT）"),
     r("tbil", "core", "意識改變：口袋書 3-5 類（Tbil）"),
@@ -848,7 +845,6 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
     r("k", "core", "抽搐：口袋書（電解質）"),
     r("crea", "core", "抽搐：腎功能"),
     r("glu", "core", "抽搐：口袋書（Glu）"),
-    r("onetouch", "core", "抽搐：馬上測床邊血糖（護理師）"),
     r("ammonia", "core", "抽搐：口袋書（NH3）"),
     r("lactate", "core", "抽搐：口袋書（Lactate）"),
     r("ca_free", "core", "抽搐：口袋書（iCa）"),

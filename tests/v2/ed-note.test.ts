@@ -214,13 +214,25 @@ describe("shared interview across problems", () => {
 });
 
 describe("chart composition", () => {
-  it("writes a concise CC from problem phrases, picked site and duration", () => {
+  it("writes only the main complaint into CC; the others lead the PI with their own time", () => {
     const findings = answer(withProblems("abd_pain", "nausea_vomiting"), {
       [edKey.history("abd_site")]: { sel: "右下腹" },
+      [edKey.duration]: { fu: { abd_pain: "1D", nausea_vomiting: "6H" } },
+    });
+    expect(composeCC(selectedProblems(findings), findings)).toBe(
+      "RLQ abd pain for 1 day",
+    );
+    expect(
+      composeChart(findings, PATIENT).fields.PI.startsWith("N/V for 6 hours"),
+    ).toBe(true);
+  });
+
+  it("still reads the old single complaint time when the main complaint has none", () => {
+    const findings = answer(withProblems("abd_pain"), {
       [edKey.ctx("duration")]: { text: "since last night" },
     });
     expect(composeCC(selectedProblems(findings), findings)).toBe(
-      "RLQ abd pain, N/V since last night",
+      "abd pain since last night",
     );
   });
 
@@ -311,7 +323,7 @@ describe("chart composition", () => {
     const missing = composeChart(findings, PATIENT).missing;
     expect(missing.find((m) => m.id === "dyspnea")).toBeUndefined();
     expect(missing.find((m) => m.id === "cold_sweat")?.kind).toBe("history");
-    expect(missing.find((m) => m.id === "heart_murmur")?.kind).toBe("pe");
+    expect(missing.find((m) => m.id === "heart_rhythm")?.kind).toBe("pe");
     expect(missing.find((m) => m.id === "chest_bs")).toBeUndefined();
   });
 });
@@ -353,7 +365,10 @@ describe("interchange text", () => {
   it("round-trips through serialize and parse", () => {
     const findings = answer(withProblems("abd_pain", "nausea_vomiting"), {
       [edKey.history("abd_site")]: { sel: "右下腹" },
-      [edKey.ctx("duration")]: { text: "since 22:00" },
+      [edKey.duration]: {
+        fu: { abd_pain: "CUSTOM" },
+        grp: { abd_pain: "since 22:00" },
+      },
       [edKey.ctx("nrs")]: { text: "6" },
       [edKey.history("nausea")]: { on: true },
       [edKey.pe("abd_tender")]: { sel: "abn", fu: { RLQ: "1" } },
@@ -367,8 +382,9 @@ describe("interchange text", () => {
     expect(parsed.fields.CC).toBe(chart.fields.CC);
     expect(parsed.fields.NRS).toBe("6");
     expect(parsed.fields.ABD).toBe(chart.fields.ABD);
-    expect(parsed.icd.map((entry) => entry.code)).toEqual(["R10.9", "R11.2"]);
-    expect(parsed.icd[0]?.desc).toBe("Unspecified abdominal pain");
+    expect(parsed.fields.CC).toBe("RLQ abd pain since 22:00");
+    expect(parsed.icd.map((entry) => entry.code)).toEqual(["R10.31", "R11.2"]);
+    expect(parsed.icd[0]?.desc).toBe("Right lower quadrant pain");
   });
 
   it("keeps multi-line values together and ignores text before any field", () => {
