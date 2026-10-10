@@ -57,7 +57,39 @@ function aboutResponse(
   );
 }
 
+/**
+ * Mimics the browser: window.fetch throws "Illegal invocation" unless it is called
+ * as a plain function (or on the global object). The 2026-10 production failure
+ * 「目前無法取得 Google 帳號資訊」 came from calling it as `this.#fetch(...)`.
+ */
+function strictBrowserFetch(response: () => Response) {
+  return vi.fn(function (this: unknown) {
+    if (this !== undefined && this !== globalThis) {
+      throw new TypeError("Failed to execute 'fetch' on 'Window': Illegal invocation");
+    }
+    return Promise.resolve(response());
+  });
+}
+
 describe("GoogleDriveConnector", () => {
+  it("calls the browser's own fetch without rebinding it to the connector", async () => {
+    const strict = strictBrowserFetch(() => aboutResponse("permission-strict"));
+    vi.stubGlobal("fetch", strict);
+    try {
+      const connector = new GoogleDriveConnector({
+        clientId: "public-client-id",
+        localStorage: new MemoryStorage(),
+        locationProtocol: "https:",
+        tokenProvider: new TokenProvider(),
+      });
+      const connection = await connector.connect();
+      expect(connection.account.key).toBe("permission-strict");
+      expect(strict).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("identifies the account and persists only a cache locator, never its token", async () => {
     const storage = new MemoryStorage();
     const tokenProvider = new TokenProvider();

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { RemoteStorageError } from "../../src/application/synchronized-patient-repository";
 import { emptyPatientDatabase } from "../../src/domain/patient-database";
@@ -57,6 +57,31 @@ function cloudEnvelope() {
 }
 
 describe("GoogleDrivePatientStore", () => {
+  it("calls the browser's own fetch without rebinding it to the store", async () => {
+    const strict = vi.fn(function (this: unknown) {
+      if (this !== undefined && this !== globalThis) {
+        throw new TypeError(
+          "Failed to execute 'fetch' on 'Window': Illegal invocation",
+        );
+      }
+      return Promise.resolve(
+        new Response(JSON.stringify({ files: [] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    });
+    vi.stubGlobal("fetch", strict);
+    try {
+      await expect(
+        new GoogleDrivePatientStore(new TokenProvider()).read(),
+      ).resolves.toBeNull();
+      expect(strict).toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("reads the appDataFolder envelope and uses ETag on conditional update", async () => {
     const { mock, requests } = queuedFetch([
       jsonResponse({

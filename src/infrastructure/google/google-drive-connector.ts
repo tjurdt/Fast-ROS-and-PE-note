@@ -18,6 +18,13 @@ import {
 } from "./google-drive-patient-store";
 import { GoogleIdentityTokenProvider } from "./google-identity-token-provider";
 
+/**
+ * The browser's fetch must be called with the window as `this`. Storing it in a
+ * field and calling `this.#fetch(...)` throws "Illegal invocation" before any
+ * request is sent, so the default is wrapped in a plain function.
+ */
+const browserFetch: typeof fetch = (input, init) => globalThis.fetch(input, init);
+
 export const V2_GOOGLE_LAST_ACCOUNT_KEY = "pe_note_v2_google_last_account";
 
 interface InteractiveGoogleTokenProvider extends GoogleAccessTokenProvider {
@@ -104,7 +111,7 @@ export class GoogleDriveConnector implements CloudRepositoryConnector {
 
   constructor(dependencies: GoogleDriveConnectorDependencies = {}) {
     this.#clientId = dependencies.clientId?.trim() ?? configuredClientId();
-    this.#fetch = dependencies.fetch ?? fetch;
+    this.#fetch = dependencies.fetch ?? browserFetch;
     this.#storage = dependencies.localStorage ?? browserLocalStorage();
     this.#protocol = dependencies.locationProtocol ?? window.location.protocol;
     this.#now = dependencies.now ?? (() => Date.now());

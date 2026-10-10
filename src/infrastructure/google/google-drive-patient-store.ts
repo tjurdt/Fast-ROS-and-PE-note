@@ -10,6 +10,13 @@ import {
   type PatientDatabase,
 } from "../../domain/patient-database";
 
+/**
+ * The browser's fetch must be called with the window as `this`. Storing it in a
+ * field and calling `this.#fetch(...)` throws "Illegal invocation" before any
+ * request is sent, so the default is wrapped in a plain function.
+ */
+const browserFetch: typeof fetch = (input, init) => globalThis.fetch(input, init);
+
 export const V2_GOOGLE_DRIVE_FILE_NAME = "pe_note_v2_cloud.json";
 const CONFLICT_BACKUP_PREFIX = "pe_note_v2_conflict_backup_";
 const CONFLICT_BACKUP_KEEP = 5;
@@ -83,7 +90,7 @@ export class GoogleDrivePatientStore implements RemotePatientStore {
     dependencies: GoogleDrivePatientStoreDependencies = {},
   ) {
     this.#tokenProvider = tokenProvider;
-    this.#fetch = dependencies.fetch ?? fetch;
+    this.#fetch = dependencies.fetch ?? browserFetch;
     this.#now = dependencies.now ?? (() => Date.now());
     this.#createBoundary =
       dependencies.createBoundary ??
