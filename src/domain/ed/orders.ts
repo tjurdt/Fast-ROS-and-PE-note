@@ -271,8 +271,8 @@ export const ED_ORDERS: readonly EdOrder[] = [
   },
   {
     id: "crp",
-    pfkey: "99912015",
-    name: "CRP(ER),[Blood]",
+    pfkey: "9068010F",
+    name: "CRP,",
     group: "chem",
     spcnm: "Blood",
     spcnmCode: "LAB0301",

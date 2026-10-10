@@ -23,6 +23,45 @@ class MemoryStorage implements Pick<Storage, "getItem" | "setItem" | "removeItem
 }
 
 describe("GoogleIdentityTokenProvider", () => {
+  it("preloads the sign-in script only when sign-in is possible", () => {
+    const load = vi.fn(async () => undefined);
+    new GoogleIdentityTokenProvider("client-id", {
+      sessionStorage: new MemoryStorage(),
+      locationProtocol: "https:",
+      loadIdentityScript: load,
+      getOAuth2: () => undefined,
+    }).prepare();
+    expect(load).toHaveBeenCalledTimes(1);
+
+    const blocked = vi.fn(async () => undefined);
+    new GoogleIdentityTokenProvider("client-id", {
+      sessionStorage: new MemoryStorage(),
+      locationProtocol: "file:",
+      loadIdentityScript: blocked,
+      getOAuth2: () => undefined,
+    }).prepare();
+    new GoogleIdentityTokenProvider("", {
+      sessionStorage: new MemoryStorage(),
+      locationProtocol: "https:",
+      loadIdentityScript: blocked,
+      getOAuth2: () => undefined,
+    }).prepare();
+    expect(blocked).not.toHaveBeenCalled();
+  });
+
+  it("swallows a failed preload so the real sign-in can report it", async () => {
+    const provider = new GoogleIdentityTokenProvider("client-id", {
+      sessionStorage: new MemoryStorage(),
+      locationProtocol: "https:",
+      loadIdentityScript: vi.fn(async () => {
+        throw new Error("offline");
+      }),
+      getOAuth2: () => undefined,
+    });
+    expect(() => provider.prepare()).not.toThrow();
+    await Promise.resolve();
+  });
+
   it("restores only an unexpired access token from session storage", async () => {
     const storage = new MemoryStorage();
     storage.setItem(

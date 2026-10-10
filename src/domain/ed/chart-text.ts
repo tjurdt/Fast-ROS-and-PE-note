@@ -1,7 +1,8 @@
 import { FIELD_ORDER } from "./compose";
 import type { EdChart } from "./compose";
+import { orderMemo } from "./order-memo";
 import { ED_ORDER_FREQ, type EdOrder } from "./orders";
-import type { EdFieldKey } from "./types";
+import type { EdFieldKey, EdProblem } from "./types";
 
 /**
  * Fast PE note → ERS 油猴腳本的交換格式（純文字，可直接複製貼上）。
@@ -12,9 +13,11 @@ import type { EdFieldKey } from "./types";
  *   ICD: R10.9 Unspecified abdominal pain; R11.2 Nausea with vomiting, unspecified
  *   ORDERS:
  *   9071715F|CBC,DC,|LAB0301|Blood|URGENT
- *   15002010|CHEST PA VIEW|0000000|Patient|URGENT
+ *   15002010|CHEST PA VIEW|0000000|Patient|URGENT|abd pain for 2 days|r/o free air under diaphragm
  *
- * ORDERS 一行一項：pfkey|ERS 醫囑名稱|檢體代碼|檢體|頻率。油猴腳本會在 ERS 檢查驗系統
+ * ORDERS 一行一項：pfkey|ERS 醫囑名稱|檢體代碼|檢體|頻率[|診斷說明|檢查目的]。
+ * 影像檢查會多帶兩段說明，給 ERS「請輸入說明」視窗的 [診斷說明]／[檢查目的]；
+ * 舊版腳本只讀前五段，多出來的會被忽略。油猴腳本會在 ERS 檢查驗系統
  * 把這些項目加進「待送出」格子（不會按送出）。ORDERS 放在最後，舊版腳本會把它當成 ICD 的
  * 續行並因格式不符而忽略，不會出錯。
  *
@@ -42,6 +45,7 @@ export function serializeChart(
   chart: EdChart,
   patient?: ChartPatient,
   orders: readonly EdOrder[] = [],
+  problems: readonly EdProblem[] = [],
 ): string {
   const lines: string[] = [CHART_TEXT_HEADER];
   const tag = patient ? patientTag(patient) : "";
@@ -58,11 +62,16 @@ export function serializeChart(
   if (orders.length > 0) {
     lines.push("ORDERS:");
     for (const order of orders) {
-      lines.push(
-        [order.pfkey, order.name, order.spcnmCode, order.spcnm, ED_ORDER_FREQ].join(
-          "|",
-        ),
-      );
+      const fields = [
+        order.pfkey,
+        order.name,
+        order.spcnmCode,
+        order.spcnm,
+        ED_ORDER_FREQ,
+      ];
+      const memo = orderMemo(order, problems, chart.fields.CC);
+      if (memo) fields.push(memo.dx, memo.purpose);
+      lines.push(fields.join("|"));
     }
   }
   return lines.join("\n");
@@ -74,6 +83,9 @@ export interface ParsedOrderLine {
   spcnmCode: string;
   spcnm: string;
   freq: string;
+  /** 影像檢查「請輸入說明」的 [診斷說明]／[檢查目的]；沒有就是空字串。 */
+  memoDx: string;
+  memoPurpose: string;
 }
 
 export interface ParsedChartText {
@@ -131,9 +143,15 @@ export function parseChartText(input: string): ParsedChartText {
   const orders: ParsedOrderLine[] = [];
   const seen = new Set<string>();
   for (const line of ordersRaw.split("\n")) {
-    const [pfkey = "", name = "", spcnmCode = "", spcnm = "", freq = ""] = line
-      .trim()
-      .split("|");
+    const [
+      pfkey = "",
+      name = "",
+      spcnmCode = "",
+      spcnm = "",
+      freq = "",
+      memoDx = "",
+      memoPurpose = "",
+    ] = line.trim().split("|");
     if (!/^[0-9A-Z]{8}$/.test(pfkey) || seen.has(pfkey)) continue;
     seen.add(pfkey);
     orders.push({
@@ -142,6 +160,8 @@ export function parseChartText(input: string): ParsedChartText {
       spcnmCode,
       spcnm,
       freq: freq || ED_ORDER_FREQ,
+      memoDx: memoDx.trim(),
+      memoPurpose: memoPurpose.trim(),
     });
   }
   return { version, patient, fields, icd, orders };

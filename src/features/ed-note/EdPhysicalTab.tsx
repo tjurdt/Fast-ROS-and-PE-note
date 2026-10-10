@@ -8,7 +8,21 @@ import {
 import { selectedComplaints } from "../../domain/ed/complaints";
 import { PE_FIELD_LABELS, PE_FIELD_ORDER, peItem } from "../../domain/ed/pe-library";
 import { edKey, type EdPeField } from "../../domain/ed/types";
-import { Chip, PeRow, type EdFindingChange } from "./ed-controls";
+import { PeGrid, type EdFindingChange } from "./ed-controls";
+
+/** 格子裡放得下的欄位短名。 */
+const PE_SHORT: Readonly<Record<EdPeField, string>> = {
+  GC: "GC",
+  HEENT: "HEENT",
+  NECK: "NECK",
+  CHEST: "CHEST",
+  ABD: "ABD",
+  BACK: "BACK",
+  GU: "GU",
+  RECTAL: "RECTAL",
+  EXT: "EXT",
+  NEURO: "NEURO",
+};
 
 interface EdPhysicalTabProps {
   findings: EdFindings;
@@ -24,29 +38,28 @@ export function EdPhysicalTab({
   const problems = selectedProblems(findings);
   if (selectedComplaints(findings).length === 0) {
     return (
-      <section className="v2-card ed-panel">
+      <section className="ed-panel">
         <p className="v2-empty">請先到「問題」分頁選擇病人的主訴。</p>
       </section>
     );
   }
   const sections = buildPhysical(problems);
-  const sectionFields = new Set<EdPeField>(sections.map((section) => section.field));
-  const otherFields = PE_FIELD_ORDER.filter((field) => !sectionFields.has(field));
+  const moreSections = sections.filter((section) => section.more.length > 0);
+  const moreCount = moreSections.reduce((n, section) => n + section.more.length, 0);
 
-  const extraRow = (field: EdPeField) => (
-    <div className="ed-row" key={`extra-${field}`}>
-      <span className="ed-row__label">補充（自由輸入）</span>
-      <span className="ed-row__controls">
-        <input
-          aria-label={`${PE_FIELD_LABELS[field]} 補充（自由輸入）`}
-          onChange={(event) =>
-            onChange(edKey.peExtra(field), { text: event.target.value })
-          }
-          placeholder="題庫沒有的所見，例如：L leg 2×3 cm erythematous patch"
-          value={findings[edKey.peExtra(field)]?.text ?? ""}
-        />
-      </span>
-    </div>
+  const extraText = (field: EdPeField) => findings[edKey.peExtra(field)]?.text ?? "";
+  const extraInput = (field: EdPeField) => (
+    <label className="ed-line" key={`extra-${field}`}>
+      <span>{PE_SHORT[field]}</span>
+      <input
+        aria-label={`${PE_FIELD_LABELS[field]} 補充（自由輸入）`}
+        onChange={(event) =>
+          onChange(edKey.peExtra(field), { text: event.target.value })
+        }
+        placeholder="題庫沒有的所見"
+        value={extraText(field)}
+      />
+    </label>
   );
 
   const unexamined = (items: readonly PhysicalItem[]) =>
@@ -58,71 +71,71 @@ export function EdPhysicalTab({
   };
   const allCore = sections.flatMap((section) => section.core);
 
-  const renderRow = (entry: PhysicalItem) => {
-    const item = peItem(entry.id);
-    if (!item) return null;
-    return (
-      <PeRow
-        finding={findings[edKey.pe(entry.id)] ?? {}}
-        item={item}
-        key={entry.id}
-        must={entry.must}
-        onChange={(next) => onChange(edKey.pe(entry.id), next)}
-        reasons={entry.reasons}
-      />
-    );
-  };
+  // 欄位名佔一格；點欄位名＝此欄未查的全部標正常。
+  const fieldLabel = (field: EdPeField, items: readonly PhysicalItem[]) => (
+    <button
+      aria-label={`${PE_FIELD_LABELS[field]} 此欄全正常`}
+      className="ed-grid__label ed-grid__label--btn"
+      onClick={() => markNormal(items)}
+      title="此欄未查的全部標正常"
+      type="button"
+    >
+      {PE_SHORT[field]}
+      <small>全✓</small>
+    </button>
+  );
+  const grid = (
+    key: string,
+    list: readonly { field: EdPeField; items: readonly PhysicalItem[] }[],
+  ) => (
+    <PeGrid
+      finding={(id) => findings[edKey.pe(id)] ?? {}}
+      groups={list
+        .filter((entry) => entry.items.length > 0)
+        .map((entry) => ({
+          key: `${key}.${entry.field}`,
+          label: fieldLabel(entry.field, entry.items),
+          entries: entry.items,
+        }))}
+      item={peItem}
+      onChange={(id, next) => onChange(edKey.pe(id), next)}
+    />
+  );
+  const anyExtra = PE_FIELD_ORDER.some((field) => extraText(field) !== "");
 
   return (
-    <section className="v2-card ed-panel" aria-labelledby="ed-pe-title">
-      <h2 id="ed-pe-title">理學檢查（依病歷欄位合併）</h2>
-      <p className="ed-help">
-        只會寫進「有按正常／異常」的項目，沒檢查的不會用套版充數。
-      </p>
-      <div className="ed-chips">
-        <Chip active={false} onClick={() => markNormal(allCore)}>
-          未檢查的核心項目全部標正常
-        </Chip>
+    <section className="ed-panel" aria-labelledby="ed-pe-title">
+      <div className="ed-bar">
+        <h2 id="ed-pe-title">PE</h2>
+        <span className="ed-hint">點一下＝正常，再點＝異常</span>
+        <button className="ed-cycle" onClick={() => markNormal(allCore)} type="button">
+          未查全正常
+        </button>
       </div>
-      {sections.map((section) => (
-        <div
-          className="ed-block"
-          data-testid={`ed-pe-field-${section.field}`}
-          key={section.field}
-        >
-          <h3>
-            {PE_FIELD_LABELS[section.field]}
-            {unexamined(section.core).length > 0 ? (
-              <button
-                className="ed-link"
-                onClick={() => markNormal(section.core)}
-                type="button"
-              >
-                此欄全正常
-              </button>
-            ) : null}
-          </h3>
-          {section.core.map(renderRow)}
-          {section.more.length > 0 ? (
-            <details className="ed-more">
-              <summary>視情況再做（{section.more.length}）</summary>
-              {section.more.map(renderRow)}
-            </details>
-          ) : null}
-          {extraRow(section.field)}
-        </div>
-      ))}
-      {otherFields.length > 0 ? (
-        <details className="ed-more" open={sections.length === 0}>
-          <summary>其他 PE 欄位自由補充（{otherFields.length}）</summary>
-          {otherFields.map((field) => (
-            <div className="ed-block" key={field}>
-              <h3>{PE_FIELD_LABELS[field]}</h3>
-              {extraRow(field)}
-            </div>
-          ))}
+      <div className="ed-sec" data-testid="ed-pe-core">
+        {grid(
+          "core",
+          sections.map((section) => ({ field: section.field, items: section.core })),
+        )}
+      </div>
+      {moreCount > 0 ? (
+        <details className="ed-tri" data-testid="ed-pe-more">
+          <summary>視情況再做（{moreCount}）</summary>
+          <div className="ed-sec">
+            {grid(
+              "more",
+              moreSections.map((section) => ({
+                field: section.field,
+                items: section.more,
+              })),
+            )}
+          </div>
         </details>
       ) : null}
+      <details className="ed-tri" open={anyExtra || sections.length === 0}>
+        <summary>各欄自由補充</summary>
+        {PE_FIELD_ORDER.map((field) => extraInput(field))}
+      </details>
     </section>
   );
 }

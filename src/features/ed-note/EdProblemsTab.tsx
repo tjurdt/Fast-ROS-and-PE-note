@@ -15,18 +15,17 @@ import {
   toggleProblemFinding,
   type EdFindings,
 } from "../../domain/ed/compose";
+import {
+  DURATION_LABELS,
+  customDuration,
+  cycleDuration,
+  durationCode,
+  setCustomDuration,
+} from "../../domain/ed/duration";
 import { ED_PROBLEMS, PROBLEM_GROUP_ORDER } from "../../domain/ed/problems";
 import { edKey, type EdContextKey, type EdProblem } from "../../domain/ed/types";
 import { Chip, type EdFindingChange } from "./ed-controls";
 
-const DURATION_CHIPS = [
-  "today",
-  "since yesterday",
-  "for 2 days",
-  "for 3 days",
-  "for 1 week",
-  "for 1 month",
-];
 const NRS_CHIPS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
 
 interface EdProblemsTabProps {
@@ -85,13 +84,10 @@ export function EdProblemsTab({ findings, onChange }: EdProblemsTabProps) {
   };
 
   return (
-    <section className="v2-card ed-panel" aria-labelledby="ed-problems-title">
-      <h2 id="ed-problems-title">病人的主訴（可複選）</h2>
-      <p className="ed-help">
-        直接搜尋症狀（例如「肚子痛」「喘」「頭暈」），或從常用／分類點選；找不到可自訂。
-        標★的是主訴，會排在病歷 CC 最前面；後面的問診與 PE 會合併，重複的題目只問一次。
-      </p>
-
+    <section className="ed-panel" aria-labelledby="ed-problems-title">
+      <h2 className="ed-sr" id="ed-problems-title">
+        病人的主訴
+      </h2>
       <div className="ed-search">
         <input
           aria-label="搜尋症狀"
@@ -99,7 +95,7 @@ export function EdProblemsTab({ findings, onChange }: EdProblemsTabProps) {
           onKeyDown={(event) => {
             if (event.key === "Enter" && results.length === 0) addCustom();
           }}
-          placeholder="搜尋症狀，或直接輸入自訂主訴"
+          placeholder="搜尋症狀，或輸入自訂主訴"
           value={query}
         />
         {query ? (
@@ -111,98 +107,119 @@ export function EdProblemsTab({ findings, onChange }: EdProblemsTabProps) {
 
       {trimmed ? (
         <div className="ed-results" data-testid="ed-search-results">
-          {results.length > 0 ? (
-            <div className="ed-chips">{results.map(problemChip)}</div>
-          ) : (
-            <p className="ed-help">題庫沒有符合「{trimmed}」的症狀。</p>
-          )}
-          <button className="ed-custom-add" onClick={addCustom} type="button">
-            ＋ 自訂主訴「{trimmed}」
-          </button>
-          <p className="ed-help">
-            自訂主訴只寫進 CC，不會帶出題庫；其他細節請用問診的「補充」欄寫進 PI。
-          </p>
+          <div className="ed-grid">
+            {results.map(problemChip)}
+            <button className="ed-chip ed-chip--add" onClick={addCustom} type="button">
+              ＋自訂「{trimmed}」
+            </button>
+          </div>
         </div>
       ) : null}
 
       {complaints.length > 0 ? (
         <div className="ed-selected" data-testid="ed-selected">
-          <h3>已選主訴</h3>
-          <ul>
-            {complaints.map((entry, index) => (
-              <li className={index === 0 ? "is-main" : ""} key={entry.id}>
-                <span className="ed-selected__label">
-                  {index === 0 ? "★ " : ""}
-                  {entry.label}
-                  {entry.kind === "custom" ? <small>（自訂）</small> : null}
-                </span>
+          {complaints.map((entry, index) => {
+            const code = durationCode(findings, entry.id);
+            return (
+              <div
+                className={`ed-selected__row ${index === 0 ? "is-main" : ""}`}
+                key={entry.id}
+              >
                 {index === 0 ? (
-                  <span className="ed-selected__main">主訴</span>
+                  <span className="ed-star" title="主訴（只有這一個寫進 CC）">
+                    ★
+                  </span>
                 ) : (
                   <button
                     aria-label={`設為主訴：${entry.label}`}
-                    className="ed-link"
+                    className="ed-star is-off"
                     onClick={() => onChange(edKey.main, { sel: entry.id })}
                     type="button"
                   >
-                    設為主訴
+                    ☆
                   </button>
                 )}
+                <span className="ed-selected__label">
+                  {entry.label}
+                  {entry.kind === "custom" ? <small>自訂</small> : null}
+                </span>
+                <button
+                  aria-label={`時間：${entry.label}`}
+                  className={`ed-c ed-dur ${code ? "is-pos" : ""}`}
+                  onClick={() =>
+                    onChange(edKey.duration, cycleDuration(findings, entry.id))
+                  }
+                  type="button"
+                >
+                  {code ? DURATION_LABELS[code] : "時間"}
+                </button>
+                {code === "CUSTOM" ? (
+                  <input
+                    aria-label={`自訂時間：${entry.label}`}
+                    className="ed-dur__custom"
+                    onChange={(event) =>
+                      onChange(
+                        edKey.duration,
+                        setCustomDuration(findings, entry.id, event.target.value),
+                      )
+                    }
+                    placeholder="例 since 22:00"
+                    value={customDuration(findings, entry.id)}
+                  />
+                ) : null}
                 <button
                   aria-label={`移除：${entry.label}`}
-                  className="ed-link"
+                  className="ed-x"
                   onClick={() => remove(entry.id)}
                   type="button"
                 >
-                  移除
+                  ✕
                 </button>
-              </li>
-            ))}
-          </ul>
+              </div>
+            );
+          })}
+          <div className="ed-preview" aria-live="polite">
+            <b>CC</b>
+            <span data-testid="ed-cc-preview">{composeCC(selected, findings)}</span>
+          </div>
         </div>
       ) : null}
 
-      <div className="ed-group">
-        <h3>常用</h3>
-        <div className="ed-chips">{common.map(problemChip)}</div>
-      </div>
+      {showPain ? (
+        <div className="ed-grid ed-grid--nrs">
+          <span className="ed-grid__label">NRS</span>
+          {NRS_CHIPS.map((chip) => (
+            <Chip
+              active={ctx("nrs") === chip}
+              key={chip}
+              label={`NRS ${chip}`}
+              onClick={() => setCtx("nrs", ctx("nrs") === chip ? "" : chip)}
+            >
+              {chip}
+            </Chip>
+          ))}
+        </div>
+      ) : null}
 
+      <div className="ed-grid ed-group">
+        <span className="ed-grid__label">常用</span>
+        {common.map(problemChip)}
+      </div>
       {PROBLEM_GROUP_ORDER.map((group) => {
         const members = ED_PROBLEMS.filter(
           (problem) => problem.group === group && !commonIds.has(problem.id),
         );
         if (members.length === 0) return null;
         return (
-          <div className="ed-group" key={group}>
-            <h3>{group}</h3>
-            <div className="ed-chips">{members.map(problemChip)}</div>
+          <div className="ed-grid ed-group" key={group}>
+            <span className="ed-grid__label">{group}</span>
+            {members.map(problemChip)}
           </div>
         );
       })}
 
-      <h3>主訴時間</h3>
-      <div className="ed-chips">
-        {DURATION_CHIPS.map((chip) => (
-          <Chip
-            active={ctx("duration") === chip}
-            key={chip}
-            onClick={() => setCtx("duration", ctx("duration") === chip ? "" : chip)}
-          >
-            {chip}
-          </Chip>
-        ))}
-      </div>
-      <label>
-        主訴時間（自由輸入）
-        <input
-          aria-label="主訴時間"
-          onChange={(event) => setCtx("duration", event.target.value)}
-          placeholder="例 since 22:00 / x50 times since 22:00"
-          value={ctx("duration")}
-        />
-      </label>
-      <label>
-        主訴補充
+      <label className="ed-line">
+        <span>CC補充</span>
         <input
           aria-label="主訴補充"
           onChange={(event) => setCtx("ccExtra", event.target.value)}
@@ -210,8 +227,8 @@ export function EdProblemsTab({ findings, onChange }: EdProblemsTabProps) {
           value={ctx("ccExtra")}
         />
       </label>
-      <label>
-        轉診／來源
+      <label className="ed-line">
+        <span>轉診</span>
         <input
           aria-label="轉診來源"
           onChange={(event) => setCtx("referral", event.target.value)}
@@ -219,30 +236,6 @@ export function EdProblemsTab({ findings, onChange }: EdProblemsTabProps) {
           value={ctx("referral")}
         />
       </label>
-
-      {showPain ? (
-        <>
-          <h3>疼痛 NRS</h3>
-          <div className="ed-chips ed-chips--tight">
-            {NRS_CHIPS.map((chip) => (
-              <Chip
-                active={ctx("nrs") === chip}
-                key={chip}
-                onClick={() => setCtx("nrs", ctx("nrs") === chip ? "" : chip)}
-              >
-                {chip}
-              </Chip>
-            ))}
-          </div>
-        </>
-      ) : null}
-
-      <div className="ed-preview" aria-live="polite">
-        <strong>主訴預覽</strong>
-        <span data-testid="ed-cc-preview">
-          {complaints.length > 0 ? composeCC(selected, findings) : "（先選主訴）"}
-        </span>
-      </div>
     </section>
   );
 }

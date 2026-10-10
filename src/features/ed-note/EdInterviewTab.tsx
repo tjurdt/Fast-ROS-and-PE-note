@@ -11,8 +11,7 @@ import {
 } from "../../domain/ed/compose";
 import { SYSTEM_LABELS, historyItem } from "../../domain/ed/history-library";
 import { edKey, type EdSystemKey } from "../../domain/ed/types";
-import { HistoryRow, type EdFindingChange } from "./ed-controls";
-import { SpecialPicker } from "./SpecialPicker";
+import { CycleSelect, HistoryGrid, type EdFindingChange } from "./ed-controls";
 
 interface EdInterviewTabProps {
   findings: EdFindings;
@@ -24,11 +23,11 @@ interface EdInterviewTabProps {
 export type InterviewDepth = "lean" | "standard" | "full";
 
 const DEPTH_KEY = "pe_note_ed_depth";
-const DEPTH_LABELS: Record<InterviewDepth, string> = {
-  lean: "精簡",
-  standard: "標準",
-  full: "完整",
-};
+const DEPTH_OPTIONS: readonly { value: InterviewDepth; label: string }[] = [
+  { value: "lean", label: "精簡" },
+  { value: "standard", label: "標準" },
+  { value: "full", label: "完整" },
+];
 
 function loadDepth(): InterviewDepth {
   try {
@@ -49,7 +48,7 @@ function saveDepth(depth: InterviewDepth) {
 }
 
 function blockTitle(block: InterviewBlock): string {
-  if (block.key.startsWith("char.")) return `${block.title}・特徵`;
+  if (block.key.startsWith("char.")) return block.title;
   if (block.key === "conditional") return block.title;
   const system = block.title as EdSystemKey;
   return SYSTEM_LABELS[system] ?? block.title;
@@ -61,34 +60,34 @@ function answered(finding: FindingValue | undefined): boolean {
   );
 }
 
-function Block({
-  block,
+/** 幾個題組放進同一個格子：題組名（問題或系統）佔一格，後面直接接題目。 */
+function Section({
+  blocks,
   findings,
   onChange,
+  testId,
 }: {
-  block: InterviewBlock;
+  blocks: readonly InterviewBlock[];
   findings: EdFindings;
   onChange: EdFindingChange;
+  testId?: string;
 }) {
-  if (block.items.length === 0) return null;
+  const groups = blocks
+    .filter((block) => block.items.length > 0)
+    .map((block) => ({
+      key: block.key,
+      label: blockTitle(block),
+      entries: block.items,
+    }));
+  if (groups.length === 0) return null;
   return (
-    <div className="ed-block" data-testid={`ed-block-${block.key}`}>
-      <h3>{blockTitle(block)}</h3>
-      {block.items.map((entry) => {
-        const item = historyItem(entry.id);
-        if (!item) return null;
-        const finding: FindingValue = findings[edKey.history(entry.id)] ?? {};
-        return (
-          <HistoryRow
-            finding={finding}
-            item={item}
-            key={entry.id}
-            must={entry.must}
-            onChange={(next) => onChange(edKey.history(entry.id), next)}
-            reasons={entry.reasons}
-          />
-        );
-      })}
+    <div className="ed-sec" data-testid={testId}>
+      <HistoryGrid
+        finding={(id) => findings[edKey.history(id)] ?? {}}
+        groups={groups}
+        item={historyItem}
+        onChange={(id, next) => onChange(edKey.history(id), next)}
+      />
     </div>
   );
 }
@@ -100,36 +99,29 @@ export function EdInterviewTab({ findings, patient, onChange }: EdInterviewTabPr
     problems.length === 0 && selectedComplaints(findings).length > 0;
 
   const extra = (
-    <>
-      <h3>補充（自由輸入，寫進 PI）</h3>
+    <label className="ed-line ed-line--area">
+      <span>補充</span>
       <textarea
         aria-label="問診補充"
         onChange={(event) =>
           onChange(edKey.ctx("piExtra"), { text: event.target.value })
         }
-        placeholder="題庫沒有的內容都可以直接打，例如：昨晚聚餐後開始、家人也有類似症狀"
+        placeholder="題庫沒有的內容直接打，寫進 PI 結尾"
         rows={2}
         value={findings[edKey.ctx("piExtra")]?.text ?? ""}
       />
-      <h3>本次相關情境</h3>
-      <SpecialPicker findings={findings} onChange={onChange} target="PI" />
-    </>
+    </label>
   );
 
   if (problems.length === 0) {
     return (
-      <section className="v2-card ed-panel">
-        {hasCustomOnly ? (
-          <>
-            <p className="ed-help">
-              目前只有自訂主訴，題庫沒有對應的問診題；請用下方補充欄寫進
-              PI，或回到「問題」分頁加選標準症狀。
-            </p>
-            {extra}
-          </>
-        ) : (
-          <p className="v2-empty">請先到「問題」分頁選擇病人的主訴。</p>
-        )}
+      <section className="ed-panel">
+        <p className="v2-empty">
+          {hasCustomOnly
+            ? "只有自訂主訴，題庫沒有對應題目；用下方補充寫進 PI。"
+            : "請先到「問題」分頁選擇病人的主訴。"}
+        </p>
+        {hasCustomOnly ? extra : null}
       </section>
     );
   }
@@ -171,49 +163,32 @@ export function EdInterviewTab({ findings, patient, onChange }: EdInterviewTabPr
   const otherCount = otherBlocks.reduce((n, block) => n + block.items.length, 0);
 
   return (
-    <section className="v2-card ed-panel" aria-labelledby="ed-interview-title">
-      <h2 id="ed-interview-title">問診（已合併 {problems.length} 個問題）</h2>
-      <div className="ed-depth" role="group" aria-label="問診深度">
-        {(Object.keys(DEPTH_LABELS) as InterviewDepth[]).map((key) => (
-          <button
-            aria-pressed={depth === key}
-            className={`ed-chip ${depth === key ? "is-active" : ""}`}
-            key={key}
-            onClick={() => setDepthAndSave(key)}
-            type="button"
-          >
-            {DEPTH_LABELS[key]}
-          </button>
-        ))}
+    <section className="ed-panel" aria-labelledby="ed-interview-title">
+      <div className="ed-bar">
+        <h2 id="ed-interview-title">問診・{problems.length} 個問題</h2>
+        <CycleSelect
+          label="深度"
+          onChange={setDepthAndSave}
+          options={DEPTH_OPTIONS}
+          value={depth}
+        />
       </div>
-      <p className="ed-help">
-        {lean
-          ? "精簡：只列★必問題；其他收在下方「其他題目」，答過的題目會自動顯示。"
-          : depth === "standard"
-            ? "標準：特徵題＋核心題；視情況再問的收在下方。"
-            : "完整：全部題目展開。"}
-        「共用」代表多個問題都需要這一題，只問一次。沒回答的題目不會寫進病歷。
-      </p>
-      {interview.characterize.map((block) => (
-        <Block block={block} findings={findings} key={block.key} onChange={onChange} />
-      ))}
-      {core.shown.map((block) => (
-        <Block block={block} findings={findings} key={block.key} onChange={onChange} />
-      ))}
-      {conditionalSplit.shown.map((block) => (
-        <Block block={block} findings={findings} key={block.key} onChange={onChange} />
-      ))}
+      <Section
+        blocks={interview.characterize}
+        findings={findings}
+        onChange={onChange}
+        testId="ed-characterize"
+      />
+      <Section
+        blocks={[...core.shown, ...conditionalSplit.shown]}
+        findings={findings}
+        onChange={onChange}
+        testId="ed-core"
+      />
       {otherCount > 0 ? (
-        <details className="ed-more" open={depth === "full"}>
-          <summary data-testid="ed-other-summary">其他題目（{otherCount} 題）</summary>
-          {otherBlocks.map((block) => (
-            <Block
-              block={block}
-              findings={findings}
-              key={`other.${block.key}`}
-              onChange={onChange}
-            />
-          ))}
+        <details className="ed-tri" open={depth === "full"}>
+          <summary data-testid="ed-other-summary">其他題目（{otherCount}）</summary>
+          <Section blocks={otherBlocks} findings={findings} onChange={onChange} />
         </details>
       ) : null}
       {extra}

@@ -125,6 +125,17 @@ export interface IcdChoice {
   whenPick?: { item: string; option: string };
   /** 該 pick 題已回答時，不再因 defaultOn 而勾選（改由 whenPick 決定）。 */
   offWhenPicked?: string;
+  /** 搭配 offWhenPicked：只有選到這些選項才取消預設（其餘選項仍維持預設勾選）。 */
+  offWhenOptions?: string[];
+  /** 某個有／無題回答「無」時自動勾選（例如沒有嘔吐 → R11.0 Nausea）。 */
+  whenNo?: string;
+  /** 某個有／無題回答「無」時，不再因 defaultOn 而勾選。 */
+  offWhenNo?: string;
+  /**
+   * 依該主訴的時間決定：acute = 有標時間且在 3 週內才勾；
+   * chronicOrUnknown = 上述情況以外才勾（例如 R05.1 acute cough／R05.9）。
+   */
+  duration?: "acute" | "chronicOrUnknown";
 }
 
 export type EdProblemGroup =
@@ -183,6 +194,8 @@ export const edKey = {
   /** 每一句的寫入設定：sel = "omit"（不寫入）或 "keep"（一定寫入）。 */
   omit: (clauseId: string) => `ed.omit.${clauseId}`,
   icd: "ed.icd",
+  /** 每個主訴各自的時間：fu = { 主訴 id: 代碼 }，grp = { 主訴 id: 自訂文字 }。 */
+  duration: "ed.dur",
 } as const;
 
 /** 主訴、背景相關的單欄文字。 */
@@ -196,4 +209,6 @@ export type EdContextKey =
   /** 問診補充（自由輸入，寫進 PI 結尾）。 */
   | "piExtra"
   /** "off" = 關閉超過字數時的自動精簡。 */
-  | "autoFit";
+  | "autoFit"
+  /** 特別情境（自由輸入，寫進 PH 的 Situation:）。 */
+  | "situation";

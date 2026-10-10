@@ -1,5 +1,5 @@
 import type { FindingValue } from "../clinical/finding";
-import { maxComplaintSeq, selectedComplaints } from "./complaints";
+import { maxComplaintSeq, selectedComplaints, type ComplaintEntry } from "./complaints";
 import {
   autoFitEnabled,
   clauseOverride,
@@ -7,6 +7,7 @@ import {
   type Clause,
   type FieldDetail,
 } from "./condense";
+import { durationPhrase, isAcuteDuration } from "./duration";
 import { HISTORY_ITEMS, PMH_ITEMS, SYSTEM_ORDER, historyItem } from "./history-library";
 import {
   PE_COLLAPSED_NORMAL,
@@ -363,38 +364,67 @@ function historyClause(
   return null;
 }
 
+/** 一個主訴的英文片語（含 ccFrom 修飾），不含時間。 */
+function complaintPhrase(
+  entry: ComplaintEntry,
+  byId: ReadonlyMap<string, EdProblem>,
+  findings: EdFindings,
+): string {
+  if (entry.kind === "custom") return entry.label;
+  const problem = byId.get(entry.id);
+  if (!problem) return "";
+  if (!problem.ccFrom) return problem.cc;
+  const item = historyItem(problem.ccFrom);
+  const option = item
+    ? pickOption(item, findings[edKey.history(problem.ccFrom)])
+    : undefined;
+  if (!option?.cc) return problem.cc;
+  return problem.ccMode === "replace" ? option.cc : `${option.cc} ${problem.cc}`;
+}
+
+/** 主訴片語＋該主訴自己的時間，例如 "RUQ abd pain for 2 days"。 */
+function complaintWithDuration(
+  entry: ComplaintEntry,
+  byId: ReadonlyMap<string, EdProblem>,
+  findings: EdFindings,
+): string {
+  return [complaintPhrase(entry, byId, findings), durationPhrase(findings, entry.id)]
+    .filter(Boolean)
+    .join(" ");
+}
+
+/**
+ * CC 只寫一個主訴（標★的那個）。其他已選症狀改寫進 PI 開頭，不塞進 CC。
+ * 舊資料的單一「主訴時間」（ed.ctx.duration）在主訴沒有自己的時間時沿用。
+ */
 export function composeCC(
   problems: readonly EdProblem[],
   findings: EdFindings,
 ): string {
   const byId = new Map(problems.map((problem) => [problem.id, problem]));
-  const phrases: string[] = [];
-  for (const entry of selectedComplaints(findings)) {
-    if (entry.kind === "custom") {
-      phrases.push(entry.label);
-      continue;
-    }
-    const problem = byId.get(entry.id);
-    if (!problem) continue;
-    if (!problem.ccFrom) {
-      phrases.push(problem.cc);
-      continue;
-    }
-    const item = historyItem(problem.ccFrom);
-    const option = item
-      ? pickOption(item, findings[edKey.history(problem.ccFrom)])
-      : undefined;
-    if (!option?.cc) phrases.push(problem.cc);
-    else
-      phrases.push(
-        problem.ccMode === "replace" ? option.cc : `${option.cc} ${problem.cc}`,
-      );
-  }
-  const unique = [...new Set(phrases)];
-  const duration = text(findings[edKey.ctx("duration")]);
+  const main = selectedComplaints(findings)[0];
+  if (!main) return text(findings[edKey.ctx("ccExtra")]);
+  const phrase = complaintPhrase(main, byId, findings);
+  const duration =
+    durationPhrase(findings, main.id) || text(findings[edKey.ctx("duration")]);
   const extra = text(findings[edKey.ctx("ccExtra")]);
-  const head = [unique.join(", "), duration].filter(Boolean).join(" ");
+  const head = [phrase, duration].filter(Boolean).join(" ");
   return [head, extra].filter(Boolean).join(", ");
+}
+
+/** 主訴以外的已選症狀（含各自時間），依選取順序。 */
+export function secondaryComplaints(
+  problems: readonly EdProblem[],
+  findings: EdFindings,
+): { id: string; text: string }[] {
+  const byId = new Map(problems.map((problem) => [problem.id, problem]));
+  return selectedComplaints(findings)
+    .slice(1)
+    .map((entry) => ({
+      id: entry.id,
+      text: complaintWithDuration(entry, byId, findings),
+    }))
+    .filter((entry) => entry.text !== "");
 }
 
 /** 只回傳分數；帶入 ERS 時由油猴腳本寫成「NRS:6」。 */
@@ -403,14 +433,17 @@ export function composeNRS(findings: EdFindings): string {
 }
 
 /** 目前勾選的特別情境（依目錄順序）。 */
-function specialClauses(findings: EdFindings, target: "PI" | "PH"): Clause[] {
-  return SPECIAL_ITEMS.filter(
-    (item) => item.target === target && findings[edKey.special(item.id)]?.on === true,
+function specialClauses(findings: EdFindings): Clause[] {
+  // 舊版勾選式情境（已改為自由輸入）；舊資料仍照樣輸出。
+  const legacy = SPECIAL_ITEMS.filter(
+    (item) => findings[edKey.special(item.id)]?.on === true,
   ).map((item) => ({
     id: `sp.${item.id}`,
     text: specialPhrase(item, text(findings[edKey.special(item.id)])),
-    score: target === "PI" ? 85 : 75,
+    score: 75,
   }));
+  const typed = text(findings[edKey.ctx("situation")]);
+  return typed ? [...legacy, { id: "sp.text", text: typed, score: 85 }] : legacy;
 }
 
 export function composePIDetail(
@@ -438,10 +471,23 @@ export function composePIDetail(
       score: 95,
     });
   }
-  for (const clause of specialClauses(findings, "PI")) {
-    clauses.push({ ...clause, kind: "pos" });
+  // 其他已選症狀寫在 PI 開頭；同名的問診題（例如「發燒」）不再重複寫，細節併進來。
+  const secondary = secondaryComplaints(problems, findings);
+  const secondaryIds = new Set(secondary.map((entry) => entry.id));
+  for (const entry of secondary) {
+    const detail =
+      historyItem(entry.id)?.type === "yn"
+        ? text(findings[edKey.history(entry.id)])
+        : "";
+    clauses.push({
+      id: `cc2.${entry.id}`,
+      kind: "lead",
+      text: detail ? `${entry.text} (${detail})` : entry.text,
+      score: 90,
+    });
   }
   for (const id of interviewItemIds(interview)) {
+    if (secondaryIds.has(id)) continue;
     const clause = historyClause(id, findings, mustIds.has(id));
     if (clause) clauses.push(clause);
   }
@@ -494,16 +540,15 @@ const TOCC_LETTERS: readonly ["t" | "o" | "c1" | "c2", string][] = [
   ["c2", "C"],
 ];
 
+/** TOCC 預設全部 (-)；只有標成 (+) 的才改寫。 */
 export function composeTOCC(findings: EdFindings): string {
-  const answered = TOCC_LETTERS.some(([key]) => findings[edKey.tocc(key)]?.sel);
-  if (!answered) return "";
   return TOCC_LETTERS.map(([key, letter]) => {
     const finding = findings[edKey.tocc(key)];
     if (finding?.sel === "+") {
       const detail = text(finding);
       return detail ? `${letter}(+: ${detail})` : `${letter}(+)`;
     }
-    return finding?.sel === "-" ? `${letter}(-)` : `${letter}(?)`;
+    return `${letter}(-)`;
   }).join(" ");
 }
 
@@ -526,7 +571,7 @@ export function composePHDetail(findings: EdFindings): FieldDetail {
   }
   const meds = text(findings[edKey.ctx("meds")]);
   if (meds) clauses.push({ id: "ph.meds", kind: "med", text: meds, score: 80 });
-  for (const clause of specialClauses(findings, "PH")) {
+  for (const clause of specialClauses(findings)) {
     clauses.push({ ...clause, kind: "situation" });
   }
   const tocc = composeTOCC(findings);
@@ -675,15 +720,29 @@ export interface IcdCandidate extends IcdChoice {
   on: boolean;
 }
 
-function icdDefault(choice: IcdChoice, findings: EdFindings): boolean {
+function icdDefault(
+  choice: IcdChoice,
+  findings: EdFindings,
+  problemId: string,
+): boolean {
+  const history = (id: string) => findings[edKey.history(id)];
+  if (choice.duration) {
+    const acute = isAcuteDuration(findings, problemId);
+    if ((choice.duration === "acute") !== acute) return false;
+  }
   const matched =
-    choice.whenPick !== undefined &&
-    findings[edKey.history(choice.whenPick.item)]?.sel === choice.whenPick.option;
+    (choice.whenPick !== undefined &&
+      history(choice.whenPick.item)?.sel === choice.whenPick.option) ||
+    (choice.whenNo !== undefined && history(choice.whenNo)?.on === false);
   if (matched) return true;
   if (!choice.defaultOn) return false;
-  if (choice.offWhenPicked && findings[edKey.history(choice.offWhenPicked)]?.sel) {
-    return false;
+  if (choice.offWhenPicked) {
+    const picked = history(choice.offWhenPicked)?.sel;
+    if (picked && (!choice.offWhenOptions || choice.offWhenOptions.includes(picked))) {
+      return false;
+    }
   }
+  if (choice.offWhenNo && history(choice.offWhenNo)?.on === false) return false;
   return true;
 }
 
@@ -692,19 +751,22 @@ export function icdCandidates(
   findings: EdFindings,
 ): IcdCandidate[] {
   const overrides = findings[edKey.icd]?.fu ?? {};
-  const seen = new Set<string>();
-  const candidates: IcdCandidate[] = [];
+  const byCode = new Map<string, IcdCandidate>();
   for (const problem of problems) {
     for (const choice of problem.icd) {
-      if (seen.has(choice.code)) continue;
-      seen.add(choice.code);
+      // 同一代碼可由多條規則觸發（例如「壓迫」「悶」都對應 R07.89）：任一條成立就勾。
+      const suggested = icdDefault(choice, findings, problem.id);
+      const existing = byCode.get(choice.code);
+      if (existing) {
+        if (overrides[choice.code] === undefined) existing.on ||= suggested;
+        continue;
+      }
       const override = overrides[choice.code];
-      const on =
-        override === undefined ? icdDefault(choice, findings) : override === "1";
-      candidates.push({ ...choice, problemId: problem.id, on });
+      const on = override === undefined ? suggested : override === "1";
+      byCode.set(choice.code, { ...choice, problemId: problem.id, on });
     }
   }
-  return candidates;
+  return [...byCode.values()];
 }
 
 export function customIcdCodes(findings: EdFindings): string[] {

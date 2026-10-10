@@ -171,6 +171,12 @@ export class GoogleIdentityTokenProvider implements GoogleAccessTokenProvider {
     return token.accessToken;
   }
 
+  /** Loads Google Identity Services early so the popup opens inside the click. */
+  prepare(): void {
+    if (!this.#clientId || this.#protocol === "file:") return;
+    this.#loadIdentityScript().catch(() => undefined);
+  }
+
   async getAccessToken(): Promise<string> {
     const token = this.#readSession();
     if (token && token.expiresAt - this.#now() > 30_000) return token.accessToken;

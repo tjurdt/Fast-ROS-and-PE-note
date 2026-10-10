@@ -26,4 +26,10 @@ export interface CloudRepositoryConnector {
   connect(): Promise<CloudRepositoryConnection>;
   openCached(): Promise<CloudRepositoryConnection | null>;
   disconnect(accountKey: string, options: { clearCache: boolean }): Promise<void>;
+  /**
+   * Starts loading the provider's sign-in script ahead of the user's click. Mobile
+   * browsers block a sign-in popup that opens after an await, so the script must be
+   * ready by the time the button is pressed. Optional; failures are ignored.
+   */
+  prepare?(): void;
 }

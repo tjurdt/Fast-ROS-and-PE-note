@@ -55,13 +55,13 @@ export function EdChartTab({
   const chart = composeChart(findings, patient);
   const candidates = icdCandidates(problems, findings);
   const orderPlan = planOrders(findings, patient);
-  const exportText = serializeChart(chart, patient, orderPlan.selected);
+  const exportText = serializeChart(chart, patient, orderPlan.selected, problems);
   const exportRef = useRef<HTMLTextAreaElement>(null);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "manual">("idle");
 
   if (selectedComplaints(findings).length === 0) {
     return (
-      <section className="v2-card ed-panel">
+      <section className="ed-panel">
         <p className="v2-empty">請先到「問題」分頁選擇病人的主訴。</p>
       </section>
     );
@@ -79,6 +79,24 @@ export function EdChartTab({
   };
 
   const overrides = new Set(chart.overridden);
+  // 空白的 PE 欄位收起來（CC／PI／PH 一律顯示）；手動改過的一定顯示。
+  const hideEmpty = (key: EdFieldKey) =>
+    !["CC", "PI", "PH"].includes(key) &&
+    chart.fields[key].trim() === "" &&
+    !overrides.has(key);
+  const emptyFields = FIELD_ORDER.filter(hideEmpty);
+  const icdRow = (candidate: (typeof candidates)[number]) => (
+    <label className="ed-icd__row" key={candidate.code}>
+      <input
+        aria-label={`ICD ${candidate.code}`}
+        checked={candidate.on}
+        onChange={(event) => setIcd(candidate.code, event.target.checked)}
+        type="checkbox"
+      />
+      <strong>{candidate.code}</strong>
+      <span>{candidate.desc}</span>
+    </label>
+  );
   const icdOverrides = findings[edKey.icd]?.fu ?? {};
   const setIcd = (code: string, on: boolean) =>
     onChange(edKey.icd, {
@@ -87,35 +105,41 @@ export function EdChartTab({
     });
 
   return (
-    <section className="v2-card ed-panel" aria-labelledby="ed-chart-title">
-      <h2 id="ed-chart-title">急診病歷輸出</h2>
+    <section className="ed-panel" aria-labelledby="ed-chart-title">
+      <div className="ed-bar">
+        <h2 id="ed-chart-title">病歷輸出</h2>
+        <Button data-testid="ed-copy" onClick={() => void copy()} tone="primary">
+          {copyState === "copied" ? "已複製 ✓" : "複製（貼到 ERS 油猴）"}
+        </Button>
+        {copyState === "manual" ? (
+          <span className="ed-hint">無法自動複製，請手動複製最下方文字。</span>
+        ) : null}
+      </div>
 
       {chart.missing.length > 0 ? (
         <div className="ed-alert" role="status" data-testid="ed-missing">
-          <strong>還有 {chart.missing.length} 項不可漏的沒做／沒問：</strong>
-          <ul>
-            {chart.missing.map((entry) => (
-              <li key={`${entry.kind}-${entry.id}`}>
-                {entry.kind === "history" ? "問" : "查"}：{entry.label}
-                <small>（{entry.reasons.join("、")}）</small>
-              </li>
-            ))}
-          </ul>
+          <strong>不可漏 {chart.missing.length} 項：</strong>
+          {(["history", "pe"] as const).map((kind) => {
+            const list = chart.missing.filter((entry) => entry.kind === kind);
+            if (list.length === 0) return null;
+            return (
+              <span className="ed-missing__line" key={kind}>
+                {kind === "history" ? "問" : "查"}：
+                {list.map((entry, index) => (
+                  <span key={entry.id} title={entry.reasons.join("、")}>
+                    {index > 0 ? "、" : ""}
+                    {entry.label}
+                  </span>
+                ))}
+              </span>
+            );
+          })}
         </div>
       ) : (
         <div className="ed-ok" role="status">
           不可漏項目都已處理。
         </div>
       )}
-
-      <div className="ed-actions">
-        <Button data-testid="ed-copy" onClick={() => void copy()} tone="primary">
-          {copyState === "copied" ? "已複製 ✓" : "複製病歷（貼到 ERS 油猴工具）"}
-        </Button>
-        {copyState === "manual" ? (
-          <span className="ed-help">無法自動複製，請手動複製下方文字。</span>
-        ) : null}
-      </div>
 
       <label className="ed-switch">
         <input
@@ -126,15 +150,14 @@ export function EdChartTab({
           }
           type="checkbox"
         />
-        超過字數上限時自動精簡（依重要性略過；每欄的「逐句明細」可逐句決定）
+        超過字數自動精簡（每欄「逐句明細」可逐句決定）
       </label>
 
       <div className="ed-ok" data-testid="ed-order-summary" role="status">
-        檢查 {orderPlan.selected.length} 項會一併帶到 ERS
-        檢查驗系統（到「檢查」分頁調整）。
+        檢查 {orderPlan.selected.length} 項一併帶到 ERS 檢查驗系統（「檢查」分頁調整）。
       </div>
 
-      {FIELD_ORDER.map((key) => {
+      {FIELD_ORDER.filter((key) => !hideEmpty(key)).map((key) => {
         const value = chart.fields[key];
         const limit = FIELD_LIMITS[key];
         const over = value.length > limit;
@@ -153,7 +176,7 @@ export function EdChartTab({
                 onChange={(event) =>
                   onChange(edKey.override(key), { on: true, text: event.target.value })
                 }
-                rows={key === "PI" || key === "PH" || key === "CC" ? 3 : 2}
+                rows={Math.min(6, Math.max(1, Math.ceil(value.length / 42)))}
                 value={value}
               />
               {overrides.has(key) ? (
@@ -180,25 +203,39 @@ export function EdChartTab({
           </div>
         );
       })}
-      <p className="ed-help">沒有內容的欄位，帶入 ERS 時不會動到表單上原有的內容。</p>
+      {emptyFields.length > 0 ? (
+        <div className="ed-grid" data-testid="ed-empty-fields">
+          <span className="ed-grid__label">空白欄</span>
+          {emptyFields.map((key) => (
+            <button
+              aria-label={`手動填寫 ${FIELD_TITLES[key]}`}
+              className="ed-chip"
+              key={key}
+              onClick={() => onChange(edKey.override(key), { on: true, text: "" })}
+              type="button"
+            >
+              ＋{key}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
-      <h3>ICD-10（以 unspecified 症狀碼為主，最多 5 筆）</h3>
+      <h3 className="ed-h">ICD-10（依問診答案挑較精確的碼，最多 5 筆）</h3>
       <div className="ed-icd">
-        {candidates.map((candidate) => (
-          <label className="ed-icd__row" key={candidate.code}>
-            <input
-              aria-label={`ICD ${candidate.code}`}
-              checked={candidate.on}
-              onChange={(event) => setIcd(candidate.code, event.target.checked)}
-              type="checkbox"
-            />
-            <strong>{candidate.code}</strong>
-            <span>{candidate.desc}</span>
-          </label>
-        ))}
+        {candidates.filter((candidate) => candidate.on).map(icdRow)}
       </div>
-      <label>
-        其他 ICD 代碼（空白或逗號分隔）
+      {candidates.some((candidate) => !candidate.on) ? (
+        <details className="ed-tri">
+          <summary>
+            其他候選（{candidates.filter((candidate) => !candidate.on).length}）
+          </summary>
+          <div className="ed-icd">
+            {candidates.filter((candidate) => !candidate.on).map(icdRow)}
+          </div>
+        </details>
+      ) : null}
+      <label className="ed-line">
+        <span>其他 ICD</span>
         <input
           aria-label="其他 ICD"
           list="ed-icd-list"
@@ -226,13 +263,13 @@ export function EdChartTab({
         </div>
       ) : null}
 
-      <h3>交換文字（給油猴工具）</h3>
+      <h3 className="ed-h">交換文字（給油猴工具；空白欄位不會動到 ERS 原有內容）</h3>
       <textarea
         aria-label="交換文字"
         className="ed-export"
         readOnly
         ref={exportRef}
-        rows={12}
+        rows={8}
         value={exportText}
       />
     </section>

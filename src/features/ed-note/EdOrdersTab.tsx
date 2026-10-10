@@ -1,7 +1,8 @@
 import type { FindingValue } from "../../domain/clinical/finding";
 import type { EdFindings, EdPatientContext } from "../../domain/ed/compose";
 import { selectedComplaints } from "../../domain/ed/complaints";
-import { selectedProblems } from "../../domain/ed/compose";
+import { composeCC, selectedProblems } from "../../domain/ed/compose";
+import { orderMemo, type OrderMemo } from "../../domain/ed/order-memo";
 import {
   planOrders,
   type OrderSuggestion,
@@ -31,9 +32,11 @@ const TIER_LABEL: Record<OrderTier, string> = {
 
 function OrderCell({
   entry,
+  memo,
   onToggle,
 }: {
   entry: OrderSuggestion;
+  memo?: OrderMemo | null;
   onToggle: (id: string, on: boolean) => void;
 }) {
   const { order } = entry;
@@ -58,7 +61,14 @@ function OrderCell({
           ) : null}
         </span>
         {entry.reasons.length > 0 ? (
-          <small className="ed-order__why">{entry.reasons.join("；")}</small>
+          <small className="ed-order__why" title={entry.reasons.join("；")}>
+            {entry.reasons.join("；")}
+          </small>
+        ) : null}
+        {memo && entry.selected ? (
+          <small className="ed-order__memo" data-testid={`ed-order-memo-${order.id}`}>
+            說明：{memo.dx}／目的：{memo.purpose}
+          </small>
         ) : null}
       </span>
     </label>
@@ -87,13 +97,15 @@ export function EdOrdersTab({
   const problems = selectedProblems(findings);
   if (selectedComplaints(findings).length === 0) {
     return (
-      <section className="v2-card ed-panel">
+      <section className="ed-panel">
         <p className="v2-empty">請先到「問題」分頁選擇病人的主訴，才能建議檢查。</p>
       </section>
     );
   }
 
   const plan = planOrders(findings, patient);
+  const cc = composeCC(problems, findings);
+  const memoOf = (entry: OrderSuggestion) => orderMemo(entry.order, problems, cc);
   const toggle = (id: string, on: boolean) => onChange(edKey.order(id), { on });
   const hasOverride = Object.keys(findings).some(
     (key) => key.startsWith("ed.ord.") && findings[key]?.on !== undefined,
@@ -107,22 +119,13 @@ export function EdOrdersTab({
   };
 
   return (
-    <section className="v2-card ed-panel" aria-labelledby="ed-orders-title">
-      <h2 id="ed-orders-title">
-        建議檢查（已合併 {problems.length} 個問題、去除重複）
-      </h2>
-      <p className="ed-help">
-        名稱與 ERS 檢查驗系統一致。<strong>標準</strong>與<strong>加開</strong>
-        預設勾選（寧可合理多開）；
-        <strong>需討論</strong>
-        （高輻射、要會診或 VS 同意）預設不勾。勾選的項目會隨病歷一併帶到 ERS
-        檢查驗系統， 只填入待送出的格子，不會自動送出。
-      </p>
-
-      <div className="ed-actions">
+    <section className="ed-panel" aria-labelledby="ed-orders-title">
+      <div className="ed-bar">
+        <h2 id="ed-orders-title">建議檢查</h2>
         <span className="ed-order__count" data-testid="ed-order-count">
           已選 {plan.selected.length} 項
         </span>
+        <span className="ed-hint">只放進待送出格子，不會送出</span>
         {hasOverride ? (
           <Button onClick={resetAll} tone="ghost">
             還原建議
@@ -146,7 +149,12 @@ export function EdOrdersTab({
           <h3>{ED_ORDER_GROUP_LABELS[group]}</h3>
           <div className="ed-order-grid">
             {entries.map((entry) => (
-              <OrderCell entry={entry} key={entry.order.id} onToggle={toggle} />
+              <OrderCell
+                entry={entry}
+                key={entry.order.id}
+                memo={memoOf(entry)}
+                onToggle={toggle}
+              />
             ))}
           </div>
         </div>
@@ -156,14 +164,19 @@ export function EdOrdersTab({
         <p className="v2-empty">這些問題沒有預設建議的檢查，可從下方手動加入。</p>
       ) : null}
 
-      <details className="ed-more">
-        <summary>其他常用檢查（手動加入，共 {plan.extras.length} 項）</summary>
+      <details className="ed-tri">
+        <summary>其他常用檢查（手動加入，{plan.extras.length}）</summary>
         {groupEntries(plan.extras).map(({ group, entries }) => (
           <div className="ed-order-group" key={group}>
             <h3>{ED_ORDER_GROUP_LABELS[group]}</h3>
             <div className="ed-order-grid">
               {entries.map((entry) => (
-                <OrderCell entry={entry} key={entry.order.id} onToggle={toggle} />
+                <OrderCell
+                  entry={entry}
+                  key={entry.order.id}
+                  memo={memoOf(entry)}
+                  onToggle={toggle}
+                />
               ))}
             </div>
           </div>

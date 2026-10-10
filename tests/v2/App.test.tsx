@@ -1,6 +1,6 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../../src/app/App";
 import type {
@@ -303,6 +303,69 @@ describe("v2 app shell", () => {
     await user.click(screen.getByRole("button", { name: "立即同步" }));
     await waitFor(() => expect(syncPanel.textContent).toContain("同步完成"));
     expect(googleRepository.syncCount).toBe(2);
+  });
+
+  it("syncs on its own shortly after the doctor stops typing", async () => {
+    const user = userEvent.setup();
+    const googleRepository = new MemorySyncPatientRepository();
+    googleRepository.database = addPatient(
+      emptyPatientDatabase(),
+      createPatient(
+        { code: "AUTO-SYNC", specialty: "general", sex: "", age: "", problem: "" },
+        { createId: () => "patient-auto", now: () => 100 },
+      ),
+    );
+    render(
+      <App
+        autoSyncDelayMs={30}
+        googleRepository={googleRepository}
+        repository={new MemoryPatientRepository()}
+      />,
+    );
+    await user.click(screen.getByTestId("choose-google-v2"));
+    await user.click(await screen.findByRole("button", { name: /AUTO-SYNC/ }));
+    await waitFor(() => expect(googleRepository.syncCount).toBe(1));
+
+    await user.type(screen.getByLabelText("主要問題"), "edited");
+    // 不用按「立即同步」：停下來後自動同步，而且連續打字只同步一次。
+    await waitFor(() => expect(googleRepository.syncCount).toBe(2));
+    await waitFor(() =>
+      expect(screen.getByTestId("sync-status-panel").textContent).toContain("已同步"),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    expect(googleRepository.syncCount).toBe(2);
+  });
+
+  it("pulls again when the page comes back into view, but not while sign-in is needed", async () => {
+    const user = userEvent.setup();
+    const googleRepository = new MemorySyncPatientRepository();
+    render(
+      <App
+        autoSyncDelayMs={30}
+        googleRepository={googleRepository}
+        repository={new MemoryPatientRepository()}
+      />,
+    );
+    await user.click(screen.getByTestId("choose-google-v2"));
+    await waitFor(() => expect(googleRepository.syncCount).toBe(1));
+
+    document.dispatchEvent(new Event("visibilitychange"));
+    await waitFor(() => expect(googleRepository.syncCount).toBe(2));
+
+    googleRepository.emit({ status: "auth-required", detail: "需要重新連線" });
+    document.dispatchEvent(new Event("visibilitychange"));
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    expect(googleRepository.syncCount).toBe(2);
+  });
+
+  it("loads the Google sign-in script before the button is pressed", () => {
+    const connector = new MemoryCloudConnector();
+    const prepare = vi.fn();
+    Object.assign(connector, { prepare });
+    render(
+      <App cloudConnector={connector} repository={new MemoryPatientRepository()} />,
+    );
+    expect(prepare).toHaveBeenCalled();
   });
 
   it("opens an account-isolated cache offline and leaves it recoverable", async () => {
