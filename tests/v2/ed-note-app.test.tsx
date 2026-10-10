@@ -61,7 +61,8 @@ async function cycleTo(
   throw new Error(`${label} never reached ${state}`);
 }
 
-describe("ED problem-oriented note", () => {
+// jsdom UI tests are slow when the pre-push hook runs every file in parallel.
+describe("ED problem-oriented note", { timeout: 20_000 }, () => {
   it("replaces the ROS/PE/bundle tabs with the problem flow for ED patients", async () => {
     const user = userEvent.setup();
     render(<App repository={seededRepository()} />);
@@ -281,7 +282,7 @@ describe("ED problem-oriented note", () => {
 
     await user.click(screen.getByRole("button", { name: "移除：右上腹悶痛" }));
     expect(screen.getByTestId("ed-cc-preview").textContent).toBe("abd pain");
-  });
+  }, 20_000);
 
   it("groups symptoms sensibly: common first, ENT and eye in their own group", async () => {
     const user = userEvent.setup();
