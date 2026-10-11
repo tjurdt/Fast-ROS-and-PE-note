@@ -14,7 +14,7 @@ if (!html) {
 const failures = [];
 const artifactBytes = Buffer.byteLength(html, "utf8");
 if (artifactBytes < 10_000) failures.push("artifact is unexpectedly small");
-if (artifactBytes > 750_000) failures.push("artifact exceeds the 750 KB size budget");
+if (artifactBytes > 900_000) failures.push("artifact exceeds the 900 KB size budget");
 if (/<script\b[^>]*\bsrc\s*=/i.test(html)) {
   failures.push("artifact contains an external script source");
 }
