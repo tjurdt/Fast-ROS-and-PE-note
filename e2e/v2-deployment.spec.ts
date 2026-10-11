@@ -13,7 +13,7 @@ test("v2 desktop workflow remains usable without horizontal overflow", async ({
 
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
-  await page.getByRole("button", { name: "基本", exact: true }).click();
+  await page.getByRole("button", { name: /^基本/ }).click();
   await page.getByLabel("科別").selectOption("general");
   await page.getByLabel("病人代號").fill("DESKTOP-01");
   await page.getByLabel("主要問題").fill("Desktop deployment audit");
@@ -59,7 +59,7 @@ test("v2 built artifact boots and persists locally over file protocol", async ({
 
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
-  await page.getByRole("button", { name: "基本", exact: true }).click();
+  await page.getByRole("button", { name: /^基本/ }).click();
   await page.getByLabel("科別").selectOption("general");
   await page.getByLabel("病人代號").fill("FILE-OFFLINE-01");
   await page.getByLabel("主要問題").fill("Single-file offline audit");

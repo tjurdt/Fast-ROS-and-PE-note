@@ -11,7 +11,7 @@ test("v2 production artifact (index.html via npm start) boots, persists, and shi
   await expect(page.getByRole("heading", { name: "查房快速紀錄" })).toBeVisible();
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
-  await page.getByRole("button", { name: "基本", exact: true }).click();
+  await page.getByRole("button", { name: /^基本/ }).click();
   await page.getByLabel("科別").selectOption("general");
   await page.getByLabel("病人代號").fill("PROD-01");
   await page.getByLabel("主要問題").fill("production entry check");

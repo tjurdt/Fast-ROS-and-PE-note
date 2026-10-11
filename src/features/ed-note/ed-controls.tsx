@@ -1,12 +1,14 @@
 import type { ReactNode } from "react";
 
 import type { FindingValue } from "../../domain/clinical/finding";
+import { matrixKey, rowSelected, toggleMatrixKey } from "../../domain/ed/pe-matrix";
 import { cyclePick, pickedOptions, togglePick } from "../../domain/ed/picks";
 import {
   edKey,
   type HistoryItem,
   type HistoryPick,
   type PeItem,
+  type PeMatrixRow,
 } from "../../domain/ed/types";
 import {
   HISTORY_SHORT,
@@ -350,6 +352,56 @@ export function HistoryGrid({
   );
 }
 
+/** 矩陣型所見裡，一個已選類型的變化型與部位按鈕（獨立一行，整行跨滿格子）。 */
+function MatrixDetail({
+  current,
+  row,
+  sites,
+  onChange,
+  testId,
+}: {
+  current: FindingValue;
+  row: PeMatrixRow;
+  sites: readonly string[];
+  onChange: (next: FindingValue) => void;
+  testId: string;
+}) {
+  const variants = row.variants ?? [];
+  return (
+    <div className="ed-matrix" data-testid={testId}>
+      <span className="ed-matrix__label">{row.label}</span>
+      {variants.map((variant) => (
+        <Chip
+          active={current.fu?.[matrixKey.variant(row, variant)] === "1"}
+          key={`v-${variant}`}
+          label={`${row.label}：${variant}`}
+          onClick={() =>
+            onChange(toggleMatrixKey(current, matrixKey.variant(row, variant)))
+          }
+          tone="positive"
+        >
+          {variant}
+        </Chip>
+      ))}
+      {row.noSites
+        ? null
+        : sites.map((site) => (
+            <Chip
+              active={current.fu?.[matrixKey.site(row, site)] === "1"}
+              key={`s-${site}`}
+              label={`${row.label}：${site}`}
+              onClick={() =>
+                onChange(toggleMatrixKey(current, matrixKey.site(row, site)))
+              }
+              tone="warning"
+            >
+              {site}
+            </Chip>
+          ))}
+    </div>
+  );
+}
+
 /** PE 循環：未查 → 正常 → 異常 → 未查。 */
 export function nextPe(finding: FindingValue): FindingValue {
   if (finding.sel === "normal") return { ...finding, sel: "abn" };
@@ -448,6 +500,25 @@ export function PeGrid({
             ) : (
               phrases
             )}
+            {definition.matrix
+              ? definition.matrix.rows.map((row) => (
+                  <Chip
+                    active={rowSelected(current, row)}
+                    key={`m-${row.label}`}
+                    label={`${definition.label}：${row.label}`}
+                    onClick={() =>
+                      onChange(
+                        entry.id,
+                        toggleMatrixKey(current, matrixKey.row(row), row),
+                      )
+                    }
+                    title={row.text}
+                    tone="warning"
+                  >
+                    {row.label}
+                  </Chip>
+                ))
+              : null}
             <input
               aria-label={`${definition.label} 補充`}
               className="ed-grid__input"
@@ -457,6 +528,20 @@ export function PeGrid({
               placeholder="補充（例 MP: LA 4）"
               value={current.note ?? ""}
             />
+            {definition.matrix
+              ? definition.matrix.rows
+                  .filter((row) => rowSelected(current, row))
+                  .map((row) => (
+                    <MatrixDetail
+                      current={current}
+                      key={`md-${row.label}`}
+                      onChange={(next) => onChange(entry.id, next)}
+                      row={row}
+                      sites={definition.matrix?.sites ?? []}
+                      testId={`ed-pe-matrix-${entry.id}`}
+                    />
+                  ))
+              : null}
           </div>
         );
       })}

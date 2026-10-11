@@ -1,51 +1,12 @@
-import type {
-  EdSystemKey,
-  HistoryItem,
-  HistoryPick,
-  HistoryText,
-  HistoryYesNo,
-  PmhItem,
-} from "./types";
-
-function yn(
-  id: string,
-  system: EdSystemKey,
-  label: string,
-  pos: string,
-  extra: Partial<Omit<HistoryYesNo, "id" | "system" | "label" | "pos" | "type">> = {},
-): HistoryYesNo {
-  return { type: "yn", id, system, label, pos, ...extra };
-}
-
-function pick(
-  id: string,
-  system: EdSystemKey,
-  label: string,
-  options: HistoryPick["options"],
-  extra: Partial<Pick<HistoryPick, "multi" | "joinTemplate" | "layout">> = {},
-): HistoryPick {
-  return { type: "pick", id, system, label, options, ...extra };
-}
-
-function text(
-  id: string,
-  system: EdSystemKey,
-  label: string,
-  template: string,
-  extra: Partial<Pick<HistoryText, "placeholder" | "gate">> = {},
-): HistoryText {
-  return { type: "text", id, system, label, template, ...extra };
-}
-
-/** 單一選項：中文按鈕與英文片語相同時的簡寫。 */
-const opt = (label: string, textValue: string, cc?: string) =>
-  cc === undefined ? { label, text: textValue } : { label, text: textValue, cc };
+import { HISTORY_EXTRA, PMH_EXTRA } from "./history-extra";
+import { opt, pick, text, yn } from "./history-builders";
+import type { EdSystemKey, HistoryItem, PmhItem } from "./types";
 
 /**
  * 急診問診題庫。順序即畫面順序（同系統內）。
  * 資料依據：臺北榮總急診歷史病歷的 CC/PI 實際會被問到與記錄的項目。
  */
-export const HISTORY_ITEMS: readonly HistoryItem[] = [
+const BASE_HISTORY_ITEMS: readonly HistoryItem[] = [
   // ── 起病與病程（通用特徵題）─────────────────────────────
   pick(
     "onset",
@@ -431,7 +392,6 @@ export const HISTORY_ITEMS: readonly HistoryItem[] = [
       opt("吞嚥困難／梗到", "dysphagia/foreign body sensation", "dysphagia"),
       opt("聲音沙啞", "hoarseness", "hoarseness"),
       opt("頸部腫塊", "neck mass", "neck mass"),
-      opt("牙痛", "toothache", "toothache"),
     ],
     { multi: true },
   ),
@@ -525,7 +485,7 @@ export const HISTORY_ITEMS: readonly HistoryItem[] = [
     placeholder: "日期",
   }),
   yn("device", "meta", "體內管路（Port-A／CVC／引流）", "indwelling device", {
-    neg: "device-related problem",
+    neg: "indwelling device complication",
     detail: { placeholder: "哪一種" },
   }),
   yn("steroid_use", "meta", "長期類固醇／免疫抑制", "on steroid/immunosuppressant", {
@@ -534,7 +494,7 @@ export const HISTORY_ITEMS: readonly HistoryItem[] = [
 ];
 
 /** 病史快選（寫進 PH 的 HX:）。asks = 勾選後額外要問的題。 */
-export const PMH_ITEMS: readonly PmhItem[] = [
+const BASE_PMH_ITEMS: readonly PmhItem[] = [
   { id: "none", label: "無特殊病史", text: "nil" },
   { id: "htn", label: "高血壓", text: "HTN", asks: ["bp_home", "bp_meds_issue"] },
   { id: "dm", label: "糖尿病", text: "DM", asks: ["glucose_home", "dm_meds_issue"] },
@@ -581,6 +541,13 @@ export const PMH_ITEMS: readonly PmhItem[] = [
   { id: "smoking", label: "抽菸", text: "smoker" },
   { id: "surgery", label: "手術史", text: "s/p surgery", detail: true },
 ];
+
+export const HISTORY_ITEMS: readonly HistoryItem[] = [
+  ...BASE_HISTORY_ITEMS,
+  ...HISTORY_EXTRA,
+];
+
+export const PMH_ITEMS: readonly PmhItem[] = [...BASE_PMH_ITEMS, ...PMH_EXTRA];
 
 const itemById = new Map<string, HistoryItem>(
   HISTORY_ITEMS.map((item) => [item.id, item]),

@@ -66,6 +66,8 @@ interface Ctx {
   /** 育齡女性且未明確否認懷孕：輻射 X 光先不勾，驗孕後再開。 */
   pregnancyNotExcluded: boolean;
   yes: (id: string) => boolean;
+  /** 單／複選題目前選了哪些選項（中文標籤）。 */
+  picks: (id: string) => string[];
   sel: (id: string) => string;
   text: (id: string) => string;
 }
@@ -138,6 +140,7 @@ function buildContext(findings: EdFindings, patient: EdPatientContext): Ctx {
       pmh.has(id),
     ),
     yes,
+    picks: (id) => pickedOptions(findings, id),
     sel: (id) => findings[edKey.history(id)]?.sel ?? "",
     text: (id) => (findings[edKey.history(id)]?.text ?? "").trim(),
   };
@@ -1084,6 +1087,546 @@ const PROBLEM_RULES: Readonly<Record<string, readonly Rule[]>> = {
     r("apap", "plus", "自殺意念：乙醯胺酚濃度", (c) => c.yes("si")),
     r("salicylate", "plus", "自殺意念：水楊酸濃度", (c) => c.yes("si")),
   ],
+
+  // ───────────── 第四輪新增的問題 ─────────────
+
+  edema: [
+    r("cbc_dc", "core", "水腫：貧血／感染"),
+    r("crea", "core", "水腫：腎功能"),
+    r("bun", "core", "水腫：腎功能"),
+    r("na", "core", "水腫：電解質"),
+    r("k", "core", "水腫：電解質"),
+    r("alb", "core", "水腫：低白蛋白"),
+    r("alt", "plus", "水腫：肝功能（肝硬化／心衰竭鬱血）"),
+    r("urine_routine", "core", "水腫：蛋白尿（腎病症候群）"),
+    r(
+      "bnp",
+      "core",
+      "水腫＋喘／端坐呼吸／心衰竭病史或年長：心衰竭",
+      (c) => c.yes("dyspnea") || c.yes("orthopnea") || c.pmh.has("chf") || c.older,
+    ),
+    r(
+      "ecg",
+      "plus",
+      "水腫＋喘或心血管風險：心律與缺血",
+      (c) => c.yes("dyspnea") || c.cardiacRisk,
+    ),
+    r(
+      "cxr",
+      "plus",
+      "水腫＋喘：肺水腫／肋膜積水",
+      (c) => c.yes("dyspnea") || c.yes("orthopnea"),
+    ),
+    r("ddimer", "plus", "單側腿腫或小腿痛：DVT", (c) => c.yes("calf_pain")),
+    r("doppler_limbs", "ask", "單側腿腫或小腿痛：下肢血管超音波", (c) =>
+      c.yes("calf_pain"),
+    ),
+  ],
+
+  poor_intake: [
+    r("cbc_dc", "core", "進食差：感染／貧血"),
+    r("crea", "core", "進食差：脫水與腎功能"),
+    r("bun", "core", "進食差：脫水"),
+    r("na", "core", "進食差：電解質"),
+    r("k", "core", "進食差：電解質"),
+    r("glu", "core", "進食差：血糖"),
+    r("crp", "core", "進食差：找感染"),
+    r("urine_routine", "core", "進食差：尿路感染／酮體"),
+    r("ca", "plus", "進食差：高血鈣也會吃不下"),
+    r("alt", "plus", "進食差：肝功能"),
+    r("ecg", "plus", "進食差：年長或電解質異常的心律", (c) => c.older),
+  ],
+
+  env_injury: [
+    ...basic("環境傷害：所有抽血的人"),
+    r("ck", "core", "環境傷害：橫紋肌溶解"),
+    r("ecg", "core", "環境傷害：心律（低體溫 J wave、電擊、CO）"),
+    r("tni", "plus", "環境傷害：心肌傷害（電擊、CO 中毒）"),
+    r("alt", "plus", "中暑：肝功能"),
+    r("ast", "plus", "中暑：肝功能"),
+    r("bun", "plus", "環境傷害：腎功能"),
+    r("urine_routine", "plus", "環境傷害：肌紅蛋白尿／腎損傷"),
+    r("lactate", "plus", "環境傷害：組織灌流"),
+    r("etoh", "plus", "低體溫或意識改變：是否合併酒精"),
+    r("cxr", "plus", "溺水／煙霧吸入：肺炎、肺水腫", (c) =>
+      c.picks("env_type").some((p) => p === "溺水" || p === "毒氣／煙霧"),
+    ),
+    r(
+      "ct_brain",
+      "ask",
+      "意識改變：先排除頭部問題",
+      (c) => c.yes("confusion") || c.yes("loc"),
+    ),
+  ],
+
+  hemoptysis: [
+    ...basic("咳血：所有抽血的人"),
+    r("pt", "core", "咳血：凝血功能"),
+    r("aptt", "core", "咳血：凝血功能"),
+    r("cxr", "core", "咳血：胸部 X 光"),
+    r(
+      "ecg",
+      "plus",
+      "咳血＋胸痛或喘：排除心臟因素",
+      (c) => c.yes("chest_pain") || c.yes("dyspnea"),
+    ),
+    r(
+      "ddimer",
+      "plus",
+      "咳血＋久臥／小腿腫痛：肺栓塞",
+      (c) => c.yes("immobil") || c.yes("calf_pain"),
+    ),
+    r("ct_chest", "ask", "咳血：胸部 CT（大量或 CXR 無法解釋時）"),
+  ],
+
+  wheeze: [
+    r("cbc_dc", "core", "喘鳴：感染／嗜伊紅"),
+    r("k", "core", "喘鳴：β 作用劑會降血鉀"),
+    r("na", "core", "喘鳴：電解質"),
+    r("crea", "core", "喘鳴：腎功能"),
+    r("glu", "plus", "喘鳴：類固醇前後的血糖"),
+    r(
+      "crp",
+      "plus",
+      "喘鳴＋發燒或有痰：感染誘發",
+      (c) => c.yes("fever") || c.yes("sputum"),
+    ),
+    r("cxr", "core", "喘鳴：氣胸、肺炎、肺水腫"),
+    r("ecg", "core", "喘鳴：心因性喘（心律不整、缺血）", (c) => c.cardiacRisk),
+    r("ecg", "plus", "喘鳴：心因性喘"),
+    r(
+      "bnp",
+      "plus",
+      "喘鳴＋水腫或心血管病史：分辨心因性",
+      (c) => c.yes("leg_edema") || c.cardiacHistory || c.older,
+    ),
+    r("trop", "plus", "喘鳴＋心血管風險：心肌缺血", (c) => c.cardiacRisk),
+    r(
+      "ddimer",
+      "plus",
+      "喘鳴＋久臥／小腿腫痛：肺栓塞",
+      (c) => c.yes("calf_pain") || c.yes("immobil"),
+    ),
+    r(
+      "flu",
+      "core",
+      "喘鳴＋發燒或接觸史：Flu Ag",
+      (c) => c.yes("fever") || c.yes("sick_contact"),
+    ),
+    r(
+      "covid_ag",
+      "core",
+      "喘鳴＋發燒或接觸史：COVID 快篩",
+      (c) => c.yes("fever") || c.yes("sick_contact"),
+    ),
+  ],
+
+  reflux: [
+    r("ecg", "core", "胃痛／火燒心：胸口不適要先排除心肌缺血"),
+    r(
+      "trop",
+      "plus",
+      "火燒心＋胸痛／冒汗或心血管風險：心肌缺血",
+      (c) => c.yes("chest_pain") || c.yes("cold_sweat") || c.cardiacRisk,
+    ),
+    r("cbc_dc", "core", "胃痛：貧血（潛在出血）"),
+    r("crea", "plus", "胃痛：腎功能"),
+    r("alt", "plus", "胃痛：肝功能"),
+    r(
+      "lipase",
+      "plus",
+      "上腹痛：胰臟炎",
+      (c) => c.yes("alcohol") || c.yes("food_trigger") || c.yes("vomiting"),
+    ),
+    r("crp", "plus", "胃痛：發炎指標"),
+    r(
+      "cxr",
+      "plus",
+      "胃痛＋胸痛或喘：肺／縱膈",
+      (c) => c.yes("chest_pain") || c.yes("dyspnea"),
+    ),
+    r("stool_ob", "plus", "胃痛＋黑便：潛血", (c) => c.yes("melena")),
+  ],
+
+  anorectal: [
+    r("cbc_dc", "core", "肛門問題：貧血或感染"),
+    r("crp", "core", "肛門腫痛＋發燒：肛周膿瘍", (c) => c.yes("fever") || c.yes("pus")),
+    r("crea", "plus", "肛門問題：術前腎功能"),
+    r("glu", "plus", "肛周感染：糖尿病控制", (c) => c.pmh.has("dm") || c.yes("pus")),
+    r(
+      "pt",
+      "plus",
+      "肛門出血＋抗凝血：凝血功能",
+      (c) => c.yes("anticoag") || c.yes("hematochezia"),
+    ),
+    r(
+      "aptt",
+      "plus",
+      "肛門出血＋抗凝血：凝血功能",
+      (c) => c.yes("anticoag") || c.yes("hematochezia"),
+    ),
+    r("stool_ob", "plus", "肛門出血：糞便潛血", (c) => c.yes("hematochezia")),
+    r("ct_pelvis", "ask", "疑似深部肛周膿瘍／敗血症：骨盆腔 CT", (c) => c.yes("fever")),
+  ],
+
+  dental: [
+    r("cbc_dc", "plus", "牙口問題＋發燒：感染"),
+    r("crp", "plus", "牙口問題＋發燒：感染", (c) => c.yes("fever")),
+    r("glu", "plus", "牙口感染：糖尿病控制", (c) => c.pmh.has("dm")),
+    r(
+      "pt",
+      "plus",
+      "拔牙後出血＋抗凝血：凝血功能",
+      (c) => c.yes("anticoag") || c.yes("gum_bleed"),
+    ),
+    r(
+      "aptt",
+      "plus",
+      "拔牙後出血＋抗凝血：凝血功能",
+      (c) => c.yes("anticoag") || c.yes("gum_bleed"),
+    ),
+    r(
+      "neck_soft_xr",
+      "ask",
+      "吞嚥困難／喘鳴：頸部軟組織側位",
+      (c) => c.yes("dysphagia") || c.yes("stridor_h"),
+    ),
+    r(
+      "ct_neck",
+      "ask",
+      "牙膿瘍擴散／深頸部感染：頸部 CT",
+      (c) => c.yes("fever") && (c.yes("dysphagia") || c.yes("lip_swell")),
+    ),
+    r("ct_face", "ask", "牙膿瘍／顏面腫：顏面 CT", (c) => c.yes("fever")),
+  ],
+
+  scrotal: [
+    r("urine_routine", "core", "陰囊痛：尿路感染／副睪炎"),
+    r("cbc_dc", "core", "陰囊痛：感染"),
+    r("crp", "core", "陰囊痛：感染"),
+    r("crea", "plus", "陰囊痛：腎功能"),
+    r("glu", "plus", "陰囊痛：糖尿病（壞死性筋膜炎風險）", (c) => c.pmh.has("dm")),
+  ],
+
+  preg_issue: [
+    r("cbc_dc", "core", "孕期不適：貧血、血小板"),
+    r("crea", "core", "孕期不適：腎功能（子癇前症）"),
+    r("na", "plus", "孕期不適：電解質"),
+    r("k", "plus", "孕期不適：電解質"),
+    r("glu", "plus", "孕期不適：血糖"),
+    r("alt", "core", "孕期不適：肝功能（HELLP）"),
+    r("ast", "core", "孕期不適：肝功能（HELLP）"),
+    r(
+      "ldh",
+      "plus",
+      "孕期不適：溶血（HELLP）",
+      (c) => c.yes("headache") || c.yes("vision") || c.yes("preg_htn"),
+    ),
+    r("urine_routine", "core", "孕期不適：蛋白尿／尿路感染"),
+    r("pt", "plus", "孕期出血：凝血功能", (c) => c.yes("vag_bleed")),
+    r("aptt", "plus", "孕期出血：凝血功能", (c) => c.yes("vag_bleed")),
+    r("bhcg", "plus", "早期孕期出血：β-hCG 定量", (c) => c.yes("vag_bleed")),
+    r("crp", "plus", "孕期發燒：感染", (c) => c.yes("fever")),
+  ],
+
+  intox: [
+    r("cbc_dc", "core", "中毒：基本抽血"),
+    r("crea", "core", "中毒：腎功能"),
+    r("na", "core", "中毒：電解質"),
+    r("k", "core", "中毒：電解質"),
+    r("glu", "core", "中毒：血糖"),
+    r("ecg", "core", "中毒：QT／心律（抗憂鬱藥、心臟藥）"),
+    r("alt", "core", "中毒：肝功能（APAP）"),
+    r("ast", "core", "中毒：肝功能（APAP）"),
+    r(
+      "apap",
+      "core",
+      "不明或自傷服藥：APAP 濃度",
+      (c) =>
+        c.sel("ingest_intent") !== "意外" ||
+        c.picks("ingest_substance").some((p) => p === "止痛藥 APAP" || p === "不明"),
+    ),
+    r(
+      "salicylate",
+      "plus",
+      "不明或自傷服藥：水楊酸濃度",
+      (c) =>
+        c.sel("ingest_intent") !== "意外" ||
+        c.picks("ingest_substance").includes("NSAID"),
+    ),
+    r(
+      "etoh",
+      "core",
+      "酒精或不明物質：酒精濃度",
+      (c) =>
+        c.picks("ingest_substance").some((p) => p === "酒精" || p === "不明") ||
+        c.yes("alcohol"),
+    ),
+    r("urine_drug", "plus", "毒品或不明物質：尿液藥物篩檢", (c) =>
+      c
+        .picks("ingest_substance")
+        .some((p) => p === "毒品" || p === "不明" || p === "安眠鎮靜藥"),
+    ),
+    r(
+      "ck",
+      "plus",
+      "中毒＋意識喪失或抽搐：橫紋肌溶解",
+      (c) => c.yes("loc") || c.yes("seizure"),
+    ),
+    r(
+      "tni",
+      "plus",
+      "心臟藥或胸痛：心肌傷害",
+      (c) =>
+        c.yes("chest_pain") || c.picks("ingest_substance").includes("降血壓／心臟藥"),
+    ),
+    r(
+      "ct_brain",
+      "ask",
+      "中毒＋外傷或神經缺損：頭部 CT",
+      (c) => c.yes("head_strike") || c.yes("weak_focal"),
+    ),
+  ],
+
+  head_injury: [
+    r(
+      "ct_brain",
+      "core",
+      "頭外傷紅旗（意識喪失、失憶、嘔吐、抗凝血、年長）：頭部 CT",
+      (c) =>
+        c.yes("loc") ||
+        c.yes("amnesia") ||
+        c.yes("vomiting") ||
+        c.yes("anticoag") ||
+        c.older ||
+        c.yes("weak_focal"),
+    ),
+    r("ct_brain", "ask", "頭外傷：依 Canadian CT head rule 評估後再決定"),
+    r("pt", "core", "頭外傷＋抗凝血：凝血功能", (c) => c.yes("anticoag")),
+    r("aptt", "core", "頭外傷＋抗凝血：凝血功能", (c) => c.yes("anticoag")),
+    r(
+      "cbc_dc",
+      "plus",
+      "頭外傷＋抗凝血或出血：血紅素與血小板",
+      (c) => c.yes("anticoag") || c.yes("wound_bleed"),
+    ),
+    r(
+      "glu",
+      "plus",
+      "頭外傷＋意識改變：血糖",
+      (c) => c.yes("confusion") || c.yes("loc"),
+    ),
+    r("etoh", "plus", "頭外傷＋飲酒：酒精濃度", (c) => c.yes("alcohol")),
+    r("ct_cspine", "ask", "頭外傷＋頸痛：頸椎 CT", (c) => c.yes("neck_back_pain")),
+    r("cspine_xr", "ask", "頭外傷＋頸痛：頸椎 X 光", (c) => c.yes("neck_back_pain")),
+    r("ecg", "plus", "頭外傷＋暈厥：心因性暈厥導致跌倒", (c) => c.yes("syncope")),
+  ],
+
+  limb_injury: [
+    r(
+      "cbc_dc",
+      "plus",
+      "肢體外傷＋出血或抗凝血：血紅素",
+      (c) => c.yes("wound_bleed") || c.yes("anticoag"),
+    ),
+    r("pt", "plus", "肢體外傷＋抗凝血：凝血功能", (c) => c.yes("anticoag")),
+    r("aptt", "plus", "肢體外傷＋抗凝血：凝血功能", (c) => c.yes("anticoag")),
+    r(
+      "ck",
+      "plus",
+      "肢體壓砸傷：橫紋肌溶解",
+      (c) => c.sel("mechanism") === "高處墜落" || c.yes("deformity"),
+    ),
+    r(
+      "pelvis_xr",
+      "ask",
+      "髖／骨盆外傷：骨盆 X 光",
+      (c) =>
+        c.text("injury_site").toLowerCase().includes("hip") ||
+        c.text("injury_site").includes("髖") ||
+        c.text("injury_site").toLowerCase().includes("pelvi"),
+    ),
+  ],
+
+  wound: [
+    r(
+      "pt",
+      "plus",
+      "傷口出血＋抗凝血：凝血功能",
+      (c) => c.yes("anticoag") && c.yes("wound_bleed"),
+    ),
+    r(
+      "aptt",
+      "plus",
+      "傷口出血＋抗凝血：凝血功能",
+      (c) => c.yes("anticoag") && c.yes("wound_bleed"),
+    ),
+    r(
+      "cbc_dc",
+      "plus",
+      "大量出血：血紅素",
+      (c) => c.yes("wound_bleed") && c.yes("anticoag"),
+    ),
+    r("glu", "plus", "糖尿病病人的傷口：血糖", (c) => c.pmh.has("dm")),
+  ],
+
+  burn: [
+    r("cbc_dc", "plus", "燒燙傷：血紅素濃縮／感染"),
+    r("crea", "plus", "燒燙傷：腎功能與水份"),
+    r("na", "plus", "燒燙傷：電解質"),
+    r("k", "plus", "燒燙傷：電解質"),
+    r("ecg", "core", "電擊傷：心律", (c) => c.picks("burn_cause").includes("電擊")),
+    r("ck", "core", "電擊或大面積燒傷：橫紋肌溶解", (c) =>
+      c.picks("burn_cause").includes("電擊"),
+    ),
+    r("urine_routine", "plus", "電擊或大面積燒傷：肌紅蛋白尿", (c) =>
+      c.picks("burn_cause").includes("電擊"),
+    ),
+    r(
+      "cxr",
+      "plus",
+      "吸入性燒傷：肺部",
+      (c) => c.yes("inhal_exposure") || c.yes("dyspnea") || c.yes("hoarse_h"),
+    ),
+  ],
+
+  bite_sting: [
+    r("cbc_dc", "core", "蛇咬：血小板與血紅素", (c) =>
+      c.picks("bite_animal").includes("蛇"),
+    ),
+    r("pt", "core", "蛇咬：凝血功能", (c) => c.picks("bite_animal").includes("蛇")),
+    r("aptt", "core", "蛇咬：凝血功能", (c) => c.picks("bite_animal").includes("蛇")),
+    r("fibrinogen", "core", "蛇咬：纖維蛋白原", (c) =>
+      c.picks("bite_animal").includes("蛇"),
+    ),
+    r("ck", "core", "蛇咬：橫紋肌溶解", (c) => c.picks("bite_animal").includes("蛇")),
+    r("crea", "core", "蛇咬：腎功能", (c) => c.picks("bite_animal").includes("蛇")),
+    r("na", "plus", "蛇咬：電解質", (c) => c.picks("bite_animal").includes("蛇")),
+    r("k", "plus", "蛇咬：電解質", (c) => c.picks("bite_animal").includes("蛇")),
+    r(
+      "cbc_dc",
+      "plus",
+      "咬螫傷＋發燒或紅腫擴大：感染",
+      (c) => c.yes("fever") || c.yes("redness"),
+    ),
+    r(
+      "crp",
+      "plus",
+      "咬螫傷＋發燒或紅腫擴大：感染",
+      (c) => c.yes("fever") || c.yes("redness"),
+    ),
+    r(
+      "ecg",
+      "plus",
+      "過敏性休克或全身症狀：心律",
+      (c) => c.yes("presyncope") || c.yes("dyspnea"),
+    ),
+  ],
+
+  joint_pain: [
+    r(
+      "cbc_dc",
+      "core",
+      "關節紅熱或發燒：化膿性關節炎",
+      (c) => c.yes("fever") || c.yes("joint_hot"),
+    ),
+    r(
+      "crp",
+      "core",
+      "關節紅熱或發燒：化膿性關節炎",
+      (c) => c.yes("fever") || c.yes("joint_hot"),
+    ),
+    r("crea", "plus", "關節痛：腎功能（痛風／止痛藥選擇）"),
+    r("glu", "plus", "關節痛：糖尿病／類固醇前"),
+    r("alt", "plus", "關節痛：肝功能（止痛藥選擇）"),
+  ],
+
+  cellulitis: [
+    r("cbc_dc", "core", "蜂窩性組織炎：白血球"),
+    r("crp", "core", "蜂窩性組織炎：發炎指標"),
+    r("crea", "core", "蜂窩性組織炎：抗生素劑量"),
+    r("na", "plus", "蜂窩性組織炎：電解質"),
+    r("k", "plus", "蜂窩性組織炎：電解質"),
+    r("glu", "core", "蜂窩性組織炎：糖尿病控制"),
+    r(
+      "lactate",
+      "plus",
+      "蜂窩性組織炎＋發燒且高風險：敗血症",
+      (c) => c.yes("fever") && (c.older || c.vulnerable),
+    ),
+    r("ddimer", "plus", "單側腿紅腫痛：DVT 鑑別", (c) => c.yes("calf_pain")),
+    r("doppler_limbs", "ask", "單側腿紅腫痛：下肢血管超音波", (c) =>
+      c.yes("calf_pain"),
+    ),
+  ],
+
+  foreign_body: [
+    r("cxr", "core", "吞入或吸入異物：胸部 X 光", (c) =>
+      c.picks("fb_site").some((p) => p === "喉嚨／食道" || p === "吸入氣管"),
+    ),
+    r("neck_soft_xr", "core", "喉嚨／食道異物：頸部軟組織側位", (c) =>
+      c.picks("fb_site").includes("喉嚨／食道"),
+    ),
+    r(
+      "kub",
+      "plus",
+      "吞入或肛門異物：腹部 X 光",
+      (c) =>
+        c.picks("fb_site").some((p) => p === "喉嚨／食道" || p === "肛門／直腸") ||
+        c.yes("fb_ingest"),
+    ),
+    r(
+      "cbc_dc",
+      "plus",
+      "異物＋發燒或嘔吐：感染／穿孔",
+      (c) => c.yes("fever") || c.yes("vomiting"),
+    ),
+    r(
+      "crp",
+      "plus",
+      "異物＋發燒或嘔吐：感染／穿孔",
+      (c) => c.yes("fever") || c.yes("vomiting"),
+    ),
+    r("ct_neck", "ask", "食道異物卡住或疑似穿孔：頸部 CT"),
+    r("ct_chest", "ask", "吸入異物或疑似縱膈炎：胸部 CT", (c) =>
+      c.picks("fb_site").some((p) => p === "吸入氣管" || p === "喉嚨／食道"),
+    ),
+  ],
+
+  device_prob: [
+    r("cbc_dc", "core", "管路問題：感染"),
+    r("crp", "core", "管路問題：發炎指標"),
+    r("crea", "core", "管路問題：腎功能"),
+    r("na", "plus", "管路問題：電解質"),
+    r("k", "plus", "管路問題：電解質"),
+    r("glu", "plus", "管路問題：血糖"),
+    r(
+      "urine_routine",
+      "core",
+      "尿管／腎造瘻問題：尿液分析",
+      (c) =>
+        c.picks("device_type").some((p) => p === "Foley" || p === "腎造瘻") ||
+        c.yes("dysuria") ||
+        c.yes("hematuria"),
+    ),
+    r("tbil", "core", "膽道引流管問題：膽紅素", (c) =>
+      c.picks("device_type").includes("膽道引流"),
+    ),
+    r("dbil", "core", "膽道引流管問題：直接膽紅素", (c) =>
+      c.picks("device_type").includes("膽道引流"),
+    ),
+    r("alp", "core", "膽道引流管問題：ALP", (c) =>
+      c.picks("device_type").includes("膽道引流"),
+    ),
+    r("alt", "core", "膽道引流管問題：肝功能", (c) =>
+      c.picks("device_type").includes("膽道引流"),
+    ),
+    r("cxr", "plus", "Port-A／氣切／胸管問題：胸部 X 光", (c) =>
+      c
+        .picks("device_type")
+        .some((p) => p === "Port-A" || p === "氣切" || p === "胸管" || p === "PICC"),
+    ),
+  ],
 };
 
 // ───────────── 全域規則（跨問題）─────────────
@@ -1101,6 +1644,11 @@ const HCG_PROBLEMS: ReadonlySet<string> = new Set([
   "psych",
   "gi_bleed",
   "trauma",
+  "head_injury",
+  "limb_injury",
+  "intox",
+  "preg_issue",
+  "env_injury",
 ]);
 
 /** 含輻射的檢查：育齡女性要先驗孕（或簽拒絕驗孕同意書）。 */
@@ -1146,8 +1694,9 @@ export interface OrderPlan {
 
 function resolvePseudo(id: string, ctx: Ctx): string {
   if (id === "trop") {
-    // 年輕且無風險 → hs-cTnT；其餘 → TnI（口袋書：年輕無共病可改 hs-TnT）
-    return !ctx.cardiacRisk ? "hs_tnt" : "tni";
+    // 預設開 Troponin I；只有「確定是年輕人」（年齡有填、< 40 歲、沒有心血管病史）才換成 hs-cTnT。
+    // 年齡空白一律當作無法確定，開 Troponin I。
+    return ctx.age !== null && ctx.age < 40 && !ctx.cardiacHistory ? "hs_tnt" : "tni";
   }
   if (id === "cxr") {
     const needsPortable =
@@ -1292,6 +1841,34 @@ function planNotes(
   if (has("trauma"))
     notes.push(
       "重大外傷（休克、高處墜落、多處嚴重傷）請啟動 Trauma team，改用 Major trauma 組套。",
+    );
+  if (has("scrotal"))
+    notes.push(
+      "陰囊／睪丸急性疼痛：睪丸扭轉要在發病 6 小時內處理最有機會保住，不要等檢驗；盡早會診泌尿科並安排陰囊都卜勒超音波。",
+    );
+  if (has("preg_issue"))
+    notes.push(
+      "孕期不適：胎心音與產科超音波請盡早會診婦產科；血壓高、頭痛、視力模糊要想到子癇前症。Rh 血型與備血到「輸血作業」。",
+    );
+  if (has("intox"))
+    notes.push(
+      "中毒：先確認服用的藥名、量與時間（請家屬帶藥盒）；必要時洽詢毒物諮詢中心或毒物科。活性碳、解毒劑依藥物與時間決定。",
+    );
+  if (has("head_injury"))
+    notes.push(
+      "頭外傷：服用抗凝血藥、年長、意識喪失、持續嘔吐要放寬 CT 門檻；留觀時以 GCS 與神經學檢查追蹤。",
+    );
+  if (has("bite_sting"))
+    notes.push(
+      "咬螫傷：蛇咬記下時間與蛇的外觀，定期追蹤凝血與 CK，抗蛇毒血清依醫院規定與毒物科會診。動物咬傷依傷口與疫苗史評估破傷風與狂犬病暴露。",
+    );
+  if (has("foreign_body"))
+    notes.push(
+      "異物：喘、喘鳴或流口水（氣道異物）要立刻處理氣道；電池、磁鐵、尖銳物吞入屬緊急，盡早會診。",
+    );
+  if (has("device_prob"))
+    notes.push(
+      "管路問題：疑似導管相關血流感染（Port-A、PICC）時，血液培養由護理師在建立 IV 時一併抽，不在第一輪開單；Foley 阻塞可先沖洗或更換。",
     );
   if (has("eye") || has("ent"))
     notes.push(

@@ -20,6 +20,7 @@ import type { FindingValue } from "../../src/domain/clinical/finding";
 type Findings = Record<string, FindingValue>;
 
 const MALE_40 = { sex: "男 M", age: "40" };
+const MALE_30 = { sex: "男 M", age: "30" };
 const MALE_70 = { sex: "男 M", age: "70" };
 const FEMALE_28 = { sex: "女 F", age: "28" };
 
@@ -97,7 +98,7 @@ describe("planOrders", () => {
   });
 
   it("picks only one troponin and one chest film, and no duplicate lab panels", () => {
-    const young = ids(withProblems("chest_pain", "dyspnea"), MALE_40);
+    const young = ids(withProblems("chest_pain", "dyspnea"), MALE_30);
     expect(young).toContain("hs_tnt");
     expect(young).not.toContain("tni");
     const old = ids(withProblems("chest_pain", "dizziness"), MALE_70);
@@ -278,7 +279,7 @@ describe("pocketbook 3-5 category first-round lists", () => {
     [
       "chest pain, young",
       withProblems("chest_pain"),
-      MALE_40,
+      MALE_30,
       [...BASE, "ck", "hs_tnt", "ecg", "cxr_pa"],
     ],
     [
@@ -291,7 +292,7 @@ describe("pocketbook 3-5 category first-round lists", () => {
       "dyspnea",
       withProblems("dyspnea"),
       MALE_40,
-      [...BASE, "bnp", "ck", "hs_tnt", "ecg", "cxr_pa"],
+      [...BASE, "bnp", "ck", "tni", "ecg", "cxr_pa"],
     ],
     [
       "abdominal pain",
@@ -327,6 +328,20 @@ describe("pocketbook 3-5 category first-round lists", () => {
       }
     });
   }
+});
+
+describe("troponin choice", () => {
+  it("gives Troponin I unless the patient is clearly young and healthy", () => {
+    // 年齡空白、40 歲以上、年輕但有心血管病史：一律 Troponin I。
+    expect(ids(withProblems("chest_pain"), { sex: "男 M", age: "" })).toContain("tni");
+    expect(ids(withProblems("chest_pain"), MALE_40)).toContain("tni");
+    expect(ids(withProblems("chest_pain"), MALE_40)).not.toContain("hs_tnt");
+    const withCad = { ...withProblems("chest_pain"), [edKey.pmh("cad")]: { on: true } };
+    expect(ids(withCad, MALE_30)).toContain("tni");
+    // 確定是年輕人（< 40 歲、沒有心血管病史）才換 hs-cTnT。
+    expect(ids(withProblems("chest_pain"), MALE_30)).toContain("hs_tnt");
+    expect(ids(withProblems("chest_pain"), MALE_30)).not.toContain("tni");
+  });
 });
 
 describe("sex and age", () => {

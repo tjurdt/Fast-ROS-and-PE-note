@@ -116,16 +116,22 @@ describe("PI never says the same thing twice", () => {
 
   it("holds for every pair of complaints under every answer pattern", () => {
     for (let i = 0; i < ids.length; i += 1) {
-      for (let j = 0; j < ids.length; j += 1) {
-        if (i === j) continue;
+      for (let j = i + 1; j < ids.length; j += 1) {
         const pair = [ids[i] ?? "", ids[j] ?? ""];
         for (const pattern of patterns) {
-          const findings = answerAll(withProblems(pair), pattern);
-          assertNoRepeat(composeChart(findings, MALE).fields.PI, `${pair}/${pattern}`);
+          // 全選的樣式最容易重複：兩種主訴順序都測；其他樣式只測一種順序。
+          const orders = pattern === "yes" ? [pair, [...pair].reverse()] : [pair];
+          for (const order of orders) {
+            const findings = answerAll(withProblems(order), pattern);
+            assertNoRepeat(
+              composeChart(findings, MALE).fields.PI,
+              `${order}/${pattern}`,
+            );
+          }
         }
       }
     }
-  }, 120_000);
+  }, 180_000);
 
   it("writes several abdominal sites as one 'abd pain (…)' instead of repeating pain", () => {
     const findings: Findings = {

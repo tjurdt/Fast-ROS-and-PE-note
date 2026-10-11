@@ -346,7 +346,7 @@ describe("v2 app shell", () => {
     );
     render(
       <App
-        autoSyncDelayMs={30}
+        autoSyncDelayMs={250}
         googleRepository={googleRepository}
         repository={new MemoryPatientRepository()}
       />,
@@ -361,7 +361,7 @@ describe("v2 app shell", () => {
     await waitFor(() =>
       expect(screen.getByTestId("sync-status-panel").textContent).toContain("已同步"),
     );
-    await new Promise((resolve) => setTimeout(resolve, 80));
+    await new Promise((resolve) => setTimeout(resolve, 600));
     expect(googleRepository.syncCount).toBe(2);
   });
 

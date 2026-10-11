@@ -11,11 +11,11 @@ test("v2 single-file shell creates and reloads a typed local patient", async ({
   await expect(page.getByTestId("choose-google-v2")).toBeEnabled();
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
-  await page.getByRole("button", { name: "基本", exact: true }).click();
+  await page.getByRole("button", { name: /^基本/ }).click();
   await page.getByLabel("病人代號").fill("V2-TEST-01");
   await page.getByLabel("年齡").fill("65");
-  await page.getByLabel("主要問題").fill("Architecture parity");
   await page.getByLabel("科別").selectOption("cms");
+  await page.getByLabel("主要問題").fill("Architecture parity");
 
   await expect(page.getByLabel("病人代號")).toHaveValue("V2-TEST-01");
   await page.getByRole("button", { name: "ROS" }).click();
@@ -54,14 +54,14 @@ test("v2 patient list searches, sorts, and safely persists deletion", async ({
   await page.getByTestId("choose-local-v2").click();
 
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
-  await page.getByRole("button", { name: "基本", exact: true }).click();
+  await page.getByRole("button", { name: /^基本/ }).click();
   await page.getByLabel("科別").selectOption("general");
   await page.getByLabel("病人代號").fill("BED-10");
   await page.getByLabel("主要問題").fill("Pneumonia follow-up");
   await page.getByRole("button", { name: /病人清單/ }).click();
 
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
-  await page.getByRole("button", { name: "基本", exact: true }).click();
+  await page.getByRole("button", { name: /^基本/ }).click();
   await page.getByLabel("科別").selectOption("general");
   await page.getByLabel("病人代號").fill("BED-2");
   await page.getByLabel("主要問題").fill("Stroke follow-up");
@@ -116,7 +116,7 @@ test("v2 neurological widgets match legacy state and survive reload", async ({
 
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
-  await page.getByRole("button", { name: "基本", exact: true }).click();
+  await page.getByRole("button", { name: /^基本/ }).click();
   await page.getByLabel("病人代號").fill("NEURO-V2");
   await page.getByLabel("科別").selectOption("neuro");
 
@@ -192,7 +192,7 @@ test("v2 note workspace persists todo, history, ADL, and block notes", async ({
 
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
-  await page.getByRole("button", { name: "基本", exact: true }).click();
+  await page.getByRole("button", { name: /^基本/ }).click();
   await page.getByLabel("科別").selectOption("general");
   await page.getByLabel("病人代號").fill("WORKSPACE-V2");
 
@@ -298,7 +298,7 @@ test("v2 LQQOPERA, dialysis, and DNR bundles persist and reload", async ({ page 
 
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
-  await page.getByRole("button", { name: "基本", exact: true }).click();
+  await page.getByRole("button", { name: /^基本/ }).click();
   await page.getByLabel("科別").selectOption("general");
   await page.getByLabel("病人代號").fill("BUNDLES-V2");
   await page.getByRole("button", { name: /^組套/ }).click();
@@ -386,7 +386,7 @@ test("v2 postoperative care preserves POD, multi-findings, and repeatable drains
 
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
-  await page.getByRole("button", { name: "基本", exact: true }).click();
+  await page.getByRole("button", { name: /^基本/ }).click();
   await page.getByLabel("科別").selectOption("general");
   await page.getByLabel("病人代號").fill("POSTOP-V2");
   await page.getByRole("button", { name: /^組套/ }).click();
@@ -495,7 +495,7 @@ test("v2 infection workups score risk and persist repeatable antibiotics", async
 
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
-  await page.getByRole("button", { name: "基本", exact: true }).click();
+  await page.getByRole("button", { name: /^基本/ }).click();
   await page.getByLabel("科別").selectOption("general");
   await page.getByLabel("病人代號").fill("INFECTION-V2");
   await page.getByLabel("年齡").fill("70");
@@ -628,7 +628,7 @@ test("v2 chemotherapy follow-up preserves safety states and the limb matrix", as
 
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
-  await page.getByRole("button", { name: "基本", exact: true }).click();
+  await page.getByRole("button", { name: /^基本/ }).click();
   await page.getByLabel("科別").selectOption("general");
   await page.getByLabel("病人代號").fill("CHEMO-V2");
   await page.getByRole("button", { name: /^組套/ }).click();
@@ -768,7 +768,7 @@ test("v2 custom bundle templates retain stable patient values through edits and 
 
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
-  await page.getByRole("button", { name: "基本", exact: true }).click();
+  await page.getByRole("button", { name: /^基本/ }).click();
   await page.getByLabel("科別").selectOption("general");
   await page.getByLabel("病人代號").fill("CUSTOM-BUNDLE-V2");
   await page.getByRole("button", { name: /^組套/ }).click();
@@ -901,7 +901,7 @@ test("v2 clinical summary previews, copies, downloads, and prints without changi
 
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
-  await page.getByRole("button", { name: "基本", exact: true }).click();
+  await page.getByRole("button", { name: /^基本/ }).click();
   await page.getByLabel("科別").selectOption("general");
   await page.getByLabel("病人代號").fill("EXPORT-V2");
   await page.getByLabel("年齡").fill("72");
@@ -1063,7 +1063,7 @@ test("v2 Google mode keeps session credentials separate and reopens its cache of
   expect(credentialStorage.account).not.toContain("e2e-session-token");
 
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
-  await page.getByRole("button", { name: "基本", exact: true }).click();
+  await page.getByRole("button", { name: /^基本/ }).click();
   await page.getByLabel("科別").selectOption("general");
   await page.getByLabel("病人代號").fill("GOOGLE-OFFLINE-CACHE");
   await page.getByLabel("主要問題").fill("local-first draft");
@@ -1162,7 +1162,7 @@ test("v2 clinical section tabs switch a single panel in place, without navigatin
 
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
-  await page.getByRole("button", { name: "基本", exact: true }).click();
+  await page.getByRole("button", { name: /^基本/ }).click();
   await page.getByLabel("科別").selectOption("general");
   await page.getByLabel("病人代號").fill("TAB-TEST");
   await page.getByRole("button", { name: "ROS" }).click();
@@ -1213,7 +1213,7 @@ test("v2 clinical tabs stay compact on mobile and every tab in a row is the same
 
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
-  await page.getByRole("button", { name: "基本", exact: true }).click();
+  await page.getByRole("button", { name: /^基本/ }).click();
   await page.getByLabel("病人代號").fill("COMPACT-TEST");
   await page.getByLabel("科別").selectOption("cms");
 

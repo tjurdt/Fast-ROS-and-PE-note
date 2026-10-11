@@ -10,6 +10,7 @@ import {
 import { coversOfHistory, coversOfProblem } from "./concepts";
 import { durationPhrase, isAcuteDuration } from "./duration";
 import { pickedOptions } from "./picks";
+import { matrixPhrases } from "./pe-matrix";
 import { HISTORY_ITEMS, PMH_ITEMS, SYSTEM_ORDER, historyItem } from "./history-library";
 import {
   PE_COLLAPSED_NORMAL,
@@ -403,7 +404,7 @@ function complaintPhrase(
   // PI 裡部位寫成 "abd pain (RUQ, LUQ)"，不是 CC 的 "RUQ/LUQ abd pain"。
   if (forPi && item?.type === "pick" && item.joinTemplate) {
     const sites = chosenOptions(item, findings)
-      .map((option) => option.cc ?? option.text)
+      .map((option) => option.detail ?? option.cc ?? option.text)
       .join(", ");
     if (sites) return item.joinTemplate.replace("{v}", sites);
   }
@@ -536,14 +537,16 @@ export function composePIDetail(
       return;
     }
     const owner = covers.length > 0 ? covers.map((c) => coveredBy.get(c)) : [];
-    const alreadyTold = owner.length > 0 && owner.every((c) => c !== undefined);
+    // 文字題（持續時間、數值…）本身就是新資訊，不會跟別的句子重複。
+    const alreadyTold =
+      item.type !== "text" && owner.length > 0 && owner.every((c) => c !== undefined);
     if (alreadyTold) {
       // 細節併進最先講到這個症狀的那一句，例如 "dyspnea for 1 day (at rest)"。
       let detail = "";
       if (item.type === "pick") {
         if (leadModifiers.has(id)) return;
         detail = chosenOptions(item, findings)
-          .map((option) => option.detail ?? option.text)
+          .map((option) => option.detail ?? option.cc ?? option.text)
           .join(", ");
       } else if (item.type === "yn") {
         detail = text(findings[edKey.history(id)]);
@@ -563,7 +566,11 @@ export function composePIDetail(
   for (const entry of selectedComplaints(findings)) {
     const phrase = secondary.get(entry.id);
     const problem = problemById.get(entry.id);
-    if (phrase) {
+    // 兩個主訴講的是同一個症狀（耳鼻喉的牙痛＋牙口的牙痛）：後面那個不再單獨寫一句。
+    const leadCovers = problem ? coversOfProblem(problem, findings) : [];
+    const repeatsEarlierLead =
+      leadCovers.length > 0 && leadCovers.every((concept) => coveredBy.has(concept));
+    if (phrase && !repeatsEarlierLead) {
       const detail =
         historyItem(entry.id)?.type === "yn"
           ? text(findings[edKey.history(entry.id)])
@@ -586,8 +593,16 @@ export function composePIDetail(
     for (const item of block?.items ?? []) pushHistory(item.id, entry.id);
   }
   for (const id of interviewItemIds(interview)) pushHistory(id, `h.${id}`);
+  // 陰性句：症狀在別處已是陽性就不寫；兩題講同一個症狀（站起頭暈／頭暈）只留第一句。
+  const negatedConcepts = new Set<string>();
   for (const negative of negatives) {
     if (negative.covers.some((concept) => coveredBy.has(concept))) continue;
+    if (
+      negative.covers.length > 0 &&
+      negative.covers.every((concept) => negatedConcepts.has(concept))
+    )
+      continue;
+    for (const concept of negative.covers) negatedConcepts.add(concept);
     clauses.push(negative);
   }
   const extra = text(findings[edKey.ctx("piExtra")]);
@@ -730,7 +745,9 @@ function peClause(
     return compact ? (PE_SHORT_NORMAL[item.id] ?? item.normal) : item.normal;
   }
   if (finding?.sel !== "abn") return "";
-  const chosen = item.abnormal.filter((phrase) => finding.fu?.[phrase] === "1");
+  const chosen = [...item.abnormal, ...(item.legacy ?? [])].filter(
+    (phrase) => finding.fu?.[phrase] === "1",
+  );
   const note = (finding.note ?? "").trim();
   let body = "";
   if (chosen.length > 0) {
@@ -738,7 +755,8 @@ function peClause(
       ? item.abnormalTemplate.replace("{v}", chosen.join("/"))
       : chosen.join(", ");
   }
-  return [body, note].filter(Boolean).join(", ");
+  const matrix = matrixPhrases(item, finding).join(", ");
+  return [body, matrix, note].filter(Boolean).join(", ");
 }
 
 export function composePeFieldDetail(

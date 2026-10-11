@@ -96,6 +96,32 @@ export interface HistoryText extends HistoryBase {
 
 export type HistoryItem = HistoryYesNo | HistoryPick | HistoryText;
 
+/**
+ * 「類型 × 部位」的異常所見（呼吸音、心雜音、水腫、肌力…）。
+ * 每個類型可以各自選變化型（fine／coarse…）與部位（R lower／bil…），輸出時併成
+ * 一句，例如 "fine rales (RLL, LLL); expiratory wheezing (bil)"，同一個類型不會重複寫。
+ * 存檔在 finding.fu：`m:<類型>` = "1" 選了這個類型、`v:<類型>@<變化型>`、`s:<類型>@<部位>`。
+ */
+export interface PeMatrixRow {
+  /** 按鈕文字（也是存檔的 key）。 */
+  label: string;
+  /** 寫進病歷的名稱。 */
+  text: string;
+  /** 變化型：放在名稱前面（"fine" rales），suffix 時放後面（"RUE MP" + "4"）。 */
+  variants?: string[];
+  variantAfter?: boolean;
+  /** 這個類型不需要部位（stridor、prolonged expiration）。 */
+  noSites?: boolean;
+}
+
+export interface PeMatrix {
+  rows: PeMatrixRow[];
+  /** 部位選項（依畫面順序）。 */
+  sites: string[];
+  /** 部位的標題，畫面顯示用。 */
+  siteTitle?: string;
+}
+
 export interface PeItem {
   id: string;
   field: EdPeField;
@@ -111,6 +137,10 @@ export interface PeItem {
   abnormalTemplate?: string;
   /** grid9 = 異常快選用腹部九宮格排列。 */
   layout?: "grid9";
+  /** 類型 × 部位的異常所見（有的話，畫面用矩陣；abnormal 仍可當一般快選）。 */
+  matrix?: PeMatrix;
+  /** 舊版快選片語：畫面不再顯示，但舊資料裡已勾的仍照樣輸出。 */
+  legacy?: string[];
 }
 
 /** 病史快選（寫進 PH 的 HX:）。 */
