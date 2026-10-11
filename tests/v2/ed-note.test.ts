@@ -224,7 +224,7 @@ describe("chart composition", () => {
     );
     // 主訴的描述在前，其他症狀（含各自時間）接在後面，不同症狀以分號隔開。
     expect(composeChart(findings, PATIENT).fields.PI).toContain(
-      "RLQ pain; N/V for 6 hours",
+      "abd pain (RLQ); N/V for 6 hours",
     );
   });
 
@@ -256,7 +256,7 @@ describe("chart composition", () => {
     });
     const chart = composeChart(findings, PATIENT);
     expect(chart.fields.PI).toBe(
-      "RLQ pain, gradual onset; nausea; vomiting (x3). no fever, diarrhea, melena",
+      "abd pain (RLQ), gradual onset; nausea; vomiting (x3). no fever, diarrhea, melena",
     );
   });
 

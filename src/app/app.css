@@ -3505,6 +3505,15 @@ textarea:focus-visible {
   margin: 3px 0;
 }
 
+/* 不同分類（系統、PE 欄位、主訴類別、各題）之間用細線隔開；細節列屬於上一列，不加線。 */
+.ed-grid + .ed-grid:not(.ed-grid--detail),
+.ed-grid + .ed-line,
+.ed-line + .ed-grid {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-subtle);
+}
+
 .ed-grid__label {
   display: flex;
   align-items: center;

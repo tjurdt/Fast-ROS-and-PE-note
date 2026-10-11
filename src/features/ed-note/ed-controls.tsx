@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import type { FindingValue } from "../../domain/clinical/finding";
-import { pickedOptions, togglePick } from "../../domain/ed/picks";
+import { cyclePick, pickedOptions, togglePick } from "../../domain/ed/picks";
 import {
   edKey,
   type HistoryItem,
@@ -103,10 +103,10 @@ export function CycleChip({
   );
 }
 
-/** 循環順序：未答 → 無 → 有 → 未答（急診問診大多是陰性，先給陰性）。 */
+/** 循環順序：未答 → 有(POS) → 無(NEG) → 未答(NUL)。 */
 export function nextYesNo(finding: FindingValue): FindingValue {
-  if (finding.on === undefined) return { on: false };
-  if (finding.on === false) return { ...finding, on: true };
+  if (finding.on === undefined) return { on: true };
+  if (finding.on === true) return { ...finding, on: false };
   return {};
 }
 
@@ -202,21 +202,39 @@ export function HistoryGrid({
     const chosen = new Set(
       pickedOptions({ [edKey.history(entry.id)]: current }, entry.id),
     );
-    const options = definition.options.map((option) => (
-      <Chip
-        active={chosen.has(option.label)}
-        key={option.label}
-        label={`${definition.label}：${option.label}`}
-        onClick={() =>
-          onChange(entry.id, togglePick(definition, current, option.label))
-        }
-        span={definition.layout === "grid9" ? 1 : undefined}
-        title={option.label}
-        tone="warning"
-      >
-        {optionShort(definition, option.label)}
-      </Chip>
-    ));
+    const optionShortOf = (label: string) => optionShort(definition, label);
+    // 單選題：一個格子循環換選項（未選 → 選項1 → … → 未選）；複選題：一顆一顆分開點。
+    const options = definition.multi
+      ? definition.options.map((option) => (
+          <Chip
+            active={chosen.has(option.label)}
+            key={option.label}
+            label={`${definition.label}：${option.label}`}
+            onClick={() =>
+              onChange(entry.id, togglePick(definition, current, option.label))
+            }
+            span={definition.layout === "grid9" ? 1 : undefined}
+            title={option.label}
+            tone="warning"
+          >
+            {optionShortOf(option.label)}
+          </Chip>
+        ))
+      : [
+          <CycleChip
+            display={
+              [...chosen][0] === undefined ? "—" : optionShortOf([...chosen][0] ?? "")
+            }
+            key="cycle"
+            label={definition.label}
+            mark=""
+            onClick={() => onChange(entry.id, cyclePick(definition, current))}
+            stateLabel={[...chosen][0] ?? "未答"}
+            testId={`ed-h-cycle-${entry.id}`}
+            title={definition.options.map((option) => option.label).join(" → ")}
+            tone={chosen.size > 0 ? "pos" : ""}
+          />,
+        ];
     const short = historyShort(definition);
     return (
       <div className="ed-grid" data-testid={`ed-h-${entry.id}`} key={entry.id}>
@@ -226,7 +244,11 @@ export function HistoryGrid({
         >
           {entry.must ? <span className="ed-must">★</span> : null}
           {short}
-          {definition.multi ? <small className="ed-multi">複選</small> : null}
+          {definition.multi ? (
+            <small className="ed-multi">複選</small>
+          ) : (
+            <small className="ed-multi">循環</small>
+          )}
         </span>
         {definition.layout === "grid9" ? (
           <Grid9 extra={options.slice(9)}>{options}</Grid9>

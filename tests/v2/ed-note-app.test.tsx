@@ -117,7 +117,7 @@ describe("ED problem-oriented note", { timeout: 20_000 }, () => {
     ).toBe("RLQ abd pain today");
     expect(
       (screen.getByLabelText("PRESENT ILLNESS") as HTMLTextAreaElement).value,
-    ).toBe("RLQ pain; N/V for 2 hours, vomiting. no fever");
+    ).toBe("abd pain (RLQ); vomiting for 2 hours. no fever");
     expect((screen.getByLabelText("ABDOMEN") as HTMLTextAreaElement).value).toBe(
       "Soft, flat, tenderness(+) at RLQ",
     );
@@ -394,15 +394,15 @@ describe("ED problem-oriented note", { timeout: 20_000 }, () => {
     await user.click(screen.getByRole("button", { name: /^病史/ }));
     // 特別情境：自由輸入，下拉選單只負責插入常用片語。
     await user.selectOptions(screen.getByLabelText("插入常用情境"), "pregnant");
-    await user.type(screen.getByLabelText("特別情境"), " (GA 20w)");
+    await user.type(screen.getByLabelText("其他"), " (GA 20w)");
     // TOCC 預設 (-)，點一下改 (+)。
     expect(screen.getByTestId("ed-ph-preview").textContent).toBe(
-      "Situation: pregnant (GA 20w); T(-) O(-) C(-) C(-)",
+      "pregnant (GA 20w); T(-) O(-) C(-) C(-)",
     );
     await user.click(screen.getByRole("button", { name: "T：Travel 旅遊 無" }));
     await user.type(screen.getByLabelText("Travel 旅遊 細節"), "Japan");
     expect(screen.getByTestId("ed-ph-preview").textContent).toBe(
-      "Situation: pregnant (GA 20w); T(+: Japan) O(-) C(-) C(-)",
+      "pregnant (GA 20w); T(+: Japan) O(-) C(-) C(-)",
     );
 
     await user.click(screen.getByRole("button", { name: /^病歷/ }));

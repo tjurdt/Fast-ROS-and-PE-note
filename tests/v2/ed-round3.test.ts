@@ -95,7 +95,7 @@ describe("multi-select abdominal 9-grid", () => {
     expect(pickedOptions(findings, "abd_site")).toEqual(["右上腹", "上腹／心窩"]);
     const chart = composeChart(findings, MALE);
     expect(chart.fields.CC).toBe("RUQ/epigastric abd pain");
-    expect(chart.fields.PI.startsWith("RUQ/epigastric pain")).toBe(true);
+    expect(chart.fields.PI.startsWith("abd pain (RUQ, epigastric)")).toBe(true);
     expect(chart.icd.map((line) => line.code)).toEqual(["R10.13", "R10.11"]);
   });
 
@@ -161,7 +161,7 @@ describe("PI punctuation", () => {
       [edKey.history("vomiting")]: { on: true },
     };
     expect(composeChart(findings, MALE).fields.PI).toBe(
-      "RLQ pain, gradual onset; fever for 2 days; vomiting",
+      "abd pain (RLQ), gradual onset; fever for 2 days; vomiting",
     );
   });
 });

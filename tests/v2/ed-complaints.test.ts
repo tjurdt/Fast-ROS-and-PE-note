@@ -239,7 +239,7 @@ describe("PI / PH / PE condensing", () => {
       [edKey.pmh("htn")]: { on: true },
     };
     expect(composePH(findings)).toBe(
-      "HX: HTN; Situation: pregnant (GA 20w), on chemotherapy, from nursing home; T(-) O(-) C(-) C(-)",
+      "HX: HTN; pregnant (GA 20w), on chemotherapy, from nursing home; T(-) O(-) C(-) C(-)",
     );
   });
 

@@ -76,3 +76,15 @@ export function removePick(
   }
   return Object.keys(fu).length > 0 ? { fu } : {};
 }
+
+/**
+ * 單選題的循環：未選 → 第一個選項 → … → 最後一個選項 → 未選。
+ * 單選題在畫面上是一個格子，點一下換下一個；複選題才是一顆一顆分開的按鈕。
+ */
+export function cyclePick(item: HistoryPick, finding: FindingValue): FindingValue {
+  const current = pickedOptions({ [edKey.history(item.id)]: finding }, item.id)[0];
+  const index =
+    current === undefined ? -1 : item.options.findIndex((o) => o.label === current);
+  const next = item.options[index + 1];
+  return next ? { sel: next.label } : {};
+}

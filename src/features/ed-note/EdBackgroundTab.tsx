@@ -138,11 +138,11 @@ export function EdBackgroundTab({
       )}
 
       <label className="ed-line ed-line--area">
-        <span>特別情境</span>
+        <span>其他</span>
         <textarea
-          aria-label="特別情境"
+          aria-label="其他"
           onChange={(event) => setCtx("situation", event.target.value)}
-          placeholder="自由輸入，寫進 PH 的 Situation:"
+          placeholder="自由輸入（懷孕、化療中、管路…），直接寫進 PH"
           rows={2}
           value={ctx("situation")}
         />

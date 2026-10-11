@@ -47,12 +47,18 @@ const opt = (label: string, textValue: string, cc?: string) =>
  */
 export const HISTORY_ITEMS: readonly HistoryItem[] = [
   // ── 起病與病程（通用特徵題）─────────────────────────────
-  pick("onset", "const", "起病方式", [
-    opt("突然", "sudden onset"),
-    opt("漸進", "gradual onset"),
-    opt("陣發", "intermittent"),
-    opt("持續加重", "progressively worsening"),
-  ]),
+  pick(
+    "onset",
+    "const",
+    "起病方式",
+    [
+      opt("突然", "sudden onset"),
+      opt("漸進", "gradual onset"),
+      opt("陣發", "intermittent"),
+      opt("持續加重", "progressively worsening"),
+    ],
+    { multi: true },
+  ),
   yn("similar_episode", "const", "以前發作過", "similar episode before", {
     neg: "similar episode before",
   }),
@@ -95,19 +101,25 @@ export const HISTORY_ITEMS: readonly HistoryItem[] = [
   yn("syncope", "cv", "暈厥／昏倒", "syncope"),
   yn("presyncope", "cv", "快暈倒／眼前發黑", "presyncope"),
   yn("leg_edema", "cv", "下肢水腫", "leg edema", { neg: "leg edema" }),
-  pick("chest_quality", "cv", "胸痛性質", [
-    opt("壓迫／緊縮", "pressure-like"),
-    opt("刺痛", "stabbing"),
-    opt("撕裂", "tearing"),
-    opt("灼熱", "burning"),
-    opt("悶", "tightness", "chest tightness"),
-  ]),
+  pick(
+    "chest_quality",
+    "cv",
+    "胸痛性質",
+    [
+      opt("壓迫／緊縮", "pressure-like"),
+      opt("刺痛", "stabbing"),
+      opt("撕裂", "tearing"),
+      opt("灼熱", "burning"),
+      { ...opt("悶", "tightness", "chest tightness"), detail: "tightness" },
+    ],
+    { multi: true, joinTemplate: "chest pain ({v})" },
+  ),
   yn("chest_radiate", "cv", "放射（手臂／下巴／背）", "radiating", {
     neg: "radiation",
     detail: { chips: ["L arm", "R arm", "jaw", "back", "neck"] },
   }),
-  yn("chest_exert", "cv", "活動誘發、休息緩解", "exertional", {
-    neg: "exertional",
+  yn("chest_exert", "cv", "活動誘發、休息緩解", "triggered by exertion", {
+    neg: "exertional trigger",
   }),
   yn(
     "chest_position",
@@ -137,15 +149,21 @@ export const HISTORY_ITEMS: readonly HistoryItem[] = [
       opt("左下腹", "LLQ pain", "LLQ"),
       opt("全腹", "diffuse abdominal pain", "diffuse"),
     ],
-    { multi: true, joinTemplate: "{v} pain", layout: "grid9" },
+    { multi: true, joinTemplate: "abd pain ({v})", layout: "grid9" },
   ),
-  pick("abd_quality", "gi", "腹痛性質", [
-    opt("絞痛", "colicky"),
-    opt("悶痛", "dull"),
-    opt("刺痛", "sharp"),
-    opt("灼熱", "burning"),
-    opt("持續性", "constant"),
-  ]),
+  pick(
+    "abd_quality",
+    "gi",
+    "腹痛性質",
+    [
+      opt("絞痛", "colicky"),
+      opt("悶痛", "dull"),
+      opt("刺痛", "sharp"),
+      opt("灼熱", "burning"),
+      opt("持續性", "constant"),
+    ],
+    { multi: true, joinTemplate: "abd pain ({v})" },
+  ),
   yn("abd_migrate", "gi", "疼痛由臍周移到右下腹", "pain migration to RLQ", {
     neg: "pain migration",
   }),
@@ -205,15 +223,21 @@ export const HISTORY_ITEMS: readonly HistoryItem[] = [
 
   // ── 神經 ────────────────────────────────────────────────
   yn("headache", "neuro", "頭痛", "headache"),
-  yn("headache_worst", "neuro", "雷擊樣／生平最痛", "thunderclap headache", {
+  yn("headache_worst", "neuro", "雷擊樣／生平最痛", "thunderclap onset", {
     neg: "thunderclap onset",
   }),
-  pick("dizzy_kind", "neuro", "頭暈性質", [
-    opt("天旋地轉", "vertigo (spinning)", "vertigo"),
-    opt("頭重腳輕", "lightheadedness", "lightheadedness"),
-    opt("走路不穩", "disequilibrium", "unsteadiness"),
-    opt("說不清", "non-specific dizziness"),
-  ]),
+  pick(
+    "dizzy_kind",
+    "neuro",
+    "頭暈性質",
+    [
+      opt("天旋地轉", "vertigo (spinning)", "vertigo"),
+      opt("頭重腳輕", "lightheadedness", "lightheadedness"),
+      opt("走路不穩", "disequilibrium", "unsteadiness"),
+      opt("說不清", "non-specific dizziness"),
+    ],
+    { multi: true },
+  ),
   yn("dizzy_position", "neuro", "姿勢改變／轉頭誘發", "positional trigger", {
     neg: "positional trigger",
   }),
@@ -241,14 +265,20 @@ export const HISTORY_ITEMS: readonly HistoryItem[] = [
   text("lkw", "neuro", "最後正常時間 LKW", "LKW {v}", { placeholder: "例 今天 08:00" }),
 
   // ── 外傷 ────────────────────────────────────────────────
-  pick("mechanism", "trauma", "受傷機轉", [
-    opt("平地跌倒", "fall from standing"),
-    opt("高處墜落", "fall from height"),
-    opt("機車／車禍", "MVA"),
-    opt("被打／攻擊", "assault"),
-    opt("運動傷害", "sports injury"),
-    opt("其他", "injury"),
-  ]),
+  pick(
+    "mechanism",
+    "trauma",
+    "受傷機轉",
+    [
+      opt("平地跌倒", "fall from standing"),
+      opt("高處墜落", "fall from height"),
+      opt("機車／車禍", "MVA"),
+      opt("被打／攻擊", "assault"),
+      opt("運動傷害", "sports injury"),
+      opt("其他", "injury"),
+    ],
+    { multi: true },
+  ),
   text("injury_site", "trauma", "受傷部位", "injury at {v}", {
     placeholder: "例 R knee",
   }),
@@ -337,24 +367,44 @@ export const HISTORY_ITEMS: readonly HistoryItem[] = [
     "resp",
     "喘的情境",
     [
-      opt("休息時也喘", "dyspnea at rest"),
-      opt("活動時喘", "exertional dyspnea"),
-      opt("平躺加重", "worse when lying flat"),
+      { ...opt("休息時也喘", "dyspnea at rest"), cc: "at rest", detail: "at rest" },
+      {
+        ...opt("活動時喘", "exertional dyspnea"),
+        cc: "exertional",
+        detail: "exertional",
+      },
+      {
+        ...opt("平躺加重", "worse when lying flat"),
+        cc: "worse lying flat",
+        detail: "worse when lying flat",
+      },
     ],
-    { multi: true },
+    { multi: true, joinTemplate: "dyspnea ({v})" },
   ),
-  pick("palp_pattern", "cv", "心悸型態", [
-    opt("規則快速", "regular rapid"),
-    opt("不規則", "irregular"),
-    opt("突然開始突然停", "paroxysmal, abrupt onset/offset"),
-  ]),
-  pick("syncope_trigger", "cv", "暈厥情境", [
-    opt("站起時", "orthostatic"),
-    opt("運動時", "during exertion"),
-    opt("排尿／排便／咳嗽時", "situational"),
-    opt("休息或平躺", "at rest/supine"),
-    opt("無明顯誘因", "no trigger"),
-  ]),
+  pick(
+    "palp_pattern",
+    "cv",
+    "心悸型態",
+    [
+      opt("規則快速", "regular rapid"),
+      opt("不規則", "irregular"),
+      opt("突然開始突然停", "paroxysmal, abrupt onset/offset"),
+    ],
+    { multi: true, joinTemplate: "palpitation ({v})" },
+  ),
+  pick(
+    "syncope_trigger",
+    "cv",
+    "暈厥情境",
+    [
+      opt("站起時", "orthostatic"),
+      opt("運動時", "during exertion"),
+      opt("排尿／排便／咳嗽時", "situational"),
+      opt("休息或平躺", "at rest/supine"),
+      opt("無明顯誘因", "no trigger"),
+    ],
+    { multi: true, joinTemplate: "syncope ({v})" },
+  ),
   pick(
     "gib_type",
     "gi",

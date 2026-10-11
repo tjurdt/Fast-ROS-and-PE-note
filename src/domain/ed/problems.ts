@@ -757,6 +757,11 @@ export const ED_PROBLEMS: readonly EdProblem[] = [
     label: "噁心嘔吐",
     hint: "噁心／嘔吐",
     cc: "N/V",
+    ccFromYes: [
+      { item: "nausea", cc: "nausea" },
+      { item: "vomiting", cc: "vomiting" },
+    ],
+    ccWhenAllYes: true,
     group: "消化",
     characterize: ["onset", "vomiting", "nausea"],
     ask: [

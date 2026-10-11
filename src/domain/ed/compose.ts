@@ -7,6 +7,7 @@ import {
   type Clause,
   type FieldDetail,
 } from "./condense";
+import { coversOfHistory, coversOfProblem } from "./concepts";
 import { durationPhrase, isAcuteDuration } from "./duration";
 import { pickedOptions } from "./picks";
 import { HISTORY_ITEMS, PMH_ITEMS, SYSTEM_ORDER, historyItem } from "./history-library";
@@ -337,7 +338,9 @@ function historyClause(
       item.joinTemplate && options.length > 0
         ? item.joinTemplate.replace(
             "{v}",
-            options.map((option) => option.cc ?? option.text).join("/"),
+            options
+              .map((option) => option.detail ?? option.cc ?? option.text)
+              .join(", "),
           )
         : options.map((option) => option.text).join(", ");
     return { id: clauseId, kind: "pos", text: textOut, score: must ? 80 : 60 };
@@ -381,6 +384,7 @@ function complaintPhrase(
   entry: ComplaintEntry,
   byId: ReadonlyMap<string, EdProblem>,
   findings: EdFindings,
+  forPi = false,
 ): string {
   if (entry.kind === "custom") return entry.label;
   const problem = byId.get(entry.id);
@@ -389,10 +393,20 @@ function complaintPhrase(
     const yes = problem.ccFromYes
       .filter((entry) => findings[edKey.history(entry.item)]?.on === true)
       .map((entry) => entry.cc);
-    if (yes.length > 0) return yes.join(", ");
+    const allYes = yes.length === problem.ccFromYes.length;
+    if (yes.length > 0) {
+      return problem.ccWhenAllYes && allYes ? problem.cc : yes.join(", ");
+    }
   }
   if (!problem.ccFrom) return problem.cc;
   const item = historyItem(problem.ccFrom);
+  // PI 裡部位寫成 "abd pain (RUQ, LUQ)"，不是 CC 的 "RUQ/LUQ abd pain"。
+  if (forPi && item?.type === "pick" && item.joinTemplate) {
+    const sites = chosenOptions(item, findings)
+      .map((option) => option.cc ?? option.text)
+      .join(", ");
+    if (sites) return item.joinTemplate.replace("{v}", sites);
+  }
   const parts = (item ? chosenOptions(item, findings) : [])
     .map((option) => option.cc)
     .filter((cc): cc is string => Boolean(cc));
@@ -408,7 +422,10 @@ function complaintWithDuration(
   byId: ReadonlyMap<string, EdProblem>,
   findings: EdFindings,
 ): string {
-  return [complaintPhrase(entry, byId, findings), durationPhrase(findings, entry.id)]
+  return [
+    complaintPhrase(entry, byId, findings, true),
+    durationPhrase(findings, entry.id),
+  ]
     .filter(Boolean)
     .join(" ");
 }
@@ -492,36 +509,87 @@ export function composePIDetail(
     });
   }
   // 依主訴順序：每個症狀先寫它自己（主訴以外的才寫，主訴已在 CC），再接它的特徵題；
-  // 同名的問診題（例如「發燒」）不再重複寫，細節併進來。其餘問診題各自一組。
+  // 其餘問診題各自一組。同一個症狀只寫一次（概念對照見 concepts.ts）：
+  //   - 概念已被前面的句子講過的陽性題：沒有細節就不寫，有細節就保留；
+  //   - 單／複選題的選項若只是補充已寫過的症狀，只附細節（例如 dyspnea … , at rest）；
+  //   - 主訴那句話已經含了該題的選項（腹痛部位）就不再重複；
+  //   - 陰性題的症狀在別處已是陽性就不寫（避免 "abd pain … no abd pain"）。
   const secondary = new Map(
     secondaryComplaints(problems, findings).map((entry) => [entry.id, entry.text]),
   );
+  const problemById = new Map(problems.map((problem) => [problem.id, problem]));
   const emitted = new Set<string>(secondary.keys());
+  const coveredBy = new Map<string, HistoryClause>();
+  const leadModifiers = new Set<string>();
+  const negatives: (HistoryClause & { covers: string[] })[] = [];
   const pushHistory = (id: string, group: string) => {
     if (emitted.has(id)) return;
     emitted.add(id);
+    const item = historyItem(id);
     const clause = historyClause(id, findings, mustIds.has(id));
-    if (clause) clauses.push({ ...clause, group });
+    if (!item || !clause) return;
+    // 主訴那句話已經含了這題的選項（例如腹痛部位、血壓偏高）。
+    if (leadModifiers.has(id) && clause.kind !== "neg") return;
+    const covers = coversOfHistory(item, findings);
+    if (clause.kind === "neg") {
+      negatives.push({ ...clause, group, covers });
+      return;
+    }
+    const owner = covers.length > 0 ? covers.map((c) => coveredBy.get(c)) : [];
+    const alreadyTold = owner.length > 0 && owner.every((c) => c !== undefined);
+    if (alreadyTold) {
+      // 細節併進最先講到這個症狀的那一句，例如 "dyspnea for 1 day (at rest)"。
+      let detail = "";
+      if (item.type === "pick") {
+        if (leadModifiers.has(id)) return;
+        detail = chosenOptions(item, findings)
+          .map((option) => option.detail ?? option.text)
+          .join(", ");
+      } else if (item.type === "yn") {
+        detail = text(findings[edKey.history(id)]);
+      }
+      const first = owner[0];
+      if (detail && first) {
+        first.text = first.text.endsWith(")")
+          ? `${first.text.slice(0, -1)}, ${detail})`
+          : `${first.text} (${detail})`;
+      }
+      return;
+    }
+    const out: HistoryClause = { ...clause, group };
+    for (const concept of covers) coveredBy.set(concept, out);
+    clauses.push(out);
   };
   for (const entry of selectedComplaints(findings)) {
     const phrase = secondary.get(entry.id);
+    const problem = problemById.get(entry.id);
     if (phrase) {
       const detail =
         historyItem(entry.id)?.type === "yn"
           ? text(findings[edKey.history(entry.id)])
           : "";
-      clauses.push({
+      const lead: HistoryClause = {
         id: `cc2.${entry.id}`,
         kind: "lead",
         text: detail ? `${phrase} (${detail})` : phrase,
         score: 90,
         group: entry.id,
-      });
+      };
+      clauses.push(lead);
+      if (problem) {
+        for (const concept of coversOfProblem(problem, findings))
+          coveredBy.set(concept, lead);
+        if (problem.ccFrom) leadModifiers.add(problem.ccFrom);
+      }
     }
     const block = interview.characterize.find((b) => b.key === `char.${entry.id}`);
     for (const item of block?.items ?? []) pushHistory(item.id, entry.id);
   }
   for (const id of interviewItemIds(interview)) pushHistory(id, `h.${id}`);
+  for (const negative of negatives) {
+    if (negative.covers.some((concept) => coveredBy.has(concept))) continue;
+    clauses.push(negative);
+  }
   const extra = text(findings[edKey.ctx("piExtra")]);
   if (extra) {
     clauses.push({
@@ -633,7 +701,7 @@ export function composePHDetail(findings: EdFindings): FieldDetail {
     const situation = kept
       .filter((clause) => clause.kind === "situation")
       .map((clause) => clause.text);
-    if (situation.length > 0) parts.push(`Situation: ${situation.join(", ")}`);
+    if (situation.length > 0) parts.push(situation.join(", "));
     const toccClause = kept.find((clause) => clause.kind === "tocc");
     if (toccClause) parts.push(toccClause.text);
     const allergyClause = kept.find((clause) => clause.kind === "allergy");

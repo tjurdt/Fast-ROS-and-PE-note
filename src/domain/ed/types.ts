@@ -49,6 +49,8 @@ export interface EdPickOption {
   text: string;
   /** 若這題被指定為主訴修飾詞（ccFrom），主訴使用的片語；缺省則不修飾。 */
   cc?: string;
+  /** 同一個症狀已經在前面寫過時，只補這段細節（例如 "at rest"）；缺省用 text。 */
+  detail?: string;
 }
 
 interface HistoryBase {
@@ -78,7 +80,7 @@ export interface HistoryPick extends HistoryBase {
   options: EdPickOption[];
   /** 可複選（例如腹痛部位可以同時右上腹＋上腹）。 */
   multi?: boolean;
-  /** 複選時寫進 PI 的樣板：{v} = 各選項 cc（或 text）以 "/" 串接，例如 "{v} pain"。 */
+  /** 複選時寫進 PI 的樣板：{v} = 各選項 cc（或 text）以 ", " 串接，例如 "abd pain ({v})"。 */
   joinTemplate?: string;
   /** grid9 = 腹部九宮格排列（前九個選項依右上→左下，之後的選項接在旁邊）。 */
   layout?: "grid9";
@@ -166,6 +168,8 @@ export interface EdProblem {
   ccMode?: "prefix" | "replace";
   /** 主訴依「有」的題目決定（例如神經缺損：單側無力／麻木／口齒不清／臉歪），多個以逗號串接。 */
   ccFromYes?: { item: string; cc: string }[];
+  /** 搭配 ccFromYes：列出的題目全部都是「有」時，改用 cc（例如噁心＋嘔吐 → N/V）。 */
+  ccWhenAllYes?: boolean;
   group: EdProblemGroup;
   /** 此問題專屬的特徵題（起病、性質、部位…），畫面放在問題標題下。 */
   characterize: string[];
@@ -223,5 +227,5 @@ export type EdContextKey =
   | "piExtra"
   /** "off" = 關閉超過字數時的自動精簡。 */
   | "autoFit"
-  /** 特別情境（自由輸入，寫進 PH 的 Situation:）。 */
+  /** 其他（自由輸入的背景情境，直接接在 PH 的 HX／Med 後面，不加前綴）。 */
   | "situation";
