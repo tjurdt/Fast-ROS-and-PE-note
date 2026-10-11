@@ -39,7 +39,7 @@ import {
 import type { UserBundleTemplate } from "../domain/bundle-templates";
 import { countFindingsByKind } from "../domain/clinical/clinical-rules";
 import { admissionFindingCount } from "../domain/note-workspace";
-import { isEdPatient } from "../domain/specialty";
+import { ED_SPECIALTY_KEY, isEdPatient } from "../domain/specialty";
 import { buildEdNoteTabs } from "../features/ed-note/EdNoteTabs";
 import { AdditionalNotes } from "../features/additional-notes/AdditionalNotes";
 import { BundleWorkspace } from "../features/bundles/BundleWorkspace";
@@ -90,6 +90,25 @@ const DEFAULT_PATIENT_FACTORY: PatientFactoryDependencies = {
   now: () => Date.now(),
 };
 
+const LAST_SPECIALTY_KEY = "pe_note_last_specialty";
+
+/** 新增病人預設用上一次選的科別；第一次（或讀不到）用急診。 */
+function readLastSpecialty(): string {
+  try {
+    return window.localStorage.getItem(LAST_SPECIALTY_KEY) || ED_SPECIALTY_KEY;
+  } catch {
+    return ED_SPECIALTY_KEY;
+  }
+}
+
+function rememberSpecialty(specialty: string): void {
+  try {
+    window.localStorage.setItem(LAST_SPECIALTY_KEY, specialty);
+  } catch {
+    // Remembering the department is only a convenience.
+  }
+}
+
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "發生未預期的錯誤。";
 }
@@ -120,6 +139,8 @@ export function App({
   const [database, setDatabase] = useState<PatientDatabase>(emptyPatientDatabase);
   const databaseRef = useRef(database);
   const [activePatientId, setActivePatientId] = useState<string | null>(null);
+  /** 剛新增的病人直接進主要頁面，不先停在「基本」。 */
+  const [startOnMain, setStartOnMain] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -374,10 +395,18 @@ export function App({
     }
   }
 
-  function createNewPatient(draft: PatientDraft) {
+  function createNewPatient() {
+    const draft: PatientDraft = {
+      code: "",
+      specialty: readLastSpecialty(),
+      sex: "",
+      age: "",
+      problem: "",
+    };
     const result = createPatientInDatabase(databaseRef.current, draft, factory);
     persist(result.database);
     setActivePatientId(result.patient.id);
+    setStartOnMain(true);
     setView("note");
   }
 
@@ -393,6 +422,7 @@ export function App({
       (candidate) => candidate.id === activePatientId,
     );
     if (!patient) return;
+    if (patch.specialty) rememberSpecialty(patch.specialty);
 
     const result = updatePatientInDatabase(
       databaseRef.current,
@@ -676,6 +706,7 @@ export function App({
           onDelete={deletePatient}
           onOpen={(patientId) => {
             setActivePatientId(patientId);
+            setStartOnMain(false);
             setView("note");
           }}
         >
@@ -686,6 +717,8 @@ export function App({
 
       {view === "note" && activePatient ? (
         <PatientNote
+          key={activePatient.id}
+          startOnMain={startOnMain}
           patient={activePatient}
           saving={saving}
           syncPanel={syncPanel}

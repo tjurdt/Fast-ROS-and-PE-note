@@ -1,8 +1,11 @@
 import { useState, type ReactNode } from "react";
 
 import type { Gender, Patient, PatientEditableFields } from "../../domain/patient";
-import { SPECIALTIES } from "../../domain/specialty";
+import { SPECIALTIES, isEdPatient } from "../../domain/specialty";
 import { Button } from "../../ui/Button";
+
+/** createPatient 在沒填代號時補的預設值；輸入框遇到它就顯示空白，免得使用者要先刪掉。 */
+const UNNAMED_CODE = "（未命名）";
 
 export interface PatientNoteTab {
   key: string;
@@ -24,6 +27,8 @@ interface PatientNoteProps {
   tabs: PatientNoteTab[];
   /** 第一個分頁的名稱（急診模式用較短的「基本」）。 */
   basicLabel?: string;
+  /** true = 一進來就停在第一個主要分頁（新增病人時用），不是「基本」。 */
+  startOnMain?: boolean;
 }
 
 export function PatientNote({
@@ -36,7 +41,9 @@ export function PatientNote({
   syncPanel,
   tabs,
   basicLabel = "基本資料",
+  startOnMain = false,
 }: PatientNoteProps) {
+  const isEd = isEdPatient(patient);
   const basicInfoTab: PatientNoteTab = {
     key: "basic",
     label: basicLabel,
@@ -48,7 +55,8 @@ export function PatientNote({
           病人代號
           <input
             aria-label="病人代號"
-            value={patient.code}
+            placeholder="例：3F-12 / Bed 07"
+            value={patient.code === UNNAMED_CODE ? "" : patient.code}
             onChange={(event) => onChange({ code: event.target.value })}
           />
         </label>
@@ -90,21 +98,25 @@ export function PatientNote({
             />
           </label>
         </div>
-        <label>
-          主要問題
-          <textarea
-            aria-label="主要問題"
-            rows={3}
-            value={patient.problem}
-            onChange={(event) => onChange({ problem: event.target.value })}
-          />
-        </label>
+        {isEd ? null : (
+          <label>
+            主要問題
+            <textarea
+              aria-label="主要問題"
+              rows={3}
+              value={patient.problem}
+              onChange={(event) => onChange({ problem: event.target.value })}
+            />
+          </label>
+        )}
       </section>
     ),
   };
 
   const allTabs = [basicInfoTab, ...tabs];
-  const [activeTabKey, setActiveTabKey] = useState(basicInfoTab.key);
+  const [activeTabKey, setActiveTabKey] = useState(
+    startOnMain && tabs[0] ? tabs[0].key : basicInfoTab.key,
+  );
   const activeTab = allTabs.find((tab) => tab.key === activeTabKey) ?? basicInfoTab;
 
   return (

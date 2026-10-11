@@ -13,9 +13,10 @@ test("v2 desktop workflow remains usable without horizontal overflow", async ({
 
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
-  await page.getByLabel("病人代號 Patient code").fill("DESKTOP-01");
+  await page.getByRole("button", { name: "基本", exact: true }).click();
+  await page.getByLabel("科別").selectOption("general");
+  await page.getByLabel("病人代號").fill("DESKTOP-01");
   await page.getByLabel("主要問題").fill("Desktop deployment audit");
-  await page.getByRole("button", { name: "建立並開始" }).click();
   await page.getByRole("button", { name: "ROS" }).click();
   await page.getByRole("button", { name: /^一般全身 Constitutional/ }).click();
   await page.getByTestId("finding-control-fever").click();
@@ -58,9 +59,10 @@ test("v2 built artifact boots and persists locally over file protocol", async ({
 
   await page.getByTestId("choose-local-v2").click();
   await page.getByRole("button", { name: "＋ 新增病人" }).click();
-  await page.getByLabel("病人代號 Patient code").fill("FILE-OFFLINE-01");
+  await page.getByRole("button", { name: "基本", exact: true }).click();
+  await page.getByLabel("科別").selectOption("general");
+  await page.getByLabel("病人代號").fill("FILE-OFFLINE-01");
   await page.getByLabel("主要問題").fill("Single-file offline audit");
-  await page.getByRole("button", { name: "建立並開始" }).click();
   await page.getByRole("button", { name: /病人清單/ }).click();
   await expect(page.getByRole("button", { name: /FILE-OFFLINE-01/ })).toBeVisible();
 

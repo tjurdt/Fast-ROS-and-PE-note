@@ -140,6 +140,33 @@ afterEach(() => {
 });
 
 describe("v2 app shell", () => {
+  it("adds a patient with one tap and lands on the main page, not an input form", async () => {
+    const user = userEvent.setup();
+    const repository = new MemoryPatientRepository();
+    render(
+      <App
+        repository={repository}
+        patientFactory={{ createId: () => "patient-quick", now: () => 100 }}
+      />,
+    );
+
+    await user.click(screen.getByTestId("choose-local-v2"));
+    await user.click(await screen.findByRole("button", { name: "＋ 新增病人" }));
+
+    // 沒有輸入表單，直接在急診的主要分頁（問題）。
+    expect(screen.queryByRole("button", { name: "建立並開始" })).toBeNull();
+    expect(screen.queryByLabelText("主要問題")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "問題" }).getAttribute("aria-pressed"),
+    ).toBe("true");
+    expect(repository.database.patients[0]?.specialty).toBe("ed");
+
+    // 基本資料不需要輸入主要問題，代號之後再補。
+    await user.click(screen.getByRole("button", { name: "基本" }));
+    expect(screen.queryByLabelText("主要問題")).toBeNull();
+    expect((screen.getByLabelText("病人代號") as HTMLInputElement).value).toBe("");
+  });
+
   it("creates, edits, and persists a local patient", async () => {
     const user = userEvent.setup();
     const repository = new MemoryPatientRepository();
@@ -153,10 +180,11 @@ describe("v2 app shell", () => {
     await user.click(screen.getByTestId("choose-local-v2"));
     await screen.findByRole("heading", { name: "查房快速紀錄" });
     await user.click(screen.getByRole("button", { name: "＋ 新增病人" }));
-    await user.type(screen.getByLabelText("病人代號 Patient code"), "TEST-01");
-    await user.type(screen.getByLabelText("年齡 Age"), "72");
+    await user.click(await screen.findByRole("button", { name: "基本" }));
+    await user.selectOptions(screen.getByLabelText("科別"), "general");
+    await user.type(screen.getByLabelText("病人代號"), "TEST-01");
+    await user.type(screen.getByLabelText("年齡"), "72");
     await user.type(screen.getByLabelText("主要問題"), "Pneumonia");
-    await user.click(screen.getByRole("button", { name: "建立並開始" }));
 
     expect(await screen.findByDisplayValue("TEST-01")).toBeTruthy();
     await user.clear(screen.getByLabelText("主要問題"));
@@ -246,8 +274,9 @@ describe("v2 app shell", () => {
 
     await user.click(screen.getByTestId("choose-local-v2"));
     await user.click(await screen.findByRole("button", { name: "＋ 新增病人" }));
-    await user.type(screen.getByLabelText("病人代號 Patient code"), "AUTO-HD");
-    await user.click(screen.getByRole("button", { name: "建立並開始" }));
+    await user.click(await screen.findByRole("button", { name: "基本" }));
+    await user.selectOptions(screen.getByLabelText("科別"), "general");
+    await user.type(screen.getByLabelText("病人代號"), "AUTO-HD");
     await user.click(screen.getByRole("button", { name: /^病史/ }));
     await user.click(screen.getByRole("button", { name: "過去病史" }));
     await user.selectOptions(

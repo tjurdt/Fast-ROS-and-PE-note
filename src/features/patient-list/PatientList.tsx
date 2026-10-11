@@ -1,25 +1,18 @@
-import { useState, type FormEvent, type PropsWithChildren } from "react";
+import { useState, type PropsWithChildren } from "react";
 
-import type { Gender, Patient, PatientDraft } from "../../domain/patient";
+import type { Patient } from "../../domain/patient";
 import { queryPatients, type PatientSortMode } from "../../domain/patient-list";
-import { SPECIALTIES, specialtyLabel } from "../../domain/specialty";
+import { specialtyLabel } from "../../domain/specialty";
 import { Button } from "../../ui/Button";
 
 interface PatientListProps {
   patients: Patient[];
   saving: boolean;
-  onCreate: (draft: PatientDraft) => void;
+  /** 直接建立空白病人並開啟主要頁面；代號、性別、年齡之後在「基本」分頁補。 */
+  onCreate: () => void;
   onDelete: (patientId: string) => void;
   onOpen: (patientId: string) => void;
 }
-
-const EMPTY_DRAFT: PatientDraft = {
-  code: "",
-  specialty: "general",
-  sex: "",
-  age: "",
-  problem: "",
-};
 
 export function PatientList({
   patients,
@@ -29,18 +22,9 @@ export function PatientList({
   onOpen,
   children,
 }: PropsWithChildren<PatientListProps>) {
-  const [showForm, setShowForm] = useState(false);
-  const [draft, setDraft] = useState<PatientDraft>(EMPTY_DRAFT);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<PatientSortMode>("updated-desc");
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
-
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    onCreate(draft);
-    setDraft(EMPTY_DRAFT);
-    setShowForm(false);
-  }
 
   const visiblePatients = queryPatients(patients, { search, sort });
 
@@ -63,73 +47,6 @@ export function PatientList({
       </header>
 
       {children}
-
-      {showForm ? (
-        <form className="v2-card v2-form" onSubmit={submit}>
-          <h2>新增病人紀錄</h2>
-          <label>
-            病人代號 Patient code
-            <input
-              autoFocus
-              value={draft.code}
-              onChange={(event) => setDraft({ ...draft, code: event.target.value })}
-              placeholder="例：3F-12 / Bed 07"
-            />
-          </label>
-          <label>
-            科別 Department
-            <select
-              value={draft.specialty}
-              onChange={(event) =>
-                setDraft({ ...draft, specialty: event.target.value })
-              }
-            >
-              {SPECIALTIES.map((specialty) => (
-                <option key={specialty.key} value={specialty.key}>
-                  {specialty.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="v2-form__row">
-            <label>
-              性別 Sex
-              <select
-                value={draft.sex}
-                onChange={(event) =>
-                  setDraft({ ...draft, sex: event.target.value as Gender })
-                }
-              >
-                <option value="">未填</option>
-                <option value="男 M">男 M</option>
-                <option value="女 F">女 F</option>
-                <option value="其他 Other">其他 Other</option>
-              </select>
-            </label>
-            <label>
-              年齡 Age
-              <input
-                inputMode="numeric"
-                value={draft.age}
-                onChange={(event) => setDraft({ ...draft, age: event.target.value })}
-              />
-            </label>
-          </div>
-          <label>
-            主要問題
-            <input
-              value={draft.problem}
-              onChange={(event) => setDraft({ ...draft, problem: event.target.value })}
-            />
-          </label>
-          <div className="v2-form__actions">
-            <Button onClick={() => setShowForm(false)}>取消</Button>
-            <Button type="submit" tone="primary">
-              建立並開始
-            </Button>
-          </div>
-        </form>
-      ) : null}
 
       {patients.length > 0 ? (
         <section className="v2-list-tools" aria-label="病人清單篩選與排序">
@@ -256,7 +173,7 @@ export function PatientList({
         )}
       </section>
 
-      <Button className="v2-fab" onClick={() => setShowForm(true)} tone="primary">
+      <Button className="v2-fab" onClick={onCreate} tone="primary">
         ＋ 新增病人
       </Button>
     </main>

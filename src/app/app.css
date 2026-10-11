@@ -254,6 +254,10 @@ h1 {
   transform: translateY(1px);
 }
 
+.v2-fab:active:not(:disabled) {
+  transform: none;
+}
+
 .v2-button:focus-visible,
 input:focus-visible,
 select:focus-visible,
@@ -678,11 +682,17 @@ textarea:focus-visible {
   background: var(--danger-strong);
 }
 
+/*
+ * 置中不能用 transform：.v2-button:active 會把 transform 換成 translateY(1px)，
+ * 按下去的瞬間按鈕往左跳半個寬度，滑鼠放開時已不在按鈕上，click 就不成立（電腦版要點好幾次）。
+ */
 .v2-fab {
   position: fixed;
   bottom: 18px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  width: fit-content;
+  margin-inline: auto;
   border-radius: 999px;
   box-shadow: 0 8px 24px rgb(14 107 122 / 30%);
 }
