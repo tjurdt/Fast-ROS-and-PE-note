@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import type { FindingValue } from "../../src/domain/clinical/finding";
 import { searchProblems } from "../../src/domain/ed/complaints";
 import { composeChart, composePeFieldDetail } from "../../src/domain/ed/compose";
+import { orderMemo } from "../../src/domain/ed/order-memo";
+import { edOrder } from "../../src/domain/ed/orders";
 import { HISTORY_ITEMS, historyItem } from "../../src/domain/ed/history-library";
 import { matrixKey } from "../../src/domain/ed/pe-matrix";
 import { PE_ITEMS, peItem } from "../../src/domain/ed/pe-library";
@@ -198,5 +200,22 @@ describe("the richer library", () => {
     expect(composeChart(findings, MALE).fields.PH).toBe(
       "HX: HTN; pregnant (GA 20w); T(-) O(-) C(-) C(-)",
     );
+  });
+});
+
+describe("imaging purposes for the new complaints", () => {
+  const purpose = (orderId: string, problemId: string) => {
+    const order = edOrder(orderId);
+    const problem = ED_PROBLEMS.find((entry) => entry.id === problemId);
+    if (!order || !problem) throw new Error("unknown order or problem");
+    return orderMemo(order, [problem], problem.cc)?.purpose ?? "";
+  };
+
+  it("gives a specific r/o phrase instead of the generic default", () => {
+    expect(purpose("ct_brain", "head_injury")).toContain("ICH");
+    expect(purpose("cxr_pa", "hemoptysis")).toContain("mass");
+    expect(purpose("neck_soft_xr", "foreign_body")).toContain("foreign body");
+    expect(purpose("ct_neck", "dental")).toContain("deep neck infection");
+    expect(purpose("doppler_limbs", "cellulitis")).toContain("abscess");
   });
 });
